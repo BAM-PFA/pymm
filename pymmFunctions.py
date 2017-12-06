@@ -10,6 +10,8 @@ from ffmpy import FFprobe, FFmpeg
 today = date.today()
 logPath =  
 
+
+
 def ingest_log(mediaID,status,message):
 	logfile = logdir+mediaID+today+"log.txt"
 	with open(logfile,'w+') as logfile:

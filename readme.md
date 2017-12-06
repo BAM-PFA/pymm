@@ -1,6 +1,6 @@
 # pymediamicroservices
 
-This is a Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm)
+This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm)
 
 The rationale is basically trying to make it easier for us to track issues with `mm` that are really hard to follow in `bash` since so much of that code is not relevant to our workflows. 
 

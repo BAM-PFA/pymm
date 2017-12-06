@@ -16,12 +16,13 @@ today = date.today()
 ################################################################
 # read the config.ini file, or make one if it doesn't exist
 # THIS LOGIC SHOULD REALLY BE IN PYMMFUNCTIONS
-# OR EVEN IN CONFIG.PY AND CALLED AT THE START OF EACH MICROSERVICE SCRIPT
+# --I SEE NOW THAT IT'S DONE IN mmfunctions, WHICH IS CALLED
+# AT THE TOP OF ALL mm SCRIPTS
 scriptDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(scriptDirectory,'..','config/config.ini')
+configPath = os.path.join(scriptDirectory,'config/config.ini') 
 globalConfig = configparser.ConfigParser()
 if os.path.isfile(configPath):
-	globalConfig.read(confPath)
+	globalConfig.read(configPath)
 else:
 	print("the configuration file doesn't exist yet... hang on ...")
 	with open(configPath,'w+') as configPath:
@@ -30,26 +31,33 @@ else:
 requiredPaths = ['outdir_ingestfile','aip_storage','resourcespace_deliver']
 for path in requiredPaths:
 	if globalConfig['paths'][path] == '': # config settings
-		print("You did not set "+path+". Please edit the config file or\n\
+		print("You did not set a directory for "+path+". Please edit the config file or\n\
 			use '--output-path' to set the ingestfile output path\n\
-			use '--aip-path' to set the AIP output path\n\
+			use '--aip-path' to set the AIP storage path\n\
 			use '--resourcespace_deliver' to set the resourcespace output path")
 		exit()
 ################################################################
 
-# set interactivemode state if command line flag is set
-interactiveMode = argparse.ArgumentParser().add_argument('--interactive',action='store_true')
-# set ingest variables
-inputFilepath = argparse.ArgumentParser().add_argument('--inputFilepath')
-filename = os.path.basename(inputFilepath)
-mediaID = argparse.ArgumentParser().add_argument('--mediaID')
-operator = argparse.ArgumentParser().add_argument('--operator')
+# COMMAND LINE ARGUMENTS
+argparser = argparse.ArgumentParser()
 
-# Quit if there are required variables missing
-for flag in inputFilepath, mediaID, operator:
-	if flag = '':
-		print("YOU FORGOT TO SET "+flag+". It is required. Try again, but set "+flag+" with the flag --"+flag)
-		exit()
+# set interactivemode state if command line flag is set
+interactiveMode = argparser.add_argument('--interactive',action='store_true')
+
+# set ingest variables
+inputFilepath = argparser.add_argument('--inputFilepath')
+# filename = os.path.basename(inputFilepath)
+mediaID = argparser.add_argument('--mediaID')
+operator = argparser.add_argument('--operator')
+
+# args = 
+
+if not interactiveMode:
+	# Quit if there are required variables missing
+	for flag in inputFilepath, mediaID, operator:
+		if flag == '':
+			print("YOU FORGOT TO SET "+flag+". It is required. Try again, but set "+flag+" with the flag --"+flag)
+			exit()
 
 # NOT TOTALLY CLEAR WHAT THE POINT OF THIS IS IN THE ORIGINAL
 # SEEMS LIKE IT'S RARELY USED, IE IF THE FILE NO LONGER EXISTS?
@@ -58,7 +66,7 @@ def cleanup():
 	log(mediaID,status,"Something went wrong and the process was aborted.")
 	exit()
 
-# SET UP AIP DIRECTORY PATHS...
+# SET UP AIP DIRECTORY PATHS FOR INGEST...
 packageDirDict = {
 	"packageOutputDir":"globalConfig['paths']['outdir_ingestfile']+mediaID+'/'",
 	"packageMetadataDir":"packageOutputDir+'metadata/'",
@@ -99,8 +107,8 @@ if not is_video(mediaID):
 if interactiveMode:
 	# ask operator/mediaID/input file
 	operator = input("Please enter your name: ")
-	filePath = input("Please drag the file to ingest into the terminal window: ")
-	fileName = os.path.basename(filePath)
+	inputFilepath = input("Please drag the file to ingest into the terminal window: ")
+	filename = os.path.basename(filePath)
 	mediaID = input("Please enter a MEDIA ID for this file (A-Z a-z 0-9 _ and - *ONLY*): ")
 
 	# check regex for mediaID
