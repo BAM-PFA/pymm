@@ -12,8 +12,8 @@ from ffmpy import FFprobe, FFmpeg
 
 ################################################################
 # READ config.ini OR MAKE ONE IF IT DOESN'T EXIST YET
-scriptDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(scriptDirectory,'config/config.ini') 
+pymmDirectory = os.path.dirname(os.path.abspath(__file__))
+configPath = os.path.join(pymmDirectory,'config/config.ini') 
 if not os.path.isfile(configPath):
 	open(configPath,'x')
 	with open(configPath,'w+') as config:
@@ -64,11 +64,15 @@ logPath =  globalConfig['logging']['pymm_log_dir']
 # 	pymm_log(mediaID,status,"Something went wrong and the process was aborted.")
 # 	exit()
 
-def is_video(mediaID):
+def is_video(inputFile):
 	ffprobe = FFprobe(
-	inputs={mediaID:'-show_streams -select_streams v:0'}
-	).run(stdout=subprocess.PIPE)
-	if json.loads(ffprobe[0].decode('utf-8')) == something:  #WHATEVER THE index value is supposed to be
-		return True
-	else: 
-		return False
+	inputs={inputFile:'-show_streams'}
+	)
+	FR = ffprobe.run(stdout=subprocess.PIPE)
+	print(json.loads(FR[0]).decode('utf-8')) # this throws a json decode error: json.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)
+
+	# print(json.loads(ffprobe[0].decode('utf-8')))
+	# if json.loads(ffprobe[0].decode('utf-8')) == something:  #WHATEVER THE index value is supposed to be
+	# 	return True
+	# else: 
+	# 	return False

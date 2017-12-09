@@ -11,24 +11,28 @@ import argparse
 import configparser
 from datetime import date
 
-import pymmFunctions
+from pymmFunctions import *
+pymmDirectory = os.path.dirname(os.path.abspath(__file__))
+# sys.path.insert(0,localContextDirectory+'/config')
+# from config import config
+configPath = os.path.join(pymmDirectory,'config/config.ini') 
+globalConfig = configparser.SafeConfigParser()
+globalConfig.read(configPath)
 
 today = date.today()
-
-localContextDirectory = os.path.dirname(os.path.abspath(__file__))
 
 # COMMAND LINE ARGUMENTS
 parser = argparse.ArgumentParser()
 
 # set interactive mode state if command line flag is set
-mode = parser.add_argument('--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
+mode = parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
 # set ingest variables
-parser.add_argument('--inputFilepath',help='path of input file')
-parser.add_argument('--mediaID',help='mediaID for input file')
-parser.add_argument('--operator',help='name of the person doing the ingest')
-parser.add_argument('--output_path',help='output path for ingestfile')
-parser.add_argument('--aip_path',help='destination for Archival Information Package')
-parser.add_argument('--resourcespace_deliver',help='path for resourcespace proxy delivery')
+parser.add_argument('-i','--inputFilepath',help='path of input file')
+parser.add_argument('-m','--mediaID',help='mediaID for input file')
+parser.add_argument('-u','--operator',help='name of the person doing the ingest')
+parser.add_argument('-o','--output_path',help='output path for ingestfile')
+parser.add_argument('-a','--aip_path',help='destination for Archival Information Package')
+parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery')
 
 args = parser.parse_args()
 # print(args)
@@ -68,32 +72,42 @@ def cleanup():
 	exit()
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
-packageDirDict = {
-	"packageOutputDir":"globalConfig['paths']['outdir_ingestfile']+mediaID+'/'",
-	"packageMetadataDir":"packageOutputDir+'metadata/'",
-	"packageFileMetadataDir":"packageMetadataDir+'fileMeta/'",
-	"packageMetadataObjects":"packageFileMetadataDir+'objects/'",
-	"packageLogDir":"packageMetadataDir+'logs/'",
-}
+# packageDirDict = {
+# 	"packageOutputDir":globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/',
+# 	"packageMetadataDir":packageOutputDir+'metadata/',
+# 	"packageFileMetadataDir":packageMetadataDir+'fileMeta/',
+# 	"packageMetadataObjects":packageFileMetadataDir+'objects/',
+# 	"packageLogDir":packageMetadataDir+'logs/',
+# }
+packageOutputDir = globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
+packageObjectDir = packageOutputDir+'objects/'
+packageMetadataDir = packageOutputDir+'metadata/'
+packageFileMetadataDir = packageMetadataDir+'fileMeta/'
+packageMetadataObjects = packageFileMetadataDir+'objects/'
+packageLogDir = packageMetadataDir+'logs/'
+packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
 
 # ... SEE IF THE TOP DIR EXISTS ...
-if os.path.isdir(packageDirDict['packageOutputDir']):
-	print("It looks like "+mediaID+" was already ingested. If you want to replace \
-		the existing package please delete the package at \r\
-		"+packageDirDict['packageOutputDir']+"\r\
-		first and then try again.")
+if os.path.isdir(packageOutputDir):
+	print("It looks like "+mediaID+" was already ingested.\
+If you want to replace the existing package please delete the package at \
+"+packageOutputDir+"\n\
+first and then try again.")
 	exit()
 
 # ... AND OTHERWISE MAKE THEM ALL
-for key in packageDirDict:
-	os.mkdir(key)
+for directory in packageDirs:
+	os.mkdir(directory)
 
 # set up a logfile for this ingest instance
-ingestLogPath = packageDirDict['packageLogDir']+mediaID+'_'+today+'.txt'
+ingestLogPath = packageLogDir+mediaID+'_'+str(today)+'.txt'
+with open(ingestLogPath,'x') as log:
+	print('Laying a log at '+ingestLogPath)
+is_video(inputFilepath)
 
-if not is_video(mediaID):
+if not is_video(inputFilepath):
 	status = 'warning'
-	message = "WARNING: "+mediaID+" is not recognized as a video file."
+	message = "WARNING: "+filename+" is not recognized as a video file."
 	print(message)
 	log(mediaID,status,message)
 	if interactiveMode:
