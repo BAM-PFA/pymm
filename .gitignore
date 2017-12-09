@@ -1,2 +1,3 @@
 .DS*
 config.ini*
+__py*

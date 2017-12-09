@@ -5,6 +5,12 @@ import sys
 import configparser
 
 configPath = os.path.dirname(os.path.abspath(__file__))+'/config.ini'
+if not os.path.isfile(configPath):
+	open(configPath,'x')
+	with open(configPath,'w+') as config:
+		config.write("[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
+			\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\
+			\r\r[logging]\rpymm_log_dir:")
 config = configparser.SafeConfigParser()
 config.read(configPath)
 
@@ -40,7 +46,7 @@ def ask_more(more):
 	else:
 		select_option()
 
-with open(configPath, 'r') as conf:
+with open(configPath, 'r+') as conf:
 	print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')
 	for line in conf.readlines():
 		print(line)

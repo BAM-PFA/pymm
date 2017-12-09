@@ -11,53 +11,54 @@ import argparse
 import configparser
 from datetime import date
 
+import pymmFunctions
+
 today = date.today()
 
-################################################################
-# read the config.ini file, or make one if it doesn't exist
-# THIS LOGIC SHOULD REALLY BE IN PYMMFUNCTIONS
-# --I SEE NOW THAT IT'S DONE IN mmfunctions, WHICH IS CALLED
-# AT THE TOP OF ALL mm SCRIPTS
-scriptDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(scriptDirectory,'config/config.ini') 
-globalConfig = configparser.ConfigParser()
-if os.path.isfile(configPath):
-	globalConfig.read(configPath)
-else:
-	print("the configuration file doesn't exist yet... hang on ...")
-	with open(configPath,'w+') as configPath:
-		globalConfig.read(configPath)
-
-requiredPaths = ['outdir_ingestfile','aip_storage','resourcespace_deliver']
-for path in requiredPaths:
-	if globalConfig['paths'][path] == '': # config settings
-		print("You did not set a directory for "+path+". Please edit the config file or\n\
-			use '--output-path' to set the ingestfile output path\n\
-			use '--aip-path' to set the AIP storage path\n\
-			use '--resourcespace_deliver' to set the resourcespace output path")
-		exit()
-################################################################
+localContextDirectory = os.path.dirname(os.path.abspath(__file__))
 
 # COMMAND LINE ARGUMENTS
-argparser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser()
 
-# set interactivemode state if command line flag is set
-interactiveMode = argparser.add_argument('--interactive',action='store_true')
-
+# set interactive mode state if command line flag is set
+mode = parser.add_argument('--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
 # set ingest variables
-inputFilepath = argparser.add_argument('--inputFilepath')
-# filename = os.path.basename(inputFilepath)
-mediaID = argparser.add_argument('--mediaID')
-operator = argparser.add_argument('--operator')
+parser.add_argument('--inputFilepath',help='path of input file')
+parser.add_argument('--mediaID',help='mediaID for input file')
+parser.add_argument('--operator',help='name of the person doing the ingest')
+parser.add_argument('--output_path',help='output path for ingestfile')
+parser.add_argument('--aip_path',help='destination for Archival Information Package')
+parser.add_argument('--resourcespace_deliver',help='path for resourcespace proxy delivery')
 
-# args = 
+args = parser.parse_args()
+# print(args)
+interactiveMode = args.interactiveMode
+inputFilepath = args.inputFilepath
+mediaID = args.mediaID
+operator = args.operator
+output_path = args.output_path
+aip_path = args.aip_path
+resourcespace_deliver = args.resourcespace_deliver
 
-if not interactiveMode:
+if inputFilepath:
+	filename = os.path.basename(inputFilepath)
+
+requiredPaths = ['inputFilepath','mediaID','operator']
+
+if interactiveMode == False:
 	# Quit if there are required variables missing
-	for flag in inputFilepath, mediaID, operator:
-		if flag == '':
+	missingPaths = 0
+	for flag in requiredPaths:
+		if getattr(args,flag) == None:
 			print("YOU FORGOT TO SET "+flag+". It is required. Try again, but set "+flag+" with the flag --"+flag)
-			exit()
+			missingPaths += 1
+	if missingPaths > 0:
+		exit()
+else:
+	# ask operator/mediaID/input file
+	operator = input("Please enter your name: ")
+	inputFilepath = input("Please drag the file you want to ingest into this window___")
+	mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
 
 # NOT TOTALLY CLEAR WHAT THE POINT OF THIS IS IN THE ORIGINAL
 # SEEMS LIKE IT'S RARELY USED, IE IF THE FILE NO LONGER EXISTS?
