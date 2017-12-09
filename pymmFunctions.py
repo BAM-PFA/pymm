@@ -70,7 +70,7 @@ def is_video(inputFile):
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	print(json.loads(FR[0]).decode('utf-8')) # this throws a json decode error: json.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)
-
+	# print(FR[1])
 	# print(json.loads(ffprobe[0].decode('utf-8')))
 	# if json.loads(ffprobe[0].decode('utf-8')) == something:  #WHATEVER THE index value is supposed to be
 	# 	return True
