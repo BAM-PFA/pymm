@@ -37,27 +37,40 @@ if missingPaths > 0:
 	exit()
 ################################################################
 
-today = date.today()
-logPath =  globalConfig['logging']['pymm_log_dir']
+today = str(date.today())
+pymmLogPath =  globalConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
 
-# def ingest_log(mediaID,status,message):
-# 	logfile = logdir+mediaID+today+"log.txt"
-# 	with open(logfile,'w+') as logfile:
-# 		# LOG SOME SHIT
+def check_pymmLogExists ():
+	if not os.path.isfile(pymmLogPath):
+		print('wait i need to make a logfile')
+		open(pymmLogPath,'x')
+	with open(pymmLogPath,'w+') as pymmLog:
+		pymmLog.write(((("#"*75)+'\r')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES\
+\r\r'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\r'+((("#"*75)+'\r')*2)+'\r')
 
-# def pymm_log(filename,mediaID,operator,message,status):
-# 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
-# 	with open(systemLog,'w+') as log:
-# 		if status == 'STARTING':
-# 			prefix = ('#'*50)+'\r\r'
-# 			suffix = ''
-# 		elif status == 'ENDING' or status == 'ABORTING':
-# 			prefix = ''
-# 			suffix = '\r\r'+('#'*50)
-# 		else:
-# 			prefix = ''
-# 			suffix = ''
-# 		log.write(prefix,today+' '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix)
+def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
+	if message == 'start':
+		message = 'onwards and upwards'
+		status = 'STARTING TO INGEST '+filename
+		today = ('#'*50)+'\r\r'+str(date.today())
+	with open(ingestLogPath,'a+') as ingestLog:
+		ingestLog.write(today+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\r')
+		# LOG SOME SHIT
+
+def pymm_log(filename,mediaID,operator,message,status):
+	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
+	check_pymmLogExists()
+	with open(pymmLogPath,'a+') as log:
+		if status == 'STARTING':
+			prefix = ('#'*50)+'\r\r'
+			suffix = ''
+		elif status == 'ENDING' or status == 'ABORTING':
+			prefix = ''
+			suffix = '\r\r'+('#'*50)
+		else:
+			prefix = ''
+			suffix = ''
+		log.write(prefix+today+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\r')
 
 # def cleanup():
 # 	status = 'ABORTING'
@@ -65,14 +78,16 @@ logPath =  globalConfig['logging']['pymm_log_dir']
 # 	exit()
 
 def is_video(inputFile):
+	# THIS FOLLOWS THE MM LOGIC BUT I DON'T
+	# KNOW ENOUGH TO BE CONVINCED THAT THE 
+	# LOGIC IS SOUND. WHAT'S index = 0 ANYWAY?
 	ffprobe = FFprobe(
-	inputs={inputFile:'-show_streams'}
+	inputs={inputFile:'-v error -print_format json -show_streams -select_streams v:0'}
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
-	print(json.loads(FR[0]).decode('utf-8')) # this throws a json decode error: json.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)
-	# print(FR[1])
-	# print(json.loads(ffprobe[0].decode('utf-8')))
-	# if json.loads(ffprobe[0].decode('utf-8')) == something:  #WHATEVER THE index value is supposed to be
-	# 	return True
-	# else: 
-	# 	return False
+	output = json.loads(FR[0].decode('utf-8'))
+	indexValue = output['streams'][0]['index']
+	if indexValue == 0:
+		return True
+	else:
+		return False

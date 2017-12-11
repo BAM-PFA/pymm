@@ -6,6 +6,7 @@ import configparser
 
 configPath = os.path.dirname(os.path.abspath(__file__))+'/config.ini'
 if not os.path.isfile(configPath):
+	print('theres no system log yet...')
 	open(configPath,'x')
 	with open(configPath,'w+') as config:
 		config.write("[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\

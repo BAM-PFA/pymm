@@ -10,20 +10,21 @@ from ffmpy import FFprobe, FFmpeg
 import argparse
 import configparser
 from datetime import date
-
+import pymmFunctions
 from pymmFunctions import *
+
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-# sys.path.insert(0,localContextDirectory+'/config')
-# from config import config
 configPath = os.path.join(pymmDirectory,'config/config.ini') 
 globalConfig = configparser.SafeConfigParser()
 globalConfig.read(configPath)
 
 today = date.today()
 
-# COMMAND LINE ARGUMENTS
+########################################################
+#
+#      SET COMMAND LINE ARGUMENTS
+#
 parser = argparse.ArgumentParser()
-
 # set interactive mode state if command line flag is set
 mode = parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
 # set ingest variables
@@ -44,8 +45,7 @@ output_path = args.output_path
 aip_path = args.aip_path
 resourcespace_deliver = args.resourcespace_deliver
 
-if inputFilepath:
-	filename = os.path.basename(inputFilepath)
+########################################################
 
 requiredPaths = ['inputFilepath','mediaID','operator']
 
@@ -61,24 +61,20 @@ if interactiveMode == False:
 else:
 	# ask operator/mediaID/input file
 	operator = input("Please enter your name: ")
-	inputFilepath = input("Please drag the file you want to ingest into this window___")
+	inputFilepath = input("Please drag the file you want to ingest into this window___").rstrip()
 	mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
 
+if inputFilepath:
+	filename = os.path.basename(inputFilepath)
+
 # NOT TOTALLY CLEAR WHAT THE POINT OF THIS IS IN THE ORIGINAL
-# SEEMS LIKE IT'S RARELY USED, IE IF THE FILE NO LONGER EXISTS?
+# SEEMS LIKE IT'S RARELY USED, IE ONLY IF THE FILE NO LONGER EXISTS?
 def cleanup():
 	status = 'abort'
 	log(mediaID,status,"Something went wrong and the process was aborted.")
 	exit()
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
-# packageDirDict = {
-# 	"packageOutputDir":globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/',
-# 	"packageMetadataDir":packageOutputDir+'metadata/',
-# 	"packageFileMetadataDir":packageMetadataDir+'fileMeta/',
-# 	"packageMetadataObjects":packageFileMetadataDir+'objects/',
-# 	"packageLogDir":packageMetadataDir+'logs/',
-# }
 packageOutputDir = globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
 packageMetadataDir = packageOutputDir+'metadata/'
@@ -101,15 +97,16 @@ for directory in packageDirs:
 
 # set up a logfile for this ingest instance
 ingestLogPath = packageLogDir+mediaID+'_'+str(today)+'.txt'
-with open(ingestLogPath,'x') as log:
+with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
-is_video(inputFilepath)
+ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
 
+# check if the input is a video file (DOUBLE CHECK THAT THIS ACTUALLY MAKES SENSE)
 if not is_video(inputFilepath):
 	status = 'warning'
 	message = "WARNING: "+filename+" is not recognized as a video file."
 	print(message)
-	log(mediaID,status,message)
+	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 	if interactiveMode:
 		stayOrGo = input("If you want to quit press 'q' and enter, otherwise press any other key:")
 		if stayOrGo == 'q':
@@ -120,14 +117,6 @@ if not is_video(inputFilepath):
 		pass
 
 if interactiveMode:
-	# ask operator/mediaID/input file
-	operator = input("Please enter your name: ")
-	inputFilepath = input("Please drag the file to ingest into the terminal window: ")
-	filename = os.path.basename(filePath)
-	mediaID = input("Please enter a MEDIA ID for this file (A-Z a-z 0-9 _ and - *ONLY*): ")
-
-	# check regex for mediaID
-
 	# cleanup strategy
 	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no ")
 	if cleanupStrategy == 'yes':
@@ -136,15 +125,16 @@ if interactiveMode:
 		cleanupStrategy = False
 
 	# crop decision
+	# going to leave this blank for now, we wouldn't have a reason to crop... AFAIK
 
 	# formula
 
 	# blackframe test
+	# also leave this blank, we won't trim anything
 
 	# phasecheck test
 
 	# ask queue
-
 
 # LOG THAT WE ARE STARTING
 pymm_log(filename,mediaID,operator,'','STARTING')
