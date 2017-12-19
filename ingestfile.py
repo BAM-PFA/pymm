@@ -10,7 +10,6 @@ from ffmpy import FFprobe, FFmpeg
 import argparse
 import configparser
 from datetime import date
-import now
 import pymmFunctions
 from pymmFunctions import *
 
@@ -21,7 +20,8 @@ globalConfig.read(configPath)
 
 today = date.today()
 now = time.strftime("%Y-%m-%d_%H:%M:%S")
-
+yes = ('YES','Yes','yes','y','Y')
+no = ('NO','No','no','n','N')
 
 ########################################################
 #
@@ -122,11 +122,14 @@ if not is_video(inputFilepath):
 
 if interactiveMode:
 	# cleanup strategy
-	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no ")
-	if cleanupStrategy == 'yes':
+	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
+	if cleanupStrategy in yes:
 		cleanupStrategy = True
+	elif cleanupStrategy in no:
+		cleanupStrategy = False
 	else:
 		cleanupStrategy = False
+		print("Sorry, your answer didn't make sense so we will leave things where they are.")
 
 	# crop decision
 	# going to leave this blank for now, we wouldn't have a reason to crop... AFAIK
