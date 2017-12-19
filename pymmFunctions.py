@@ -8,45 +8,54 @@ import os
 import sys
 import configparser
 from datetime import date
+import time
 from ffmpy import FFprobe, FFmpeg
 
 ################################################################
 # READ config.ini OR MAKE ONE IF IT DOESN'T EXIST YET
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(pymmDirectory,'config/config.ini') 
+configPath = os.path.join(pymmDirectory,'config','config.ini') 
 if not os.path.isfile(configPath):
 	open(configPath,'x')
 	with open(configPath,'w+') as config:
-		config.write("[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
-			\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\
-			\r\r[logging]\rpymm_log_dir:")
+		config.write('''
+			[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:
+			\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:
+			\r\r[logging]\rpymm_log_dir:
+			''')
 globalConfig = configparser.SafeConfigParser()
 globalConfig.read(configPath)
 
 # check for the existence of required output paths
-requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path','resourcespace_deliver':'the resourcespace output path'}
+requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path',
+				'resourcespace_deliver':'the resourcespace output path'}
 missingPaths = 0
 for path in requiredPaths.items():
 	if not os.path.isdir(globalConfig['paths'][path[0]]):
 		missingPaths += 1
-		print("CONFIGURATION PROBLEM:\n\
-			You have not yet set a directory for "+path[0]+". Please edit the config file or\n\
-			use '--"+path[0]+"' to set "+path[1])
+		print('''CONFIGURATION PROBLEM:\n
+			You have not yet set a directory for "+path[0]+". Please run config.py,\n
+			edit the config file directly,\n
+			or use '--"+path[0]+"' to set "+path[1]
+			''')
 if missingPaths > 0:
 	print("You are missing some required file paths and we have to quit. Sorry.")
 	exit()
 ################################################################
 
 today = str(date.today())
+now = time.strftime("%Y-%m-%d_%H:%M:%S")
 pymmLogPath =  globalConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
 
-def check_pymmLogExists ():
+def check_pymmLog_exists ():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
 		open(pymmLogPath,'x')
 	with open(pymmLogPath,'w+') as pymmLog:
-		pymmLog.write(((("#"*75)+'\r')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES\
-\r\r'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\r'+((("#"*75)+'\r')*2)+'\r')
+		pymmLog.write('''
+			((("#"*75)+'\r')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES
+			\r\r'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\r'+((("#"*75)+'\r')*2)+'\r'
+			''')
 
 def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
 	if message == 'start':
@@ -59,7 +68,7 @@ def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
 
 def pymm_log(filename,mediaID,operator,message,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
-	check_pymmLogExists()
+	check_pymmLog_exists()
 	with open(pymmLogPath,'a+') as log:
 		if status == 'STARTING':
 			prefix = ('#'*50)+'\r\r'

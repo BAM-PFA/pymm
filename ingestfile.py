@@ -10,15 +10,18 @@ from ffmpy import FFprobe, FFmpeg
 import argparse
 import configparser
 from datetime import date
+import now
 import pymmFunctions
 from pymmFunctions import *
 
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(pymmDirectory,'config/config.ini') 
+configPath = os.path.join(pymmDirectory,'config','config.ini') 
 globalConfig = configparser.SafeConfigParser()
 globalConfig.read(configPath)
 
 today = date.today()
+now = time.strftime("%Y-%m-%d_%H:%M:%S")
+
 
 ########################################################
 #
@@ -85,10 +88,11 @@ packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileM
 
 # ... SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
-	print("It looks like "+mediaID+" was already ingested.\
-If you want to replace the existing package please delete the package at \
-"+packageOutputDir+"\n\
-first and then try again.")
+	print('''
+		"It looks like "+mediaID+" was already ingested.
+		If you want to replace the existing package please delete the package at
+		\n"+packageOutputDir+"\nfirst and then try again."
+		''')
 	exit()
 
 # ... AND OTHERWISE MAKE THEM ALL
