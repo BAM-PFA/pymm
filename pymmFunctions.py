@@ -102,9 +102,17 @@ def is_video(inputFile):
 		return False
 
 def phase_check(inputFile):
-	ffprobe = FFprobe(
-		inputs={inputFile:'''
-		-f lavfi aphasemeter=r=0.2 -select_streams 0:a:0 -show_entries frame=pkt_dts_time:frame_tags=lavfi.aphasemeter.phase
+	# THE FFPROBE/FFMPEG DOCUMENTATION IS SO RIDICULOUS. I CAN'T GET
+	# THE MM COMMAND TO FUNCTION AS EXPECTED USING FFMPY,
+	# BUT THIS PRINTS THE LAVFI.APHASEMETER.PHASE VALUE PLUS 'PTS_TIME' VALUE:
+	#
+	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] frame:128  pts:131072  pts_time:2.97215
+	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] lavfi.aphasemeter.phase=-0.634070
+	# 
+	# GOING TO HAVE TO RETURN TO THIS ONE LATER.
+	ffpmpeg = FFmpeg(
+		inputs={'''
+		/path/to/file':'-af aphasemeter=video=0,ametadata=print:key=lavfi.aphasemeter.phase -f null -'
 		'''
 		}
 		)
