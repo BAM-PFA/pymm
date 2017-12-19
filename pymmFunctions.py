@@ -40,7 +40,7 @@ if missingPaths > 0:
 today = str(date.today())
 pymmLogPath =  globalConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
 
-def check_pymmLogExists ():
+def check_pymm_log_exists ():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
 		open(pymmLogPath,'x')
@@ -91,3 +91,13 @@ def is_video(inputFile):
 		return True
 	else:
 		return False
+
+def phase_check(inputFile):
+	ffprobe = FFprobe(
+		inputs={inputFile:'''
+		-f lavfi aphasemeter=r=0.2 -select_streams 0:a:0 -show_entries frame=pkt_dts_time:frame_tags=lavfi.aphasemeter.phase
+		'''
+		}
+		)
+	
+
