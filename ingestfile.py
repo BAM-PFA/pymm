@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 #
 # pymm is a python port of mediamicroservices
+# (https://github.com/mediamicroservices/mm)
+#
+# `ingestfile` takes an input a/v file, transcodes a derivative,
+# produces/extracts some metadata, creates fixity checks,
+# and packages the whole lot in an OAIS-like Archival Information Package
 
 import sys
 import subprocess
@@ -57,10 +62,14 @@ if interactiveMode == False:
 	missingPaths = 0
 	for flag in requiredPaths:
 		if getattr(args,flag) == None:
-			print("YOU FORGOT TO SET "+flag+". It is required. Try again, but set "+flag+" with the flag --"+flag)
+			print('''
+				CONFIGURATION PROBLEM:\n
+				YOU FORGOT TO SET "+flag+". It is required.\n
+				Try again, but set "+flag+" with the flag --"+flag
+				''')
 			missingPaths += 1
 	if missingPaths > 0:
-		exit()
+		sys.exit()
 else:
 	# ask operator/mediaID/input file
 	operator = input("Please enter your name: ")
@@ -75,7 +84,7 @@ if inputFilepath:
 def cleanup():
 	status = 'abort'
 	log(mediaID,status,"Something went wrong and the process was aborted.")
-	exit()
+	sys.exit()
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
 packageOutputDir = globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
@@ -89,11 +98,11 @@ packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileM
 # ... SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
 	print('''
-		"It looks like "+mediaID+" was already ingested.
+		"It looks like "+mediaID+" was already ingested.\n
 		If you want to replace the existing package please delete the package at
 		\n"+packageOutputDir+"\nfirst and then try again."
 		''')
-	exit()
+	sys.exit(1)
 
 # ... AND OTHERWISE MAKE THEM ALL
 for directory in packageDirs:
@@ -114,7 +123,8 @@ if not is_video(inputFilepath):
 	if interactiveMode:
 		stayOrGo = input("If you want to quit press 'q' and enter, otherwise press any other key:")
 		if stayOrGo == 'q':
-			exit()
+			sys.exit(0)
+			# CLEANUP AND LOG THIS
 		else:
 			pass
 	else:

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-# SO YOU SAY YOU WANT TO MAKE SOME DERIVATIVES?
+# YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
+
+def set_input_options():
+	inputOptions = ''
 
 def set_middle_options(outputType):
 	middleOptions = ''
@@ -12,5 +15,4 @@ def set_middle_options(outputType):
 		# and so on
 
 	return middleOptions
-
 

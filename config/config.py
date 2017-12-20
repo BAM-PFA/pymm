@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# pymm is a python port of mediamicroservices
+#
+# THIS IS ABANDONDED I THINK
 
 import configparser
 import os

@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+#
+# pymm is a python port of mediamicroservices
+# (https://github.com/mediamicroservices/mm)
+#
+# run `pymmconfig` once at setup to initialize config settings
+# or run it again to change or add values
 
 import os
 import sys
@@ -34,16 +40,15 @@ def select_option():
 			set_value(section,optionToSet)
 		else:
 			pass
+	
 	if matchingSections == 0:
-		print("Oops, there is no option matching "+optionToSet+". Check your spelling and try again.")
-		exit()
-
+		print("\nOops, there is no option matching "+optionToSet+". Check your spelling and try again.\n")
 	more = input("Type 'q' to quit or any other key to select another option to set: ")
 	ask_more(more)
 
 def ask_more(more):
 	if more == 'q':
-		exit()
+		sys.exit(0)
 	else:
 		select_option()
 
