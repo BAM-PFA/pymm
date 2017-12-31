@@ -58,39 +58,41 @@ today = str(date.today())
 now = time.strftime("%Y-%m-%d_%H:%M:%S")
 pymmLogPath =  globalConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
 
-def check_pymm_log_exists ():
+def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
 		open(pymmLogPath,'x')
-	with open(pymmLogPath,'w+') as pymmLog:
-		pymmLog.write('''
-			((("#"*75)+'\r')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES
-			\r\r'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\r'+((("#"*75)+'\r')*2)+'\r'
-			''')
+		with open(pymmLogPath,'w+') as pymmLog:
+			pymmLog.write(
+				((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
+				'\n\n'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
+				)
+	else:
+		return True
 
 def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
 	if message == 'start':
 		message = 'onwards and upwards'
 		status = 'STARTING TO INGEST '+filename
-		today = ('#'*50)+'\r\r'+str(date.today())
+		startToday = ('#'*50)+'\r\r'+str(date.today())
 	with open(ingestLogPath,'a+') as ingestLog:
-		ingestLog.write(today+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\r')
+		ingestLog.write(today+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
 		# LOG SOME SHIT
 
 def pymm_log(filename,mediaID,operator,message,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
-	check_pymmLog_exists()
-	with open(pymmLogPath,'a+') as log:
+	check_pymm_log_exists()
+	with open(pymmLogPath,'a') as log:
 		if status == 'STARTING':
-			prefix = ('#'*50)+'\r\r'
-			suffix = ''
+			prefix = ('&'*50)+'\n\n'
+			suffix = '\n'
 		elif status == 'ENDING' or status == 'ABORTING':
 			prefix = ''
-			suffix = '\r\r'+('#'*50)
+			suffix = '\n\n'+('#'*50)
 		else:
 			prefix = ''
-			suffix = ''
-		log.write(prefix+today+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\r')
+			suffix = '\n'
+		log.write(prefix+today+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
 
 # def cleanup():
 # 	status = 'ABORTING'
@@ -98,18 +100,40 @@ def pymm_log(filename,mediaID,operator,message,status):
 # 	exit()
 
 def is_video(inputFile):
-	# THIS FOLLOWS THE MM LOGIC BUT I DON'T
-	# KNOW ENOUGH TO BE CONVINCED THAT THE 
-	# LOGIC IS SOUND. WHAT'S index = 0 ANYWAY?
+	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
+	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
+	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
+	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
 	ffprobe = FFprobe(
 	inputs={inputFile:'-v error -print_format json -show_streams -select_streams v:0'}
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	output = json.loads(FR[0].decode('utf-8'))
+	try:
+		indexValue = output['streams'][0]['index']
+		if indexValue == 0:
+			return True
+	except:
+		return False
+
+def is_audio(inputFile):
+	print('¿maybe this is an audio file?')
+	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
+	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
+	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
+	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
+	ffprobe = FFprobe(
+	inputs={inputFile:'-v error -print_format json -show_streams -select_streams a:0'}
+	)
+	FR = ffprobe.run(stdout=subprocess.PIPE)
+	output = json.loads(FR[0].decode('utf-8'))
 	indexValue = output['streams'][0]['index']
-	if indexValue == 0:
-		return True
-	else:
+	try:
+		if indexValue == 0:
+			print("This appears to be an audio file!")
+			return True
+	except:
+		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
 		return False
 
 def phase_check(inputFile):

@@ -6,6 +6,9 @@
 # `ingestfile` takes an input a/v file, transcodes a derivative,
 # produces/extracts some metadata, creates fixity checks,
 # and packages the whole lot in an OAIS-like Archival Information Package
+#
+# @fixme = stuff to do
+
 
 import sys
 import subprocess
@@ -64,9 +67,9 @@ if interactiveMode == False:
 		if getattr(args,flag) == None:
 			print('''
 				CONFIGURATION PROBLEM:\n
-				YOU FORGOT TO SET "+flag+". It is required.\n
-				Try again, but set "+flag+" with the flag --"+flag
-				''')
+				YOU FORGOT TO SET '''+flag+'''. It is required.\n
+				Try again, but set '''+flag+''' with the flag --'''+flag
+				)
 			missingPaths += 1
 	if missingPaths > 0:
 		sys.exit()
@@ -80,13 +83,14 @@ if inputFilepath:
 	filename = os.path.basename(inputFilepath)
 
 # NOT TOTALLY CLEAR WHAT THE POINT OF THIS IS IN THE ORIGINAL
-# SEEMS LIKE IT'S RARELY USED, IE ONLY IF THE FILE NO LONGER EXISTS?
+# SEEMS LIKE IT'S RARELY USED, IE ONLY IF THE FILE NO LONGER EXISTS? @fixme
 def cleanup():
 	status = 'abort'
 	log(mediaID,status,"Something went wrong and the process was aborted.")
 	sys.exit()
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
+# @fixme REDO THESE WITH OS.PATH.JOIN
 packageOutputDir = globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
 packageMetadataDir = packageOutputDir+'metadata/'
@@ -98,9 +102,10 @@ packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileM
 # ... SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
 	print('''
-		"It looks like "+mediaID+" was already ingested.\n
+		It looks like '''+mediaID+''' was already ingested.
 		If you want to replace the existing package please delete the package at
-		\n"+packageOutputDir+"\nfirst and then try again."
+		'''+packageOutputDir+'''
+		and then try again.
 		''')
 	sys.exit(1)
 
@@ -114,32 +119,38 @@ with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
 ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
 
-# check if the input is a video file (DOUBLE CHECK THAT THIS ACTUALLY MAKES SENSE)
+# check if the input is a video file
 if not is_video(inputFilepath):
 	status = 'warning'
 	message = "WARNING: "+filename+" is not recognized as a video file."
 	print(message)
 	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
-	if interactiveMode:
-		stayOrGo = input("If you want to quit press 'q' and enter, otherwise press any other key:")
-		if stayOrGo == 'q':
-			sys.exit(0)
-			# CLEANUP AND LOG THIS
+	if not is_audio(inputFilepath):
+		status = 'warning'
+		message = "WARNING: "+filename+" is not recognized as an audio file."
+		print(message)
+		ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
+
+		if interactiveMode:
+			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
+			if stayOrGo == 'q':
+				sys.exit(0)
+				# CLEANUP AND LOG THIS @fixme
+			else:
+				pass
 		else:
 			pass
-	else:
-		pass
 
 if interactiveMode:
 	# cleanup strategy
 	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if cleanupStrategy in yes:
+	if cleanupStrategy in ['yes','Y','y']:
 		cleanupStrategy = True
-	elif cleanupStrategy in no:
+	elif cleanupStrategy in ['no','N','n']:
 		cleanupStrategy = False
 	else:
 		cleanupStrategy = False
-		print("Sorry, your answer didn't make sense so we will leave things where they are.")
+		print("Sorry, your answer didn't make sense so we will just leave things where they are.")
 
 	# crop decision
 	# going to leave this blank for now, we wouldn't have a reason to crop... AFAIK

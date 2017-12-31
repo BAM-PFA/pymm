@@ -2,9 +2,11 @@
 
 # YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
 
+# SET FFMPEG INPUT OPTIONS
 def set_input_options():
 	inputOptions = ''
 
+# SET FFMPEG MIDDLE OPTIONS
 def set_middle_options(outputType):
 	middleOptions = ''
 	if outputType == 'resourcespace':
