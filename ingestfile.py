@@ -134,12 +134,13 @@ if not is_video(inputFilepath):
 		if interactiveMode:
 			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
 			if stayOrGo == 'q':
-				sys.exit(0)
+				sys.exit()
 				# CLEANUP AND LOG THIS @fixme
 			else:
 				pass
 		else:
-			pass
+			print("Check your file and come back later. Now exiting. Bye!")
+			sys.exit()
 
 if interactiveMode:
 	# cleanup strategy
@@ -173,6 +174,7 @@ pymm_log(filename,mediaID,operator,'','STARTING')
 # RSYNC THE FILE TO WHERE IT BELONGS
 
 # MAKE DERIVS
+ffmpegMiddleOptions = makederivs.set_middle_options(outputType)
 
 # MAKE METADATA
 

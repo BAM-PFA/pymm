@@ -136,6 +136,14 @@ def is_audio(inputFile):
 		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
 		return False
 
+def is_dpx_sequence(inputFile):
+	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
+	# AUTOMATICALLY? 
+	if os.path.isdir(inputFile):
+		for root,dirs,files in os.walk(inputFile):
+			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
+
+
 def phase_check(inputFile):
 	# THE FFPROBE/FFMPEG DOCUMENTATION IS SO RIDICULOUS. I CAN'T GET
 	# THE MM COMMAND TO FUNCTION AS EXPECTED USING FFMPY,
