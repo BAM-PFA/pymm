@@ -145,9 +145,9 @@ if not is_video(inputFilepath):
 if interactiveMode:
 	# cleanup strategy
 	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if cleanupStrategy in ['yes','Y','y']:
+	if cleanupStrategy in yes:
 		cleanupStrategy = True
-	elif cleanupStrategy in ['no','N','n']:
+	elif cleanupStrategy in no:
 		cleanupStrategy = False
 	else:
 		cleanupStrategy = False
@@ -174,11 +174,28 @@ pymm_log(filename,mediaID,operator,'','STARTING')
 # RSYNC THE FILE TO WHERE IT BELONGS
 
 # MAKE DERIVS
-ffmpegMiddleOptions = makederivs.set_middle_options(outputType)
+derivType = 'resourcespace'
+# NOT CLEAR YET OF THE BEST WAY TO CALL THE DERIV CREATION FUNCTIONS
+# I.E. SHOULD I CALL THEM HERE OR IN makederivs AND JUST PASS PARAMETERS FROM HERE
+ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
+
+ffmpegCommand = FFmpeg(
+	inputFilepath
+	# YADDA YADDA
+	ffmpegMiddleOptions
+	)
+
+if ingestMode == 'film scan':
+	derivType = 'mezzanine'
+	ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
+
+
 
 # MAKE METADATA
+makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
 
 # DO CHECKSUMS
+
 
 # MAKE FINGERPRINT
 
