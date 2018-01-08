@@ -10,11 +10,11 @@ import sys
 import json
 import xmltodict
 
-def get_mediainfo_report(inputFilepath,textOutputDir):
-	if os.path.isdir(textOutputDir):
+def get_mediainfo_report(inputFilepath,metadataDir):
+	if os.path.isdir(metadataDir):
 		# @fixme CHANGE TO ONLY MAKE FILE IF IT'S NEEDED
 		# MAYBE MAKE A TEMP XML FILE THAT CAN BE READ REPEATEDLY IF NEEDED? THEN DELETED?
-		mediainfoOutput = '--LogFile='+os.path.join(textOutputDir,'mediainfo.xml')
+		mediainfoOutput = '--LogFile='+os.path.join(metadataDir,'mediainfo.xml')
 	else:
 		mediainfoOutput = None
 
@@ -25,14 +25,16 @@ def get_mediainfo_report(inputFilepath,textOutputDir):
 	# check values like duration, frame count, whatever
 		
 	
-	mediainfoXML = subprocess.Popen(['mediainfo',inputFile,'--Output=XML',mediainfoOutput],stdout=PIPE)
-	mediainfoJSON = xmltodict.parse(mediainfoXML)
+	mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
+	mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 
 	return mediainfoJSON    # @fixme CHANGE TO RETURN THIS ONLY IF IT'S NEEDED
 							# OR MAYBE SPLIT JSON/TEXT CREATION
 
 def make_frame_md5(inputFile,metadataDir):
 	print("AND HERE IS WHERE YOU WOULD DO SOME NEAT MD5 STUFF")
-	with open('metadata.md5','x') as makethisfile:
+	
+	with open(os.path.join(metadataDir,'metadata.md5'),'x') as makethisfile:
+		print('make an md5 file')
 		# SAVE THE FILE TO THE METADATA DIR FOR THE PACKAGE
 	return "in json format?"

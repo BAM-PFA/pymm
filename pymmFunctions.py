@@ -15,7 +15,7 @@ import time
 from ffmpy import FFprobe, FFmpeg
 
 ################################################################
-# READ config.ini 
+# READ config.ini AND CHECK FOR REQUIRED PATHS
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
 configPath = os.path.join(pymmDirectory,'config','config.ini') 
 if not os.path.isfile(configPath):
@@ -25,15 +25,8 @@ if not os.path.isfile(configPath):
 		RUN pymmconfig.py TO CREATE CONFIG.INI AND CHOOSE YOUR DESIRED SETTINGS.\n
 		NOW EXITING.
 		''')
-	sys.exit(1)
+	sys.exit()
 
-	# open(configPath,'x')
-	# with open(configPath,'w+') as config:
-	# 	config.write('''
-	# 		[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:
-	# 		\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:
-	# 		\r\r[logging]\rpymm_log_dir:
-	# 		''')
 globalConfig = configparser.SafeConfigParser()
 globalConfig.read(configPath)
 
@@ -52,6 +45,7 @@ for path in requiredPaths.items():
 if missingPaths > 0:
 	print("You are missing some required file paths and we have to quit. Sorry.")
 	sys.exit()
+# END config.ini CHECKS
 ################################################################
 
 today = str(date.today())

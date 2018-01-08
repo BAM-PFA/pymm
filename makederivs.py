@@ -20,25 +20,27 @@ def set_middle_options(derivType):
 		middleOptions += '-crf 18'
 		middleOptions += '-maxrate 8760k'
 		# and all the other stuff for making this deriv type
-	elif:
-		derivType == 'mezzanine':
+	elif derivType == 'mezzanine':
 		middleOptions += 'BONZO'
 		middleOptions += 'BANANAS'
-	elif:
+	elif True == True:
+		print('etc')
 		# and so on
 
 	return middleOptions
 
 def set_output_options(derivType,inputFile,packageObjectDir):
-	baseMinusExtension = os.path.split(inputFile,'.') # OR WHATEVER IT REALLY IS
-	ext = inputFile # EXTENSION
+	baseMinusExtension = os.path.splitext(inputFile[0])
+	ext = os.path.splitext(inputFile[1])
 	if derivType == 'resourcespace':
 		derivDeliv = os.path.join(packageObjectDir,'resourcespace')
 		outputFilePath = derivDeliv+baseMinusExtension+'_lrp'+ext
 	else:
+		print('')
 		# DO SOMETHING ELSE
 
 def make_deriv(inputFile):
+	print('doing stuff here')
 	# DO THE STUFF
 	# PROBABLY CALL THIS WITH ALL THE PARAMETERS NEEDED
 	# AND THEN CALL THE SUB-FUNCTIONS FROM HERE

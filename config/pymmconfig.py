@@ -10,16 +10,16 @@ import os
 import sys
 import configparser
 
-configPath = os.path.dirname(os.path.abspath(__file__))+'/config.ini'
-if not os.path.isfile(configPath):
-	print('theres no system config file yet...')
-	open(configPath,'x')
-	with open(configPath,'w+') as config:
-		config.write("[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
-			\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\
-			\r\r[logging]\rpymm_log_dir:")
-config = configparser.SafeConfigParser()
-config.read(configPath)
+def make_config(configPath):
+	if not os.path.isfile(configPath):
+		print('theres no system config file yet... hang on...')
+		open(configPath,'x')
+		with open(configPath,'w+') as config:
+			config.write('''[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
+				\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\
+				\r\r[logging]\rpymm_log_dir:\
+				\r\r[mediaconch format policies]\rfilm_scan_master:\rvideo_capture_master:\rmagnetic_video_mezzanine:\rfilm_scan_mezzanine:\rlow_res_proxy:
+				''')
 
 def set_value(section, optionToSet):
 	print("So you want to set "+optionToSet)
@@ -48,9 +48,15 @@ def select_option():
 
 def ask_more(more):
 	if more == 'q':
-		sys.exit(0)
+		sys.exit()
 	else:
 		select_option()
+
+configPath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'config.ini')
+# configPath = 'config.ini'
+make_config(configPath)
+config = configparser.SafeConfigParser()
+config.read(configPath)
 
 with open(configPath, 'r+') as conf:
 	print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')

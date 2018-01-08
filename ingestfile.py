@@ -20,6 +20,8 @@ import configparser
 from datetime import date
 import pymmFunctions
 from pymmFunctions import *
+import makederivs
+import makeMetadata
 
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
 configPath = os.path.join(pymmDirectory,'config','config.ini') 
@@ -36,15 +38,15 @@ no = ('NO','No','no','n','N')
 #      SET COMMAND LINE ARGUMENTS
 #
 parser = argparse.ArgumentParser()
-# set interactive mode state if command line flag is set
 mode = parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
-# set ingest variables
 parser.add_argument('-i','--inputFilepath',help='path of input file')
 parser.add_argument('-m','--mediaID',help='mediaID for input file')
 parser.add_argument('-u','--operator',help='name of the person doing the ingest')
+parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer'],default='video transfer',help='type of file being ingested: film scan, video xfer')
 parser.add_argument('-o','--output_path',help='output path for ingestfile')
 parser.add_argument('-a','--aip_path',help='destination for Archival Information Package')
 parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery')
+parser.add_argument('-d','--database_reporting',help='report preservation metadata/events to database',action='store_true')
 
 args = parser.parse_args()
 # print(args)
@@ -55,6 +57,9 @@ operator = args.operator
 output_path = args.output_path
 aip_path = args.aip_path
 resourcespace_deliver = args.resourcespace_deliver
+report_to_db = args.database_reporting
+ingest_type = args.ingest_type
+cleanupStrategy = True
 
 ########################################################
 
@@ -82,12 +87,6 @@ else:
 if inputFilepath:
 	filename = os.path.basename(inputFilepath)
 
-# NOT TOTALLY CLEAR WHAT THE POINT OF THIS IS IN THE ORIGINAL
-# SEEMS LIKE IT'S RARELY USED, IE ONLY IF THE FILE NO LONGER EXISTS? @fixme
-def cleanup():
-	status = 'abort'
-	log(mediaID,status,"Something went wrong and the process was aborted.")
-	sys.exit()
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
 # @fixme REDO THESE WITH OS.PATH.JOIN
@@ -107,7 +106,7 @@ if os.path.isdir(packageOutputDir):
 		'''+packageOutputDir+'''
 		and then try again.
 		''')
-	sys.exit(1)
+	sys.exit()
 
 # ... AND OTHERWISE MAKE THEM ALL
 for directory in packageDirs:
@@ -119,8 +118,11 @@ with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
 ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
 
+# INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
+
 # check if the input is a video file
 if not is_video(inputFilepath):
+	is_av = False
 	status = 'warning'
 	message = "WARNING: "+filename+" is not recognized as a video file."
 	print(message)
@@ -153,23 +155,13 @@ if interactiveMode:
 		cleanupStrategy = False
 		print("Sorry, your answer didn't make sense so we will just leave things where they are.")
 
-	# crop decision
-	# going to leave this blank for now, we wouldn't have a reason to crop... AFAIK
-
-	# formula
-
-	# blackframe test
-	# also leave this blank, we won't trim anything
-
-	# phasecheck test
-
-	# ask queue
 
 # LOG THAT WE ARE STARTING
 pymm_log(filename,mediaID,operator,'','STARTING')
 
 # WRITE VARIABLES TO LOG
 
+# CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
 
 # RSYNC THE FILE TO WHERE IT BELONGS
 
@@ -179,29 +171,31 @@ derivType = 'resourcespace'
 # I.E. SHOULD I CALL THEM HERE OR IN makederivs AND JUST PASS PARAMETERS FROM HERE
 ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
 
-ffmpegCommand = FFmpeg(
-	inputFilepath
-	# YADDA YADDA
-	ffmpegMiddleOptions
-	)
+# ffmpegCommand = FFmpeg(
+# 	inputFilepath
+# 	# YADDA YADDA
+# 	ffmpegMiddleOptions
+# 	)
 
-if ingestMode == 'film scan':
+if ingest_type == 'film scan':
 	derivType = 'mezzanine'
 	ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
 
-
+# CHECK DERIVS AGAINST MEDIACONCH POLICIES
 
 # MAKE METADATA
 makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
 
 # DO CHECKSUMS
 
-
-# MAKE FINGERPRINT
-
 # FINISH LOGGING
 
 # RSYNC TO AIP STAGE
 
-# CLEANUP
+# VERIFY PACKAGE CHECKSUM
 
+# CLEANUP
+if cleanupStrategy == True:
+	print("LET'S CLEEEEEAN!")
+else:
+	print("BUH-BYE")
