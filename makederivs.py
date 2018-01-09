@@ -3,7 +3,11 @@
 
 import os
 import sys
-import ffmpy
+import configparser
+import subprocess
+import time
+from datetime import date
+from ffmpy import FFprobe, FFmpeg
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options():
@@ -39,7 +43,7 @@ def set_output_options(derivType,inputFile,packageObjectDir):
 		print('')
 		# DO SOMETHING ELSE
 
-def make_deriv(inputFile):
+def make_deriv(inputFile,derivType):
 	print('doing stuff here')
 	# DO THE STUFF
 	# PROBABLY CALL THIS WITH ALL THE PARAMETERS NEEDED

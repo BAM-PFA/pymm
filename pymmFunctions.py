@@ -15,42 +15,44 @@ import time
 from ffmpy import FFprobe, FFmpeg
 
 ################################################################
+# 
 # READ config.ini AND CHECK FOR REQUIRED PATHS
-pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(pymmDirectory,'config','config.ini') 
-if not os.path.isfile(configPath):
-	print('''
-		CONFIGURATION PROBLEM:\n
-		YOU HAVE NOT YET SET CONFIG.INI OR IT IS MISSING.\n
-		RUN pymmconfig.py TO CREATE CONFIG.INI AND CHOOSE YOUR DESIRED SETTINGS.\n
-		NOW EXITING.
-		''')
-	sys.exit()
-
-globalConfig = configparser.SafeConfigParser()
-globalConfig.read(configPath)
-
-# check for the existence of required output paths
-requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path',
-				'resourcespace_deliver':'the resourcespace output path'}
-missingPaths = 0
-for path in requiredPaths.items():
-	if not os.path.isdir(globalConfig['paths'][path[0]]):
-		missingPaths += 1
-		print('''CONFIGURATION PROBLEM:\n
-			You have not yet set a directory for "+path[0]+". Please run config.py,\n
-			edit the config file directly,\n
-			or use '--"+path[0]+"' to set "+path[1]
+#
+def read_config():
+	pymmDirectory = os.path.dirname(os.path.abspath(__file__))
+	configPath = os.path.join(pymmDirectory,'config','config.ini') 
+	if not os.path.isfile(configPath):
+		print('''
+			CONFIGURATION PROBLEM:\n
+			YOU HAVE NOT YET SET CONFIG.INI OR IT IS MISSING.\n
+			RUN pymmconfig.py TO CREATE CONFIG.INI AND CHOOSE YOUR DESIRED SETTINGS.\n
+			NOW EXITING.
 			''')
-if missingPaths > 0:
-	print("You are missing some required file paths and we have to quit. Sorry.")
-	sys.exit()
-# END config.ini CHECKS
-################################################################
+		sys.exit()
+	config = configparser.SafeConfigParser()
+	config.read(configPath)
+	return config
 
-today = str(date.today())
-now = time.strftime("%Y-%m-%d_%H:%M:%S")
-pymmLogPath =  globalConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
+def check_missing_paths(pymmConfig):
+	requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path',
+					'resourcespace_deliver':'the resourcespace output path'}
+	missingPaths = 0
+	for path in requiredPaths.items():
+		if not os.path.isdir(pymmConfig['paths'][path[0]]):
+			missingPaths += 1
+			print('''
+				CONFIGURATION PROBLEM:
+				You have not yet set a directory for '''+path[0]+'''. Please run config.py,
+				edit the config file directly,
+				or use \'--'''+path[0]+"\' to set "+path[1]+"."
+				)
+	if missingPaths > 0:
+		print("\nYou are missing some required file paths and we have to quit. Sorry.")
+		sys.exit()
+# 
+# END config.ini CHECKS	
+# 
+################################################################
 
 def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
@@ -88,10 +90,15 @@ def pymm_log(filename,mediaID,operator,message,status):
 			suffix = '\n'
 		log.write(prefix+today+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
 
-# def cleanup():
-# 	status = 'ABORTING'
-# 	pymm_log(mediaID,status,"Something went wrong and the process was aborted.")
-# 	exit()
+def cleanup_package(packageOutputDir):
+	status = 'ABORTING'
+	pymm_log(mediaID,status,"Something went critically wrong and the process was aborted. "
+		+packageOutputDir+" and all its contents have been deleted.")
+	try:
+		shutil.rmtree(packageOutputDir)
+	except:
+		print("Could not delete the package at "+packageOutputDir+". Try deleting it manually?\r\rNow exiting.")
+	sys.exit()
 
 def is_video(inputFile):
 	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
@@ -153,5 +160,11 @@ def phase_check(inputFile):
 		'''
 		}
 		)
-	
+
+pymmConfig = read_config()
+# check_missing_paths(pymmConfig)	
+today = str(date.today())
+now = time.strftime("%Y-%m-%d_%H:%M:%S")
+pymmLogPath =  pymmConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
+
 

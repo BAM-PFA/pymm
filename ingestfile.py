@@ -9,7 +9,6 @@
 #
 # @fixme = stuff to do
 
-
 import sys
 import subprocess
 import os
@@ -20,13 +19,14 @@ import configparser
 from datetime import date
 import pymmFunctions
 from pymmFunctions import *
-import makederivs
+import makeDerivs
 import makeMetadata
 
 pymmDirectory = os.path.dirname(os.path.abspath(__file__))
 configPath = os.path.join(pymmDirectory,'config','config.ini') 
-globalConfig = configparser.SafeConfigParser()
-globalConfig.read(configPath)
+pymmConfig = configparser.SafeConfigParser()
+pymmConfig.read(configPath)
+pymmFunctions.check_missing_paths(pymmConfig)
 
 today = date.today()
 now = time.strftime("%Y-%m-%d_%H:%M:%S")
@@ -38,11 +38,11 @@ no = ('NO','No','no','n','N')
 #      SET COMMAND LINE ARGUMENTS
 #
 parser = argparse.ArgumentParser()
-mode = parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
+parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
 parser.add_argument('-i','--inputFilepath',help='path of input file')
 parser.add_argument('-m','--mediaID',help='mediaID for input file')
 parser.add_argument('-u','--operator',help='name of the person doing the ingest')
-parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer'],default='video transfer',help='type of file being ingested: film scan, video xfer')
+parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer','multi-pak'],default='video transfer',help='type of file being ingested: film scan, video xfer, multi-pak for a collection of files')
 parser.add_argument('-o','--output_path',help='output path for ingestfile')
 parser.add_argument('-a','--aip_path',help='destination for Archival Information Package')
 parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery')
@@ -90,7 +90,7 @@ if inputFilepath:
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
 # @fixme REDO THESE WITH OS.PATH.JOIN
-packageOutputDir = globalConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
+packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
 packageMetadataDir = packageOutputDir+'metadata/'
 packageFileMetadataDir = packageMetadataDir+'fileMeta/'
@@ -98,7 +98,7 @@ packageMetadataObjects = packageFileMetadataDir+'objects/'
 packageLogDir = packageMetadataDir+'logs/'
 packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
 
-# ... SEE IF THE TOP DIR EXISTS ...
+# ... THEN SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
 	print('''
 		It looks like '''+mediaID+''' was already ingested.
@@ -120,7 +120,7 @@ ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')
 
 # INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
 
-# check if the input is a video file
+# check if the input is recognized as an AV file
 if not is_video(inputFilepath):
 	is_av = False
 	status = 'warning'
@@ -139,6 +139,8 @@ if not is_video(inputFilepath):
 				sys.exit()
 				# CLEANUP AND LOG THIS @fixme
 			else:
+				if is_av = False:
+
 				pass
 		else:
 			print("Check your file and come back later. Now exiting. Bye!")
@@ -153,7 +155,7 @@ if interactiveMode:
 		cleanupStrategy = False
 	else:
 		cleanupStrategy = False
-		print("Sorry, your answer didn't make sense so we will just leave things where they are.")
+		print("Sorry, your answer didn't make sense so we will just leave things where they are when we finish.")
 
 
 # LOG THAT WE ARE STARTING
@@ -162,24 +164,21 @@ pymm_log(filename,mediaID,operator,'','STARTING')
 # WRITE VARIABLES TO LOG
 
 # CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
+if ingest_type == 'film scan':
+
 
 # RSYNC THE FILE TO WHERE IT BELONGS
 
 # MAKE DERIVS
 derivType = 'resourcespace'
-# NOT CLEAR YET OF THE BEST WAY TO CALL THE DERIV CREATION FUNCTIONS
-# I.E. SHOULD I CALL THEM HERE OR IN makederivs AND JUST PASS PARAMETERS FROM HERE
-ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
+makeDerivs(derivType)
 
-# ffmpegCommand = FFmpeg(
-# 	inputFilepath
-# 	# YADDA YADDA
-# 	ffmpegMiddleOptions
-# 	)
+ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
+
 
 if ingest_type == 'film scan':
 	derivType = 'mezzanine'
-	ffmpegMiddleOptions = makederivs.set_middle_options(derivType)
+	ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
 
 # CHECK DERIVS AGAINST MEDIACONCH POLICIES
 

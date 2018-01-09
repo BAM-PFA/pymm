@@ -23,7 +23,7 @@ def make_config(configPath):
 
 def set_value(section, optionToSet):
 	print("So you want to set "+optionToSet)
-	newValue = input("Please enter a value for "+optionToSet+": ")
+	newValue = input("Please enter a value for "+optionToSet+": ").rstrip()
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)
@@ -43,11 +43,16 @@ def select_option():
 	
 	if matchingSections == 0:
 		print("\nOops, there is no option matching "+optionToSet+". Check your spelling and try again.\n")
-	more = input("Type 'q' to quit or any other key to select another option to set: ")
+	more = input("Type 'q' to quit or hit enter to select another option to set: ")
 	ask_more(more)
 
 def ask_more(more):
 	if more == 'q':
+		with open(configPath, 'r+') as conf:
+			print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')
+			for line in conf.readlines():
+				print(line.rstrip())
+			print("NOW EXITING. BYE!!")
 		sys.exit()
 	else:
 		select_option()
@@ -61,7 +66,7 @@ config.read(configPath)
 with open(configPath, 'r+') as conf:
 	print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')
 	for line in conf.readlines():
-		print(line)
+		print(line.rstrip())
 	print("IF YOU WANT TO CHANGE ANYTHING, LET'S GO!!")
 
 	select_option()
