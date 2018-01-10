@@ -14,9 +14,12 @@ from datetime import date
 import time
 from ffmpy import FFprobe, FFmpeg
 
+today = str(date.today())
+now = time.strftime("%Y-%m-%d_%H:%M:%S")
+
 ################################################################
 # 
-# READ config.ini AND CHECK FOR REQUIRED PATHS
+# CONFIG CHECK STUFF
 #
 def read_config():
 	pymmDirectory = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +36,7 @@ def read_config():
 	config.read(configPath)
 	return config
 
-def check_missing_paths(pymmConfig):
+def check_missing_ingest_paths(pymmConfig):
 	requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path',
 					'resourcespace_deliver':'the resourcespace output path'}
 	missingPaths = 0
@@ -42,29 +45,41 @@ def check_missing_paths(pymmConfig):
 			missingPaths += 1
 			print('''
 				CONFIGURATION PROBLEM:
-				You have not yet set a directory for '''+path[0]+'''. Please run config.py,
+				You have not yet set a directory for '''+path[0]+'''. Please run pymmConfig.py,
 				edit the config file directly,
 				or use \'--'''+path[0]+"\' to set "+path[1]+"."
 				)
 	if missingPaths > 0:
 		print("\nYou are missing some required file paths and we have to quit. Sorry.")
-		sys.exit()
+		sys.exit()	
 # 
-# END config.ini CHECKS	
+# END CONFIG CHECK STUFF
 # 
 ################################################################
 
+################################################################
+#
+# PYMM ADMIN / LOGGING STUFF
+#
 def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
-		open(pymmLogPath,'x')
-		with open(pymmLogPath,'w+') as pymmLog:
-			pymmLog.write(
-				((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
-				'\n\n'+((' ')*4)+'THIS COPY WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
-				)
+		if pymmLogDir == '':
+			print("CONFIGURATION PROBLEM:\n"
+				  "THERE IS NO DIRECTORY SET FOR THE SYSTEM-WIDE LOG.\n"
+				  "PLEASE RUN pymmconfig.py OR EDIT config.ini DIRECTLY\n"
+				  "TO ADD A VALID DIRECTORY FOR pymm_log.txt TO LIVE IN.\n"
+				  "NOW EXITING. BYE!")
+			sys.exit()
+		else:
+			open(pymmLogPath,'x')
+			with open(pymmLogPath,'w+') as pymmLog:
+				pymmLog.write(
+					((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
+					'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
+					)
 	else:
-		return True
+		pass
 
 def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
 	if message == 'start':
@@ -99,7 +114,15 @@ def cleanup_package(packageOutputDir):
 	except:
 		print("Could not delete the package at "+packageOutputDir+". Try deleting it manually?\r\rNow exiting.")
 	sys.exit()
+#
+# END PYMM ADMIN / LOGGING STUFF 
+#
+################################################################
 
+################################################################
+#
+# FILE CHECK STUFF
+#
 def is_video(inputFile):
 	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
 	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
@@ -146,9 +169,7 @@ def is_dpx_sequence(inputFile):
 
 
 def phase_check(inputFile):
-	# THE FFPROBE/FFMPEG DOCUMENTATION IS SO RIDICULOUS. I CAN'T GET
-	# THE MM COMMAND TO FUNCTION AS EXPECTED USING FFMPY,
-	# BUT THIS PRINTS THE LAVFI.APHASEMETER.PHASE VALUE PLUS 'PTS_TIME' VALUE:
+	# THIS PRINTS THE LAVFI.APHASEMETER.PHASE VALUE PLUS 'PTS_TIME' VALUE:
 	#
 	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] frame:128  pts:131072  pts_time:2.97215
 	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] lavfi.aphasemeter.phase=-0.634070
@@ -161,10 +182,15 @@ def phase_check(inputFile):
 		}
 		)
 
+def check_policy(ingestType,inputFilePath):
+	print('do policy check stuff')
+	policyStatus = "result of check against mediaconch policy"
+	return policyStatus
+#
+# END FILE CHECK STUFF 
+#
+################################################################
+
 pymmConfig = read_config()
-# check_missing_paths(pymmConfig)	
-today = str(date.today())
-now = time.strftime("%Y-%m-%d_%H:%M:%S")
-pymmLogPath =  pymmConfig['logging']['pymm_log_dir']+'/pymm_log.txt'
-
-
+pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
+pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')

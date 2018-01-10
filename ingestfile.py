@@ -22,11 +22,8 @@ from pymmFunctions import *
 import makeDerivs
 import makeMetadata
 
-pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-configPath = os.path.join(pymmDirectory,'config','config.ini') 
-pymmConfig = configparser.SafeConfigParser()
-pymmConfig.read(configPath)
-pymmFunctions.check_missing_paths(pymmConfig)
+pymmConfig = pymmFunctions.read_config()
+pymmFunctions.check_missing_ingest_paths(pymmConfig)
 
 today = date.today()
 now = time.strftime("%Y-%m-%d_%H:%M:%S")
@@ -35,7 +32,7 @@ no = ('NO','No','no','n','N')
 
 ########################################################
 #
-#      SET COMMAND LINE ARGUMENTS
+#  INITIALIZE COMMAND LINE ARGUMENTS
 #
 parser = argparse.ArgumentParser()
 parser.add_argument('-x','--interactiveMode',help='enter interactive mode for command line usage',action='store_true')
@@ -61,6 +58,9 @@ report_to_db = args.database_reporting
 ingest_type = args.ingest_type
 cleanupStrategy = True
 
+#
+# END INTIALIZE COMMAND LINE ARGUMENTS
+#
 ########################################################
 
 requiredPaths = ['inputFilepath','mediaID','operator']
@@ -71,8 +71,8 @@ if interactiveMode == False:
 	for flag in requiredPaths:
 		if getattr(args,flag) == None:
 			print('''
-				CONFIGURATION PROBLEM:\n
-				YOU FORGOT TO SET '''+flag+'''. It is required.\n
+				CONFIGURATION PROBLEM:
+				YOU FORGOT TO SET '''+flag+'''. It is required.
 				Try again, but set '''+flag+''' with the flag --'''+flag
 				)
 			missingPaths += 1
@@ -122,7 +122,7 @@ ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')
 
 # check if the input is recognized as an AV file
 if not is_video(inputFilepath):
-	is_av = False
+	is_av == False
 	status = 'warning'
 	message = "WARNING: "+filename+" is not recognized as a video file."
 	print(message)
@@ -139,8 +139,8 @@ if not is_video(inputFilepath):
 				sys.exit()
 				# CLEANUP AND LOG THIS @fixme
 			else:
-				if is_av = False:
-
+				if is_av == False:
+					ingest_log(ingestLogPath,mediaID,filename)
 				pass
 		else:
 			print("Check your file and come back later. Now exiting. Bye!")
@@ -165,13 +165,21 @@ pymm_log(filename,mediaID,operator,'','STARTING')
 
 # CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
 if ingest_type == 'film scan':
+	policyStatus = pymmFunctions.check_policy(ingest_type,inputFilepath)
+	if policyStatus:
+		message = filename+" passed the MediaConch policy check."
+		status = "ok"
+	else:
+		message = filename+" did not pass the MediaConch policy check."
+		status = "not ok, but not critical?"
 
+	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 
 # RSYNC THE FILE TO WHERE IT BELONGS
 
 # MAKE DERIVS
 derivType = 'resourcespace'
-makeDerivs(derivType)
+makeDerivs.make_deriv(inputFilepath,derivType,packageObjectDir)
 
 ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
 
