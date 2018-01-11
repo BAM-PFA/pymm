@@ -49,7 +49,7 @@ def set_middle_options(derivType):
 	# print(middleOptions)
 	return middleOptions
 
-def set_output_options(derivType,inputFile,packageObjectDir):
+def set_output_options(derivType,inputFile,packageDerivDir):
 	outputOptions = []
 	base = os.path.basename(inputFile)
 	baseAndExt = os.path.splitext(base)
@@ -57,23 +57,23 @@ def set_output_options(derivType,inputFile,packageObjectDir):
 	ext_original = baseAndExt[1]
 	if derivType == 'resourcespace':
 		ext = 'mp4'
-		derivDeliv = os.path.join(packageObjectDir,'resourcespace')
+		derivDeliv = os.path.join(packageDerivDir,'resourcespace')
 		if not os.path.isdir(derivDeliv):
 			os.mkdir(derivDeliv)
 		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_lrp.'+ext)
 		outputOptions.append(outputFilePath)
 	else:
-		print('')
+		print('~ ~ ~ ~ ~')
 		# DO STUFF TO OTHER DERIV TYPES
 
 	return outputOptions
 
-def make_deriv(inputFilepath,derivType,packageObjectDir,packageOutputDir):
+def make_deriv(inputFilepath,derivType,packageDerivDir):
 	print('doing stuff here')
 	ffmpegArgs = []
 	inputOptions = set_input_options(derivType,inputFilepath)
 	middleOptions = set_middle_options(derivType)
-	outputOptions = set_output_options(derivType,inputFilepath,packageObjectDir)
+	outputOptions = set_output_options(derivType,inputFilepath,packageDerivDir)
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
 	# print(' '.join(ffmpegArgs))

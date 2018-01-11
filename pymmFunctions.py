@@ -130,13 +130,13 @@ def cleanup_package(inputFilepath,packageOutputDir,reason):
 #
 # FILE CHECK STUFF
 #
-def is_video(inputFile):
+def is_video(inputFilepath):
 	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
 	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
 	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
 	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
 	ffprobe = FFprobe(
-	inputs={inputFile:'-v error -print_format json -show_streams -select_streams v:0'}
+	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams v:0'}
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	output = json.loads(FR[0].decode('utf-8'))
@@ -147,7 +147,7 @@ def is_video(inputFile):
 	except:
 		return False
 
-def is_audio(inputFile):
+def is_audio(inputFilepath):
 	print("THIS ISN'T A VIDEO FILE\n"
 		'¿maybe this is an audio file?')
 	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
@@ -155,7 +155,7 @@ def is_audio(inputFile):
 	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
 	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
 	ffprobe = FFprobe(
-	inputs={inputFile:'-v error -print_format json -show_streams -select_streams a:0'}
+	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams a:0'}
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	output = json.loads(FR[0].decode('utf-8'))
@@ -168,24 +168,24 @@ def is_audio(inputFile):
 		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
 		return False
 
-def is_av(inputFile):
-	_is_video = is_video(inputFile)
-	_is_audio = is_audio(inputFile)
+def is_av(inputFilepath):
+	_is_video = is_video(inputFilepath)
+	_is_audio = is_audio(inputFilepath)
 	if not is_video or is_audio:
 		print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
 		return False
 	else:
 		return True
 
-def is_dpx_sequence(inputFile):
+def is_dpx_sequence(inputFilepath):
 	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
 	# AUTOMATICALLY? 
-	if os.path.isdir(inputFile):
-		for root,dirs,files in os.walk(inputFile):
+	if os.path.isdir(inputFilepath):
+		for root,dirs,files in os.walk(inputFilepath):
 			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
 
 
-def phase_check(inputFile):
+def phase_check(inputFilepath):
 	# THIS PRINTS THE LAVFI.APHASEMETER.PHASE VALUE PLUS 'PTS_TIME' VALUE:
 	#
 	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] frame:128  pts:131072  pts_time:2.97215
@@ -199,12 +199,38 @@ def phase_check(inputFile):
 		}
 		)
 
-def check_policy(ingestType,inputFilePath):
+def check_policy(ingestType,inputFilepath):
 	print('do policy check stuff')
 	policyStatus = "result of check against mediaconch policy"
 	return policyStatus
 #
 # END FILE CHECK STUFF 
+#
+################################################################
+
+################################################################
+#
+# FILE MOVE STUFF -- @fixme : investigate borrowing file transfer code from UCSB or IFI
+#
+def check_write_permissions(destination):
+	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
+	return True
+
+def copy_file(inputFilepath,destination):
+	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
+	return True
+
+def copy_dir(inputDir,destination):
+	if os.path.isdir(destination):
+		for _,_,_file in os.walk(inputDir):
+			copy_file(_file)
+	else:
+		print("the destination may or may not be a real directory, OOPS")
+		return False
+	# MAKE A BAG? HASH THE BAG? CHECK HASH OF DESTIATION BAG?
+
+#
+# END FILE MOVE STUFF
 #
 ################################################################
 

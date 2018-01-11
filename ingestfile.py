@@ -92,6 +92,7 @@ if inputFilepath:
 # @fixme REDO THESE WITH OS.PATH.JOIN
 packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
+packageDerivDir = os.path.join(packageOutputDir,'access')
 packageMetadataDir = packageOutputDir+'metadata/'
 packageFileMetadataDir = packageMetadataDir+'fileMeta/'
 packageMetadataObjects = packageFileMetadataDir+'objects/'
@@ -161,7 +162,7 @@ if interactiveMode:
 # LOG THAT WE ARE STARTING
 pymm_log(filename,mediaID,operator,'','STARTING')
 
-# WRITE VARIABLES TO LOG
+# WRITE VARIABLES TO INGEST LOG
 
 # CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
 if ingest_type == 'film scan':
@@ -175,18 +176,19 @@ if ingest_type == 'film scan':
 
 	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 
-# RSYNC THE FILE TO WHERE IT BELONGS
+# RSYNC THE INPUT FILE TO THE OUTPUT DIR
+
 
 # MAKE DERIVS
 derivType = 'resourcespace'
-makeDerivs.make_deriv(inputFilepath,derivType,packageObjectDir,packageOutputDir)
-
-# ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
-
+makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
 
 if ingest_type == 'film scan':
-	derivType = 'mezzanine'
-	ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
+	derivType = 'film mezzanine'
+	makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
+elif ingest_type == 'video transfer':
+	derivType = 'video mezzanine'
+	makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
 
 # CHECK DERIVS AGAINST MEDIACONCH POLICIES
 
