@@ -10,6 +10,7 @@ import subprocess
 import os
 import sys
 import configparser
+import shutil
 from datetime import date
 import time
 from ffmpy import FFprobe, FFmpeg
@@ -103,17 +104,23 @@ def pymm_log(filename,mediaID,operator,message,status):
 		else:
 			prefix = ''
 			suffix = '\n'
-		log.write(prefix+today+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
+		log.write(prefix+now+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
 
-def cleanup_package(packageOutputDir):
-	status = 'ABORTING'
-	pymm_log(mediaID,status,"Something went critically wrong and the process was aborted. "
-		+packageOutputDir+" and all its contents have been deleted.")
-	try:
-		shutil.rmtree(packageOutputDir)
-	except:
-		print("Could not delete the package at "+packageOutputDir+". Try deleting it manually?\r\rNow exiting.")
-	sys.exit()
+def cleanup_package(inputFilepath,packageOutputDir,reason):
+	if reason == 'abort ingest':
+		status = 'ABORTING'
+		message = ("Something went critically wrong and the process was aborted. "
+					+packageOutputDir+
+					" and all its contents have been deleted."
+					)
+	pymm_log(inputFilepath,'','',message,status)
+	if os.path.isdir(packageOutputDir):
+		print(packageOutputDir)
+		try:
+			shutil.rmtree(packageOutputDir)
+		except:
+			print("Could not delete the package at "+packageOutputDir+". Try deleting it manually? Now exiting.")
+	# sys.exit()
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #
@@ -141,7 +148,8 @@ def is_video(inputFile):
 		return False
 
 def is_audio(inputFile):
-	print('¿maybe this is an audio file?')
+	print("THIS ISN'T A VIDEO FILE\n"
+		'¿maybe this is an audio file?')
 	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
 	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
 	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
@@ -151,14 +159,23 @@ def is_audio(inputFile):
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	output = json.loads(FR[0].decode('utf-8'))
-	indexValue = output['streams'][0]['index']
 	try:
+		indexValue = output['streams'][0]['index']
 		if indexValue == 0:
 			print("This appears to be an audio file!")
 			return True
 	except:
 		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
 		return False
+
+def is_av(inputFile):
+	_is_video = is_video(inputFile)
+	_is_audio = is_audio(inputFile)
+	if not is_video or is_audio:
+		print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
+		return False
+	else:
+		return True
 
 def is_dpx_sequence(inputFile):
 	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT

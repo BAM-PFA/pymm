@@ -179,9 +179,9 @@ if ingest_type == 'film scan':
 
 # MAKE DERIVS
 derivType = 'resourcespace'
-makeDerivs.make_deriv(inputFilepath,derivType,packageObjectDir)
+makeDerivs.make_deriv(inputFilepath,derivType,packageObjectDir,packageOutputDir)
 
-ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
+# ffmpegMiddleOptions = makeDerivs.set_middle_options(derivType)
 
 
 if ingest_type == 'film scan':
@@ -200,9 +200,11 @@ makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
 # RSYNC TO AIP STAGE
 
 # VERIFY PACKAGE CHECKSUM
+packageVerified = False
 
 # CLEANUP
-if cleanupStrategy == True:
+if cleanupStrategy == True and packageVerified == True:
 	print("LET'S CLEEEEEAN!")
+	cleanup_package(inputFilepath,packageOutputDir,reason)
 else:
 	print("BUH-BYE")

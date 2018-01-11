@@ -28,17 +28,26 @@ def get_mediainfo_report(inputFilepath,metadataDir):
 	return mediainfoJSON    # @fixme CHANGE TO RETURN THIS ONLY IF IT'S NEEDED
 							# OR MAYBE SPLIT JSON/TEXT CREATION
 
-def make_frame_md5(inputFile,metadataDir):
-	print("AND HERE IS WHERE YOU WOULD DO SOME NEAT MD5 STUFF")
-	
-	with open(os.path.join(metadataDir,'metadata.md5'),'x') as makethisfile:
-		print('make a frame md5 report')
-		# SAVE THE FILE TO THE METADATA DIR FOR THE PACKAGE
-	return "in json format?"
+def make_frame_md5(inputFilepath,metadataDir):
+	if not pymmFunctions.is_av(inputFilepath):
+		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
+		print("THIS IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
+		sys.exit()
+	else:
+		frameMd5Filepath = os.path.join(metadataDir,inputFilepath+"_frame-md5.txt")
+		frameMd5Command = ['ffmpeg','-i',inputFilepath,'-f','framemd5',frameMd5Filepath]
+		output = subprocess.Popen(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		try:
+			out,err = output.communicate()
+			if err:
+				print(err)
+			return frameMd5Filepath
+		except:
+			return False
 
 def main():
 	#######################
-	#  INITILIZE STUFF
+	#  INITIALIZE STUFF
 	config = pymmFunctions.read_config() # THIS IS PROBABLY NOT GOING TO BE NEEDED
 
 	parser = argparse.ArgumentParser()
@@ -63,13 +72,14 @@ def main():
 			''')
 		destination = os.path.dirname(os.path.abspath(inputFilepath))
 	print(destination,inputFilepath)
-	# END INITILIZE STUFF
+	# END INITIALIZE STUFF
 	#######################
 
 	if mediainfo_report:
 		get_mediainfo_report(inputFilepath,destination)
 	if frame_md5:
-		make_frame_md5(inputFile,destination)
+		frameMd5Filepath = make_frame_md5(inputFilepath,destination)
+		print(frameMd5Filepath)
 
 if __name__ == '__main__':
 	main()

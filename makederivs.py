@@ -12,51 +12,77 @@ import pymmFunctions
 
 pymmConfig = pymmFunctions.read_config()
 
+
 # SET FFMPEG INPUT OPTIONS
-def set_input_options(inputFilepath):
-	inputOptions = []
+def set_input_options(derivType,inputFilepath):
+	inputOptions = ['-i']
+	inputOptions.append(inputFilepath)
+	
+	return inputOptions
 
 # SET FFMPEG MIDDLE OPTIONS
 def set_middle_options(derivType):
 	middleOptions = []
 	if derivType == 'resourcespace':
-		middleOptions.append('-pix_fmt yuv420p')
-		middleOptions.append('-c:v libx26')
-		middleOptions.append('-bufsize 1835k')
-		middleOptions.append('-f mp4')
-		middleOptions.append('-crf 18')
-		middleOptions.append('-maxrate 8760k')
-		# and all the other stuff for making this deriv type
+		middleOptions = [
+			'-movflags','faststart',
+			'-pix_fmt','yuv420p',
+			'-c:v','libx264',
+			'-bufsize','1835k',
+			'-f','mp4',
+			'-crf','18',
+			'-maxrate','8760k',
+			'-c:a','aac',
+			'-ac','2',
+			'-b:a','320k',
+			'-ar','48000'
+			]
 	elif derivType == 'mezzanine':
-		middleOptions.append('BONZO')
-		middleOptions.append('BANANAS')
+		middleOptions = [
+			'BONZO',
+			'BANANAS'
+			]
 	elif True == True:
 		print('etc')
 		# and so on
-	print(middleOptions)
+
+	# print(middleOptions)
 	return middleOptions
 
 def set_output_options(derivType,inputFile,packageObjectDir):
 	outputOptions = []
-	baseMinusExtension = str(os.path.splitext(inputFile[0]))
-	ext = str(os.path.splitext(inputFile[1]))
+	base = os.path.basename(inputFile)
+	baseAndExt = os.path.splitext(base)
+	baseMinusExtension = baseAndExt[0]
+	ext_original = baseAndExt[1]
 	if derivType == 'resourcespace':
+		ext = 'mp4'
 		derivDeliv = os.path.join(packageObjectDir,'resourcespace')
-		outputFilePath = derivDeliv+baseMinusExtension+'_lrp'+ext
-
+		if not os.path.isdir(derivDeliv):
+			os.mkdir(derivDeliv)
+		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_lrp.'+ext)
+		outputOptions.append(outputFilePath)
 	else:
 		print('')
-		# DO SOMETHING ELSE
+		# DO STUFF TO OTHER DERIV TYPES
 
 	return outputOptions
 
-def make_deriv(inputFilepath,derivType,packageObjectDir):
+def make_deriv(inputFilepath,derivType,packageObjectDir,packageOutputDir):
 	print('doing stuff here')
-	ffmpegCommand = []
-	inputOptions = set_input_options(inputFilepath)
+	ffmpegArgs = []
+	inputOptions = set_input_options(derivType,inputFilepath)
 	middleOptions = set_middle_options(derivType)
 	outputOptions = set_output_options(derivType,inputFilepath,packageObjectDir)
-	ffmpegCommand = []
+	ffmpegArgs = inputOptions+middleOptions+outputOptions
+	ffmpegArgs.insert(0,'ffmpeg')
+	# print(' '.join(ffmpegArgs))
+	# print(ffmpegArgs)
+	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	out,err = output.communicate()
+	print(out.decode('utf-8'))
+	if err:
+		print(err.decode('utf-8'))
 	# DO THE STUFF
 	# PROBABLY CALL THIS WITH ALL THE PARAMETERS NEEDED
 	# AND THEN CALL THE SUB-FUNCTIONS FROM HERE
