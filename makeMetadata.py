@@ -8,9 +8,11 @@ import os
 import subprocess
 import sys
 import json
-import xmltodict
 import argparse
 import configparser
+# nonstandard libraries:
+import xmltodict
+# local modules:
 import pymmFunctions
 
 def get_mediainfo_report(inputFilepath,metadataDir):
@@ -46,8 +48,6 @@ def make_frame_md5(inputFilepath,metadataDir):
 			return False
 
 def main():
-	#######################
-	#  INITIALIZE STUFF
 	config = pymmFunctions.read_config() # THIS IS PROBABLY NOT GOING TO BE NEEDED
 
 	parser = argparse.ArgumentParser()
@@ -72,8 +72,6 @@ def main():
 			''')
 		destination = os.path.dirname(os.path.abspath(inputFilepath))
 	print(destination,inputFilepath)
-	# END INITIALIZE STUFF
-	#######################
 
 	if mediainfo_report:
 		get_mediainfo_report(inputFilepath,destination)

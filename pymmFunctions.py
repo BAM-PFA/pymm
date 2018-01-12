@@ -13,6 +13,8 @@ import configparser
 import shutil
 from datetime import date
 import time
+import hashlib
+# nonstandard libraries:
 from ffmpy import FFprobe, FFmpeg
 
 today = str(date.today())
@@ -203,34 +205,27 @@ def check_policy(ingestType,inputFilepath):
 	print('do policy check stuff')
 	policyStatus = "result of check against mediaconch policy"
 	return policyStatus
+
+def dir_or_file(inputPath):
+	if os.path.isdir(inputPath):
+		return 'dir'
+	elif os.path.isdir(inputPath):
+		return 'file'
+	else:
+		return False
+
+def get_system():
+	if sys.platform.startswith("darwin"):
+		return 'mac'
+	elif sys.platform.startswith("win"):
+		return 'windows'
+	elif sys.platform.startswith("linux"):
+		return 'linux'
+	else:
+		return False
+
 #
 # END FILE CHECK STUFF 
-#
-################################################################
-
-################################################################
-#
-# FILE MOVE STUFF -- @fixme : investigate borrowing file transfer code from UCSB or IFI
-#
-def check_write_permissions(destination):
-	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
-	return True
-
-def copy_file(inputFilepath,destination):
-	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
-	return True
-
-def copy_dir(inputDir,destination):
-	if os.path.isdir(destination):
-		for _,_,_file in os.walk(inputDir):
-			copy_file(_file)
-	else:
-		print("the destination may or may not be a real directory, OOPS")
-		return False
-	# MAKE A BAG? HASH THE BAG? CHECK HASH OF DESTIATION BAG?
-
-#
-# END FILE MOVE STUFF
 #
 ################################################################
 
