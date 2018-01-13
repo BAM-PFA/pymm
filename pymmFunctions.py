@@ -209,7 +209,7 @@ def check_policy(ingestType,inputFilepath):
 def dir_or_file(inputPath):
 	if os.path.isdir(inputPath):
 		return 'dir'
-	elif os.path.isdir(inputPath):
+	elif os.path.isfile(inputPath):
 		return 'file'
 	else:
 		return False
@@ -224,8 +224,44 @@ def get_system():
 	else:
 		return False
 
+def get_base(inputPath,base):
+	bases = {'basename':'','baseMinusExtension':'','ext_original':''}
+	if not base in bases.keys():
+		return "_:(_"
+	else:
+		try:
+			basename = os.path.basename(inputPath)
+			bases['basename'] = basename
+			baseAndExt = os.path.splitext(basename)
+			baseMinusExtension = baseAndExt[0]
+			bases['baseMinusExtension'] = baseMinusExtension
+			ext_original = baseAndExt[1]
+			bases['ext_original'] = ext_original
+
+			return bases[base]
+		except:
+			print("error getting basename")
+			return "_:(_"
 #
 # END FILE CHECK STUFF 
+#
+################################################################
+
+################################################################
+# NEITHER HERE NOR THERE
+#
+def timestamp(style):
+	knownStyles = ['iso8601','YMD','now']
+	if style in knownStyles:
+		if style == 'iso8601':
+			timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+		elif style == 'YMD':
+			timestamp = str(date.today())
+		elif style == 'now':
+			timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+		return timestamp
+	else:
+		return str(date.today())
 #
 ################################################################
 

@@ -16,7 +16,6 @@ import os.path
 from ffmpy import FFprobe, FFmpeg
 import argparse
 import configparser
-from datetime import date
 import pymmFunctions
 from pymmFunctions import *
 import makeDerivs
@@ -25,8 +24,6 @@ import makeMetadata
 pymmConfig = pymmFunctions.read_config()
 pymmFunctions.check_missing_ingest_paths(pymmConfig)
 
-today = date.today()
-now = time.strftime("%Y-%m-%d_%H:%M:%S")
 yes = ('YES','Yes','yes','y','Y')
 no = ('NO','No','no','n','N')
 
@@ -114,7 +111,7 @@ for directory in packageDirs:
 	os.mkdir(directory)
 
 # set up a logfile for this ingest instance
-ingestLogPath = packageLogDir+mediaID+'_'+str(today)+'.txt'
+ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('today')+'.txt'
 with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
 ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
-
 import os
 import sys
 import configparser
 import subprocess
 import time
 from datetime import date
+# nonstandard libraries;
 from ffmpy import FFprobe, FFmpeg
+# local modules:
 import pymmFunctions
 
 pymmConfig = pymmFunctions.read_config()
-
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputFilepath):
