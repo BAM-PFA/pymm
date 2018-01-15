@@ -59,7 +59,8 @@ def set_output_options(derivType,inputFile,packageDerivDir):
 		ext = 'mp4'
 		derivDeliv = os.path.join(packageDerivDir,'resourcespace')
 		if not os.path.isdir(derivDeliv):
-			os.mkdir(derivDeliv)
+			print(derivDeliv)
+			os.mkdir(os.path.join(packageDerivDir,'resourcespace'))
 		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_lrp.'+ext)
 		outputOptions.append(outputFilePath)
 	else:
@@ -69,7 +70,6 @@ def set_output_options(derivType,inputFile,packageDerivDir):
 	return outputOptions
 
 def make_deriv(inputFilepath,derivType,packageDerivDir):
-	print('doing stuff here')
 	ffmpegArgs = []
 	inputOptions = set_input_options(derivType,inputFilepath)
 	middleOptions = set_middle_options(derivType)

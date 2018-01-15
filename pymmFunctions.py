@@ -17,8 +17,6 @@ import hashlib
 # nonstandard libraries:
 from ffmpy import FFprobe, FFmpeg
 
-today = str(date.today())
-now = time.strftime("%Y-%m-%d_%H:%M:%S")
 
 ################################################################
 # 
@@ -90,7 +88,7 @@ def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
 		status = 'STARTING TO INGEST '+filename
 		startToday = ('#'*50)+'\r\r'+str(date.today())
 	with open(ingestLogPath,'a+') as ingestLog:
-		ingestLog.write(today+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
+		ingestLog.write(iso8601+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
 		# LOG SOME SHIT
 
 def pymm_log(filename,mediaID,operator,message,status):
@@ -142,6 +140,7 @@ def is_video(inputFilepath):
 	)
 	FR = ffprobe.run(stdout=subprocess.PIPE)
 	output = json.loads(FR[0].decode('utf-8'))
+	# print(output)
 	try:
 		indexValue = output['streams'][0]['index']
 		if indexValue == 0:
@@ -168,14 +167,16 @@ def is_audio(inputFilepath):
 			return True
 	except:
 		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
+		print(output)
 		return False
 
 def is_av(inputFilepath):
 	_is_video = is_video(inputFilepath)
-	_is_audio = is_audio(inputFilepath)
-	if not is_video or is_audio:
-		print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
-		return False
+	if not _is_video:
+		_is_audio = is_audio(inputFilepath)
+		if not _is_audio:
+			print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
+			return False
 	else:
 		return True
 
@@ -224,7 +225,7 @@ def get_system():
 	else:
 		return False
 
-def get_base(inputPath,base):
+def get_base(inputPath,base='basename'):
 	bases = {'basename':'','baseMinusExtension':'','ext_original':''}
 	if not base in bases.keys():
 		return "_:(_"
@@ -265,6 +266,10 @@ def timestamp(style):
 #
 ################################################################
 
+
+today = str(date.today())
+now = timestamp('now')
+iso8601 = timestamp('iso8601')
 pymmConfig = read_config()
 pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
 pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')

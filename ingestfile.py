@@ -13,12 +13,15 @@ import sys
 import subprocess
 import os
 import os.path
-from ffmpy import FFprobe, FFmpeg
 import argparse
 import configparser
+# nonstandard libraries:
+from ffmpy import FFprobe, FFmpeg
+# local modules:
 import pymmFunctions
 from pymmFunctions import *
 import makeDerivs
+import moveNcopy
 import makeMetadata
 
 pymmConfig = pymmFunctions.read_config()
@@ -89,12 +92,12 @@ if inputFilepath:
 # @fixme REDO THESE WITH OS.PATH.JOIN
 packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
-packageDerivDir = os.path.join(packageOutputDir,'access')
+packageDerivDir = os.path.join(packageObjectDir,'access')
 packageMetadataDir = packageOutputDir+'metadata/'
 packageFileMetadataDir = packageMetadataDir+'fileMeta/'
 packageMetadataObjects = packageFileMetadataDir+'objects/'
 packageLogDir = packageMetadataDir+'logs/'
-packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
+packageDirs = [packageOutputDir,packageObjectDir,packageDerivDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
 
 # ... THEN SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
@@ -114,11 +117,12 @@ for directory in packageDirs:
 ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('today')+'.txt'
 with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
+ingestLogBoilerplate = [ingestLogPath,mediaID,filename,operator]
 ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
 
 # INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
 
-# check if the input is recognized as an AV file
+# check if the input is recognized as an AV file @fixme: redo this with rediddled is_av() function
 if not is_video(inputFilepath):
 	is_av == False
 	status = 'warning'
@@ -174,7 +178,9 @@ if ingest_type == 'film scan':
 	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 
 # RSYNC THE INPUT FILE TO THE OUTPUT DIR
-
+# BUT FIRST GET A HASH OF THE ORIGINAL FILE (can i do this in php for our upload process?)
+sys.argv = ['','-i'+inputFilepath,'-d'+packageOutputDir]
+moveNcopy.main()
 
 # MAKE DERIVS
 derivType = 'resourcespace'
@@ -182,17 +188,21 @@ makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
 
 if ingest_type == 'film scan':
 	derivType = 'film mezzanine'
-	makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
+	# makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
 elif ingest_type == 'video transfer':
 	derivType = 'video mezzanine'
-	makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
+	# makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
 
 # CHECK DERIVS AGAINST MEDIACONCH POLICIES
 
 # MAKE METADATA
-makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
-
-# DO CHECKSUMS
+ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
+mediainfo = makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
+if mediainfo:
+	ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report written to metadata directory for package.",'OK')
+frameMD5 = makeMetadata.make_frame_md5(inputFilepath,packageMetadataDir)
+if frameMD5 != False:
+	ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
 
 # FINISH LOGGING
 

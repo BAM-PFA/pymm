@@ -10,12 +10,13 @@ import sys
 import json
 import argparse
 import configparser
+import hashlib
 # nonstandard libraries:
 import xmltodict
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputFilepath,metadataDir):
+def get_mediainfo_report(inputFilepath,metadataDir,json=False):
 	basename = os.path.basename(inputFilepath)
 	if os.path.isdir(metadataDir):
 		# @fixme CHANGE TO ONLY MAKE FILE IF IT'S NEEDED
@@ -27,22 +28,37 @@ def get_mediainfo_report(inputFilepath,metadataDir):
 	mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
 	mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 
-	return mediainfoJSON    # @fixme CHANGE TO RETURN THIS ONLY IF IT'S NEEDED
-							# OR MAYBE SPLIT JSON/TEXT CREATION
+	if json:
+		return mediainfoJSON    
+	else:
+		return True
+
+def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
+	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
+	hasher = hashlib.new(algorithm)
+	with open(inputFilepath,'rb') as infile:
+		buff = infile.read(blocksize) # read the file into a buffer cause it's more efficient for big files
+		while len(buff) > 0: # little loop to keep reading
+			hasher.update(buff) # here's where the hash is actually generated
+			buff = infile.read(blocksize) # keep reading
+	return hasher.hexdigest()
 
 def make_frame_md5(inputFilepath,metadataDir):
+	print('making frame md5')
+	print(metadataDir)
 	if not pymmFunctions.is_av(inputFilepath):
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
-		print("THIS IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
-		sys.exit()
+		print(inputFilepath+" IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
+		return False
 	else:
-		frameMd5Filepath = os.path.join(metadataDir,inputFilepath+"_frame-md5.txt")
+		md5File = pymmFunctions.get_base(inputFilepath)+"_frame-md5.txt"
+		frameMd5Filepath = os.path.join(metadataDir,md5File)
 		frameMd5Command = ['ffmpeg','-i',inputFilepath,'-f','framemd5',frameMd5Filepath]
 		output = subprocess.Popen(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		try:
 			out,err = output.communicate()
 			if err:
-				print(err)
+				print(err.decode('utf-8'))
 			return frameMd5Filepath
 		except:
 			return False
@@ -71,8 +87,9 @@ def main():
 			SO WE'LL PUT ANY SIDECAR FILES IN THE SAME DIRECTORY AS YOUR INPUT FILE.
 			''')
 		destination = os.path.dirname(os.path.abspath(inputFilepath))
-	print(destination,inputFilepath)
-
+	# print(destination,inputFilepath)
+	fileHash = hash_file(inputFilepath)
+	print(fileHash)
 	if mediainfo_report:
 		get_mediainfo_report(inputFilepath,destination)
 	if frame_md5:

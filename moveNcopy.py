@@ -18,15 +18,7 @@ import pymmFunctions
 def verify_copy():
 	print('woof')
 
-def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
-	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
-	hasher = hashlib.new(algorithm)
-	with open(inputFilepath,'rb') as infile:
-		buff = infile.read(blocksize) # read the file into a buffer cause it's more efficient for big files
-		while len(buff) > 0: # little loop to keep reading
-			hasher.update(buff) # here's where the hash is actually generated
-			buff = infile.read(blocksize) # keep reading
-	return hasher.hexdigest()
+
 
 def check_write_permissions(destination):
 	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
@@ -77,6 +69,8 @@ def set_args():
 def main():
 	config = pymmFunctions.read_config()
 	args = set_args()
+
+	print(args)
 
 	requiredArgs = ['inputPath','destination']
 	# Quit if there are required variables missing
