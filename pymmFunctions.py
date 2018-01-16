@@ -249,7 +249,8 @@ def get_base(inputPath,base='basename'):
 ################################################################
 
 ################################################################
-# NEITHER HERE NOR THERE
+#
+# SYSTEM / ENVIRONMENT STUFF
 #
 def timestamp(style):
 	knownStyles = ['iso8601','YMD','now']
@@ -259,10 +260,30 @@ def timestamp(style):
 		elif style == 'YMD':
 			timestamp = str(date.today())
 		elif style == 'now':
-			timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+			timestamp = time.strftime("%Y%m%d_%H%M%S")
 		return timestamp
 	else:
 		return str(date.today())
+
+def get_caller():
+	caller = sys.argv[0]
+	caller = os.path.splitext(caller)
+	return caller
+
+def get_ffmpeg_version():
+	call = subprocess.check_output(['ffmpeg','-version'])
+	version = call.decode('utf-8').split()[2]
+	return version
+
+def set_ffreport(dest,caller):
+	ffmpegVersion = get_ffmpeg_version()
+	os.environ["FFREPORT"] = "file="+os.path.join(dest,"ffmpeg-"+ffmpegVersion+"_"+timestamp('now')+"_"+caller+".txt")
+	return "set FFREPORT to "+dest
+
+def unset_ffreport():
+	del os.environ["FFREPORT"]
+#
+# SYSTEM / ENVIRONMENT STUFF
 #
 ################################################################
 

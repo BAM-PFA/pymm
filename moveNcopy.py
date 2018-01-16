@@ -77,6 +77,7 @@ def set_args():
 	# parser.add_argument('-',choices=['',''],help='')
 	parser.add_argument('-d','--destination',help='set destination for files to move/copy')
 	parser.add_argument('-l','--loglevel',choices=['all','pymm','None'],default='all',help='set the level of logging you want. rsync & pymm logs? just pymm? default is None.')
+	parser.add_argument('-L','--logDir',help='set a directory for the rsync log to live in')
 
 	return parser.parse_args()
 
@@ -104,6 +105,7 @@ def main():
 	removeOriginals = args.removeOriginals
 	destination = args.destination
 	loglevel = args.loglevel
+	logDir = args.logDir
 	now = pymmFunctions.timestamp('now')
 
 	# set up rsync log
@@ -111,7 +113,7 @@ def main():
 		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
 		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 		try:
-			rsyncLogpath = os.path.join(destination,'rsync_log_'+pymmFunctions.timestamp('now')+'.txt')
+			rsyncLogpath = os.path.join(logDir,'rsync_log_'+pymmFunctions.timestamp('now')+'.txt')
 		except:
 			print("there was a problem getting the rsync log path ....")
 			rsyncLogpath = ''

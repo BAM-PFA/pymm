@@ -12,9 +12,7 @@
 import sys
 import subprocess
 import os
-import os.path
 import argparse
-import configparser
 # nonstandard libraries:
 from ffmpy import FFprobe, FFmpeg
 # local modules:
@@ -87,17 +85,20 @@ else:
 if inputFilepath:
 	filename = os.path.basename(inputFilepath)
 
+# INIT A DICTIONARY FOR INGEST TYPES AND DERIV TYPES
+ingests = {'video transfer':'proresHQ'}
+
 
 # SET UP AIP DIRECTORY PATHS FOR INGEST...
 # @fixme REDO THESE WITH OS.PATH.JOIN
 packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
-packageDerivDir = os.path.join(packageObjectDir,'access')
+# packageDerivDir = os.path.join(packageObjectDir,'access')
 packageMetadataDir = packageOutputDir+'metadata/'
 packageFileMetadataDir = packageMetadataDir+'fileMeta/'
 packageMetadataObjects = packageFileMetadataDir+'objects/'
 packageLogDir = packageMetadataDir+'logs/'
-packageDirs = [packageOutputDir,packageObjectDir,packageDerivDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
+packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
 
 # ... THEN SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
@@ -114,7 +115,7 @@ for directory in packageDirs:
 	os.mkdir(directory)
 
 # set up a logfile for this ingest instance
-ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('today')+'.txt'
+ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt'
 with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
 ingestLogBoilerplate = [ingestLogPath,mediaID,filename,operator]
@@ -179,19 +180,27 @@ if ingest_type == 'film scan':
 
 # RSYNC THE INPUT FILE TO THE OUTPUT DIR
 # BUT FIRST GET A HASH OF THE ORIGINAL FILE (can i do this in php for our upload process?)
-sys.argv = ['','-i'+inputFilepath,'-d'+packageOutputDir]
+sys.argv = ['','-i'+inputFilepath,'-d'+packageObjectDir,'-L'+packageLogDir]
 moveNcopy.main()
 
 # MAKE DERIVS
-derivType = 'resourcespace'
-makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
-
+# WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
+# DERIVTYPE LIST WITH RESOURCESPACE
+derivTypes = ['resourcespace']
 if ingest_type == 'film scan':
-	derivType = 'film mezzanine'
-	# makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
+	derivTypes.append('filmMezzanine')
+	for derivType in derivTypes:
+		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
+		makeDerivs.main()
 elif ingest_type == 'video transfer':
-	derivType = 'video mezzanine'
-	# makeDerivs.make_deriv(inputFilepath,derivType,packageDerivDir)
+	derivTypes.append('proresHQ')
+	for derivType in derivTypes:
+		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
+		makeDerivs.main()
+else:
+	for derivType in derivTypes:
+		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
+		makeDerivs.main()
 
 # CHECK DERIVS AGAINST MEDIACONCH POLICIES
 
