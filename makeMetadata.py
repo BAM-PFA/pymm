@@ -16,22 +16,27 @@ import xmltodict
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputFilepath,metadataDir,json=False):
-	basename = os.path.basename(inputFilepath)
-	if os.path.isdir(metadataDir):
-		# @fixme CHANGE TO ONLY MAKE FILE IF IT'S NEEDED
-		# MAYBE MAKE A TEMP XML FILE THAT CAN BE READ REPEATEDLY IF NEEDED? THEN DELETED?
-		mediainfoOutput = '--LogFile='+os.path.join(metadataDir,basename+'_mediainfo.xml')
+def get_mediainfo_report(inputFilepath,destination,json=False):
+	basename = pymmFunctions.get_base(inputFilepath)
+	if os.path.isdir(destination):
+		mediainfoOutput = '--LogFile='+os.path.join(destination,basename+'_mediainfo.xml')
+		mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
+		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
+		if json:
+			return mediainfoJSON    
+		else:
+			return True
 	else:
-		mediainfoOutput = None
-		
-	mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
-	mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
+		mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath],stdout=subprocess.PIPE)
+		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
+		if json:
+			return mediainfoJSON
+		else:
+			print(destination+" doesn't exist and you didn't say you want the raw mediainfo output.\n"
+					"What do you want??")
+			return False
 
-	if json:
-		return mediainfoJSON    
-	else:
-		return True
+
 
 def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
 	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
@@ -70,6 +75,7 @@ def main():
 	parser.add_argument('-i','--inputFilepath',help='path of input file')
 	parser.add_argument('-m','--mediainfo',action='store_true',help='generate a mediainfo sidecar file')
 	parser.add_argument('-f','--frame_md5',action='store_true',help='make frame md5 report')
+	parser.add_argument('-j','--getJSON',action='store_true',default=False,help='get JSON output as applicable')
 	parser.add_argument('-d','--destination',help='set destination for output metadata files')
 	args = parser.parse_args()
 	
@@ -77,6 +83,7 @@ def main():
 	destination = args.destination
 	frame_md5 = args.frame_md5
 	mediainfo_report = args.mediainfo
+	getJSON = args.getJSON
 
 	if not inputFilepath:
 		print("\n\nHEY THERE, YOU NEED TO SET AN INPUT FILE TO RUN THIS SCRIPT ON.\rNOW EXITING")
@@ -91,7 +98,7 @@ def main():
 	fileHash = hash_file(inputFilepath)
 	print(fileHash)
 	if mediainfo_report:
-		get_mediainfo_report(inputFilepath,destination)
+		get_mediainfo_report(inputFilepath,destination,getJSON)
 	if frame_md5:
 		frameMd5Filepath = make_frame_md5(inputFilepath,destination)
 		print(frameMd5Filepath)

@@ -18,8 +18,6 @@ import pymmFunctions
 def verify_copy():
 	print('woof')
 
-
-
 def check_write_permissions(destination):
 	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
 	return True
@@ -28,13 +26,14 @@ def copy_file(inputFilepath,rsyncLogOptions,destination):
 	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
 	# hashing redundant when using rsync.... 
 	# inputFileHash = hash_file(inputFilepath)
-	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputFilepath,'basename'))
+	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputFilepath))
 	if not rsyncLogOptions == '':
 		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputFilepath,destFilepath]
+	else:
+		rsyncCommand = ['rsync','-rtvPih',inputFilepath,destFilepath]		
 	# print(' '.join(rsyncCommand))
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
-			# subprocess.check_call(['rsync','-rtvPih',rsyncLogOptions,inputFilepath,destination],stderr=subprocess.PIPE) # mm puts the removal of source files in rsync command
 			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
 			return True
 		except subprocess.CalledProcessError as error:
@@ -45,14 +44,29 @@ def copy_file(inputFilepath,rsyncLogOptions,destination):
 		print('go get a mac, my man.')
 	return False
 
-def copy_dir(inputDir,destination):
-	if os.path.isdir(destination):
-		for _,_,_files in os.walk(inputDir):
-			for _file in _files:
-				copy_file(_file)
+def copy_dir(inputDir,rsyncLogOptions,destination):
+	destDir = os.path.join(pymmFunctions.get_base(inputDir))
+	if not rsyncLogOptions == '':
+		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputDir,destDir]
 	else:
-		print("the destination may or may not be a real directory, OOPS")
-		return False
+		rsyncCommand = ['rsync','-rtvPih',inputDir,destDir]		
+
+	if pymmFunctions.get_system() in ('mac','linux'):
+		try:
+			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
+			return True
+		except subprocess.CalledProcessError as error:
+			print("rsync failed?")
+			print (error)
+			return error
+	else:
+		print('go get a mac, my man.')
+	return False
+
+	# WELL THIS WOUND UP BEING IDENTICAL TO THE ABOVE.... 
+	# MAYBE MAKE AN 'RSYNC_IT' FUNCTION THAT IS CALLED IF
+	# SYS.PLATFORM CHECK == MAC/LINUX
+
 	# MAKE A BAG? HASH THE BAG? CHECK HASH OF DESTIATION BAG?
 
 def set_args():
@@ -95,10 +109,9 @@ def main():
 	# set up rsync log
 	if loglevel == 'all':
 		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
+		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 		try:
 			rsyncLogpath = os.path.join(destination,'rsync_log_'+pymmFunctions.timestamp('now')+'.txt')
-			# rsyncLogOptions = '--log-file = '+rsyncLogpath #+' --log-file-format= '+now+" '%f'"+" %l "+destination @fixme
-			# print(rsyncLogOptions)
 		except:
 			print("there was a problem getting the rsync log path ....")
 			rsyncLogpath = ''
