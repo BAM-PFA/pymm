@@ -24,9 +24,13 @@ if not dbExists:
 	createDbSQL =  ("CREATE DATABASE IF NOT EXISTS "+pymm_db+";")
 	createTablesSQL =  ("CREATE TABLE event ("
 						"eventIdentifierValue BIGINT(20) NOT NULL AUTO_INCREMENT, "
-						"objectIdentifierValue VARCHAR(1000)"
+						"objectIdentifierValue VARCHAR(1000), "
+						"PRIMARY KEY (eventIdentifierValue)" 
 						"" # ETC
-						")"
+						");"
 						)
-
+	print(createTablesSQL)
+	useDB = ("USE "+pymm_db)
 	cursor.execute(createDbSQL)
+	cursor.execute(useDB)
+	cursor.execute(createTablesSQL)
