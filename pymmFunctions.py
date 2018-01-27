@@ -282,6 +282,15 @@ def set_ffreport(dest,caller):
 
 def unset_ffreport():
 	del os.environ["FFREPORT"]
+
+def get_unix_ip():
+	# totally stolen from mmfunctions
+	ifconfig = subprocess.Popen(['ifconfig'],stdout=subprocess.PIPE)
+	grep = subprocess.Popen(['grep','inet '],stdin=ifconfig.stdout,stdout=subprocess.PIPE)
+	tail = subprocess.Popen(['tail','-n1'],stdin=grep.stdout,stdout=subprocess.PIPE)
+	thestuff = subprocess.Popen(['cut','-d',' ','-f2'],stdin=tail.stdout,stdout=subprocess.PIPE)
+	ip = thestuff.communicate()[0].decode().rstrip()
+	return ip
 #
 # SYSTEM / ENVIRONMENT STUFF
 #

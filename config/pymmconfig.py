@@ -16,7 +16,7 @@ def make_config(configPath):
 		open(configPath,'x')
 		with open(configPath,'w+') as config:
 			config.write('''[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
-				\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\
+				\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\rpymm_db_address:\
 				\r\r[logging]\rpymm_log_dir:\
 				\r\r[mediaconch format policies]\rfilm_scan_master:\rvideo_capture_master:\rmagnetic_video_mezzanine:\rfilm_scan_mezzanine:\rlow_res_proxy:
 				''')
