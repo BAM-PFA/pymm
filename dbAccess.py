@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
+# defines a class for accessing the pymm PREMIS databse
+
 import os
 import sys
 import argparse
 import getpass
+# nonstandard libraries:
 try:
 	import mysql.connector
 except ImportError:
-	print("Try installing mysqlclient again.")
+	print("Try installing mysql connector/python again.")
 	sys.exit()
+# check this out for mysql.connector install: https://gist.github.com/stefanfoulis/902296/f466a8dba3a75c172ac88627298f18eaaf0aa4c3
+# brew install mysql-connector-c
+# pip3 install mysql-connector
+# pip3 error  ``Unable to find Protobuf include directory.`` --> `brew install protobuf`
+# and if that still doesn't work try pip install mysql-connector==2.1.6
 
 ##################
 #   INIT ARGS
@@ -46,10 +54,16 @@ class DB:
 		cursor = None
 		try:
 			# self.connect()
+			self.connection.get_warnings = True
 			cursor = self.connection.cursor()
 			cursor.execute(sql)
+			# for row in cursor:
+			# 	print(row)
 			return cursor
 		except:
+			# @fixme
+			# https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlcursor-fetchwarnings.html
+			# print(cursor.fetch_warnings())
 			print('errr')
 			return 'ooops'
 			# self.connect()

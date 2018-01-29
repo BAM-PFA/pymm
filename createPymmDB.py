@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
+# pymm databse stuff: create & report to a PREMIS-based mysql db
+
 import os
 import sys
 import argparse
 import getpass
-# try:
-# 	import mysql.connector
-# except ImportError:
-# 	print("Try installing mysqlclient again.")
-# 	sys.exit()
+# local modules:
 import pymmFunctions
 import dbAccess as db
 # import pymmconfig
-
-# check this out for mysql.connector install: https://gist.github.com/stefanfoulis/902296/f466a8dba3a75c172ac88627298f18eaaf0aa4c3
-# brew install mysql-connector-c
-# pip3 install mysql-connector
-# pip3 error  ``Unable to find Protobuf include directory.`` --> `brew install protobuf`
-# and if that still doesn't work try pip install mysql-connector==2.1.6
 
 ##################
 #   INIT ARGS
@@ -39,8 +31,8 @@ def check_db_exists(pymm_db):
 	connect = db.DB()
 	connect.connect()
 	dostuff = connect.query(query)
-	databases = dostuff.fetchall()
-	dbExists = [item[0] for item in databases if pymm_db in item]
+	# databases = dostuff.fetchall()
+	dbExists = [item[0] for item in dostuff if pymm_db in item]
 	if dbExists:
 		return True
 		connect.close_cursor()
@@ -57,7 +49,7 @@ def create_db(pymm_db=pymm_db):
 		connect = db.DB()
 		connect.connect()
 		cursor = connect.query(createDbSQL)
-		print(cursor)
+		# print(cursor)
 		cursor = connect.close_cursor()
 	except:
 		print("Check your mysql settings and try again.")
@@ -151,18 +143,46 @@ def create_db(pymm_db=pymm_db):
 			createLTOschemaTable,createLTOidIndex,createLTOcolumnIndex,
 			createObjectCharsTable,createFingerprintsTable,createHashIndex]
 
-
 	for sql in sqlToDo:
-		print("executing "+sql.rstrip())
+		print("executing "+sql.strip('\t'))
 		try:
 			cursor = connect.query(sql)
 			cursor = connect.close_cursor()
 		except:
 			print("mysql error... check your settings and try again.")
 			sys.exit()
+	
 	connect.close_connection()
 
-# def create_user():
+def create_user(pymm_db=pymm_db):
+	print("This step will make a new user for the pymm database.\n")
+	newUser = input("Please enter a name for the user: ")
+	targetDB = input("Please enter the name you created for the pymm databse:")
+	if targetDB != pymm_db:
+		print("\n\nFYI!!!\nTHE DATABSE YOU ENTERED ("+targetDB+")\n"
+			"IS NOT THE SAME AS THE DATABSE IN YOUR CONFIG FILE ("+pymm_db+")")
+	userPass = input("Enter a password for the user: ")
+	userIP = input("Please enter the ip address for the user: ")
+	if userIP == pymmFunctions.get_unix_ip():
+		userIP = 'localhost'
+	createUserSQL = "CREATE USER \'"+newUser+"\'@\'"+userIP+"\' IDENTIFIED BY '"+userPass+"\';"
+	grantPrivsSQL = "GRANT ALL PRIVILIGES ON "+targetDB+".* TO \'"+newUser+"\'@\'"+userIP+"\';"
+
+	try:
+		connect = db.DB()
+		connect.connect()
+		connect.query(createUserSQL)
+		# for row in createUser:
+		# 	print(row.statement)
+		# 	print(row.rowcount)
+		connect.query(grantPrivsSQL)
+		# connect.close_cursor()
+		# connect.close_connection()
+	except:
+		print("stupid error")
+		sys.exit()
+
+
 
 # def main():
 	# cursor = connect()
