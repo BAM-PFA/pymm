@@ -24,7 +24,7 @@ from ffmpy import FFprobe, FFmpeg
 #
 def read_config():
 	pymmDirectory = os.path.dirname(os.path.abspath(__file__))
-	configPath = os.path.join(pymmDirectory,'config','config.ini') 
+	configPath = os.path.join(pymmDirectory,'pymmconfig','config.ini') 
 	if not os.path.isfile(configPath):
 		print('''
 			CONFIGURATION PROBLEM:\n

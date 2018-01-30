@@ -15,15 +15,16 @@ def make_config(configPath):
 		print('theres no system config file yet... hang on...')
 		open(configPath,'x')
 		with open(configPath,'w+') as config:
-			config.write('''[paths]\routdir_ingestfile:\raip_storage:\rresourcespace_deliver:\rpymm_scriptdir:\
-				\r\r[database settings]\rpymm_db:\rpymm_db_user_profile:\rpymm_db_name:\rpymm_db_address:\
-				\r\r[logging]\rpymm_log_dir:\
-				\r\r[mediaconch format policies]\rfilm_scan_master:\rvideo_capture_master:\rmagnetic_video_mezzanine:\rfilm_scan_mezzanine:\rlow_res_proxy:
+			config.write('''[paths]\noutdir_ingestfile:\naip_storage:\nresourcespace_deliver:\npymm_scriptdir:\
+				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
+				\n\n[logging]\npymm_log_dir:\
+				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:
 				''')
 
-def set_value(section, optionToSet):
-	print("So you want to set "+optionToSet)
-	newValue = input("Please enter a value for "+optionToSet+": ").rstrip()
+def set_value(section, optionToSet,newValue=None):
+	if newValue == None:
+		print("So you want to set "+optionToSet)
+		newValue = input("Please enter a value for "+optionToSet+": ").rstrip()
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)
@@ -63,11 +64,14 @@ make_config(configPath)
 config = configparser.SafeConfigParser()
 config.read(configPath)
 
-with open(configPath, 'r+') as conf:
-	print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')
-	for line in conf.readlines():
-		print(line.rstrip())
-	print("IF YOU WANT TO CHANGE ANYTHING, LET'S GO!!")
+def main():
+	with open(configPath, 'r+') as conf:
+		print('THIS IS WHAT THE CONFIG FILE LOOKS LIKE NOW.')
+		for line in conf.readlines():
+			print(line.rstrip())
+		print("IF YOU WANT TO CHANGE ANYTHING, LET'S GO!!")
 
-	select_option()
+		select_option()
 
+if __name__ == '__main__':
+	main()
