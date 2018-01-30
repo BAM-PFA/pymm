@@ -16,7 +16,7 @@ from pymmconfig import pymmconfig
 #
 def set_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-m','--mode',choices=['db','user','check'],default='check',help='db mode creates a PREMIS database from scratch; user mode adds a user to an existing db')
+	parser.add_argument('-m','--mode',choices=['database','user','check'],help='database mode creates a PREMIS database from scratch; user mode adds a user to an existing db')
 	return parser.parse_args()
 #
 #
@@ -27,13 +27,23 @@ pymm_db = config['database settings']['pymm_db']
 
 print("THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!")
 
+def connect_to_mysql(user='root'):
+	try:
+		connect = db.DB(user)
+		connection = connect.connect()
+		return connect
+	except:
+		print("you got some mysql connection issues, maybe the user doesn't exist?")
+		sys.exit()
+
 def check_db_exists(pymm_db=pymm_db):
 	if pymm_db == '':
 		print("There is no Pymm database set in the config file yet. Now exiting.")
 		sys.exit()
 	query = "SHOW DATABASES;"
-	connect = db.DB()
-	connect.connect()
+	connect = connect_to_mysql('root')
+	# connect = db.DB('root')
+	# connect.connect()
 	databases = connect.query(query,)
 	dbExists = [item[0] for item in databases if pymm_db in item]
 	if dbExists:
@@ -55,13 +65,12 @@ def create_db(pymm_db=pymm_db):
 	createDbSQL = "CREATE DATABASE IF NOT EXISTS {};".format(pymm_db)
 	useDB = "USE {};".format(pymm_db)
 	try:
-		connect = db.DB()
+		connect = db.DB('root')
 		connect.connect()
 		cursor = connect.query(createDbSQL)
 		print(cursor)
 		cursor = connect.close_cursor()
-	except connect.Error as e:
-		print(e)
+	except:
 		print("Check your mysql settings and try again.")
 		sys.exit()
 	
@@ -153,14 +162,15 @@ def create_db(pymm_db=pymm_db):
 			createLTOschemaTable,createLTOidIndex,createLTOcolumnIndex,
 			createObjectCharsTable,createFingerprintsTable,createHashIndex]
 
-	for sql in sqlToDo:
-		try:
-			cursor = connect.query(sql)
-			cursor = connect.close_cursor()
-		except:
-			print("mysql error... check your settings and try again.")
-			sys.exit()
-	pymmconfig.set_value("database settings",'pymm_db',pymm_db)
+	if not check_db_exists():
+		for sql in sqlToDo:
+			try:
+				cursor = connect.query(sql)
+				cursor = connect.close_cursor()
+			except:
+				print("mysql error... check your settings and try again.")
+				sys.exit()
+		pymmconfig.set_value("database settings",'pymm_db',pymm_db)
 	connect.close_connection()
 
 def create_user(pymm_db=pymm_db):
@@ -178,18 +188,17 @@ def create_user(pymm_db=pymm_db):
 	if userIP == pymmFunctions.get_unix_ip():
 		userIP = 'localhost'
 	createUserSQL = "CREATE USER IF NOT EXISTS %s@%s IDENTIFIED BY %s;"
-	# createUserSQL = "CREATE USER \'{}\'@\'{}\' IDENTIFIED BY \'{}\';".format(newUser,userIP,userPass)
 	grantPrivsSQL = "GRANT ALL PRIVILEGES ON {}.* TO %s@%s;".format(pymm_db)
 	print(createUserSQL)
 	print(grantPrivsSQL)
 	try:
-		connect = db.DB()
+		connect = db.DB('root')
 		connect.connect()
 		connect.query(createUserSQL,(newUser,userIP,userPass))
 		connect.query(grantPrivsSQL,(newUser,userIP))
 		connect.close_cursor()
 		connect.close_connection()
-		print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE USER'S COMPUTER:\n"
+		print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"
 			"mysql_config_editor set --login-path="+newUser+"_db_access --host="+userIP+" --user="+newUser+" --password=\n"
 			"\nAND THEN TYPE IN THE USER PASSWORD ("+userPass+")\n"
 			"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
@@ -200,14 +209,14 @@ def create_user(pymm_db=pymm_db):
 		sys.exit()
 
 def main():
-	if mode == 'db':
+	if mode == 'database':
 		create_db()
 	elif mode == 'user':
 		create_user()
 	elif mode == 'check':
 		check_db_exists()
 	else:
-		print("PLEASE PICK A MODE TO RUN THIS SCRIPT IN: '--db' TO CREATE A DATABASE,\nOR --user TO ADD USER(S).")
+		print("PLEASE PICK A MODE TO RUN THIS SCRIPT IN: '-m database' TO CREATE A DATABASE,\nOR -m user TO ADD USER(S).")
 		sys.exit()
 
 if __name__ == '__main__':
