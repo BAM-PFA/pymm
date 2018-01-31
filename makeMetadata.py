@@ -36,8 +36,6 @@ def get_mediainfo_report(inputFilepath,destination,json=False):
 					"What do you want??")
 			return False
 
-
-
 def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
 	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
 	hasher = hashlib.new(algorithm)

@@ -95,10 +95,10 @@ packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
 # packageDerivDir = os.path.join(packageObjectDir,'access')
 packageMetadataDir = packageOutputDir+'metadata/'
-packageFileMetadataDir = packageMetadataDir+'fileMeta/'
-packageMetadataObjects = packageFileMetadataDir+'objects/'
+# packageFileMetadataDir = packageMetadataDir+'fileMeta/'
+packageMetadataObjects = packageMetadataDir+'objects/'
 packageLogDir = packageMetadataDir+'logs/'
-packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
+packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir]
 if aip_path == None:
 	aip_path = pymmConfig['paths']['aip_staging']
 
@@ -185,35 +185,39 @@ if ingest_type == 'film scan':
 sys.argv = ['','-i'+inputFilepath,'-d'+packageObjectDir,'-L'+packageLogDir]
 moveNcopy.main()
 
+# MAKE METADATA FOR INPUT FILE
+ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
+mediainfo = makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataObjects)
+if mediainfo:
+	ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report for input file written to metadata directory for package.",'OK')
+frameMD5 = makeMetadata.make_frame_md5(inputFilepath,packageMetadataObjects)
+if frameMD5 != False:
+	ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
+
 # MAKE DERIVS
 # WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
 # DERIVTYPE LIST WITH RESOURCESPACE
 derivTypes = ['resourcespace']
+deliveredDerivPaths = {}
 if ingest_type == 'film scan':
 	derivTypes.append('filmMezzanine')
-	for derivType in derivTypes:
-		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
-		makeDerivs.main()
 elif ingest_type == 'video transfer':
 	derivTypes.append('proresHQ')
-	for derivType in derivTypes:
-		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
-		makeDerivs.main()
 else:
-	for derivType in derivTypes:
-		sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
-		makeDerivs.main()
+	pass
+for derivType in derivTypes:
+	sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
+	deliveredDeriv = makeDerivs.main()
+	deliveredDerivPaths[derivType] = deliveredDeriv
+
+for key,value in deliveredDerivPaths.items():
+	# print([key,value])
+	mdDest = os.path.join(packageMetadataObjects,key)
+	if not os.path.isdir(mdDest):
+		os.mkdir(mdDest)
+	mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
 
 # CHECK DERIVS AGAINST MEDIACONCH POLICIES
-
-# MAKE METADATA
-ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
-mediainfo = makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataDir)
-if mediainfo:
-	ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report written to metadata directory for package.",'OK')
-frameMD5 = makeMetadata.make_frame_md5(inputFilepath,packageMetadataDir)
-if frameMD5 != False:
-	ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
 
 # FINISH LOGGING
 

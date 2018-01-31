@@ -16,6 +16,7 @@ def make_config(configPath):
 		open(configPath,'x')
 		with open(configPath,'w+') as config:
 			config.write('''[paths]\noutdir_ingestfile:\naip_staging:\nresourcespace_deliver:\nprores_deliver:\
+				\n\n[deriv delivery options]\nresourcespace: n\nproresHQ: n\
 				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
 				\n\n[logging]\npymm_log_dir:\
 				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:

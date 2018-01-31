@@ -133,9 +133,12 @@ def main():
 		print(err.decode('utf-8'))
 	if ffmpegReportDir:
 		pymmFunctions.unset_ffreport()
+	# get the output path to rsync the deriv to access directories
 	outputFilePath = outputOptions[-1]
-	additional_delivery(outputFilePath,derivType)
-
+	if config.getboolean('deriv delivery options',derivType):
+		additional_delivery(outputFilePath,derivType)
+	print(outputFilePath)
+	return outputFilePath
 
 if __name__ == '__main__':
 	main()
