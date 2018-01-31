@@ -14,7 +14,7 @@ import subprocess
 import os
 import argparse
 # nonstandard libraries:
-from ffmpy import FFprobe, FFmpeg
+# from ffmpy import FFprobe, FFmpeg
 # local modules:
 import pymmFunctions
 from pymmFunctions import *

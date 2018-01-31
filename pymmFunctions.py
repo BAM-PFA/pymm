@@ -17,7 +17,6 @@ import hashlib
 # nonstandard libraries:
 from ffmpy import FFprobe, FFmpeg
 
-
 ################################################################
 # 
 # CONFIG CHECK STUFF
@@ -46,9 +45,11 @@ def check_missing_ingest_paths(pymmConfig):
 			missingPaths += 1
 			print('''
 				CONFIGURATION PROBLEM:
-				You have not yet set a directory for '''+path[0]+'''. Please run pymmConfig.py,
+				You have not yet set a valid directory for '{}.' Please run pymmConfig.py,
 				edit the config file directly,
-				or use \'--'''+path[0]+"\' to set "+path[1]+"."
+				or use '--{}' to set {}.
+				HINT: Check that the filepath is entered correctly.
+				'''.format(path[0],path[0],path[1])
 				)
 	if missingPaths > 0:
 		print("\nYou are missing some required file paths and we have to quit. Sorry.")
@@ -215,15 +216,7 @@ def dir_or_file(inputPath):
 	else:
 		return False
 
-def get_system():
-	if sys.platform.startswith("darwin"):
-		return 'mac'
-	elif sys.platform.startswith("win"):
-		return 'windows'
-	elif sys.platform.startswith("linux"):
-		return 'linux'
-	else:
-		return False
+
 
 def get_base(inputPath,base='basename'):
 	bases = {'basename':'','baseMinusExtension':'','ext_original':''}
@@ -252,6 +245,16 @@ def get_base(inputPath,base='basename'):
 #
 # SYSTEM / ENVIRONMENT STUFF
 #
+def get_system():
+	if sys.platform.startswith("darwin"):
+		return 'mac'
+	elif sys.platform.startswith("win"):
+		return 'windows'
+	elif sys.platform.startswith("linux"):
+		return 'linux'
+	else:
+		return False
+
 def timestamp(style):
 	knownStyles = ['iso8601','YMD','now']
 	if style in knownStyles:
@@ -295,7 +298,6 @@ def get_unix_ip():
 # SYSTEM / ENVIRONMENT STUFF
 #
 ################################################################
-
 
 today = str(date.today())
 now = timestamp('now')

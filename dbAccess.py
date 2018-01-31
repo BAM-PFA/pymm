@@ -14,7 +14,7 @@ except ImportError:
 # brew install mysql-connector-c
 # pip3 install mysql-connector
 # pip3 error  ``Unable to find Protobuf include directory.`` --> `brew install protobuf`
-# and if that still doesn't work try pip install mysql-connector==2.1.6
+# and if that still doesn't work try pip3 install mysql-connector==2.1.6
 
 class DB:
 	connection = None

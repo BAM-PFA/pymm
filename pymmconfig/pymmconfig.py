@@ -24,7 +24,10 @@ def make_config(configPath):
 def set_value(section, optionToSet,newValue=None):
 	if newValue == None:
 		print("So you want to set "+optionToSet)
-		newValue = input("Please enter a value for "+optionToSet+": ").rstrip()
+		# the replace() call is a kind of stupid hack fix to get around paths with spaces getting an unnecessary escape slash
+		# when you drag a folder into the terminal on Mac.... 
+		# @fixme
+		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")  
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)

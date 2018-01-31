@@ -24,6 +24,7 @@ def set_args():
 
 config = pymmFunctions.read_config()
 pymm_db = config['database settings']['pymm_db']
+preexistingDB = pymm_db
 
 print("THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!")
 
@@ -63,12 +64,13 @@ def create_db(pymm_db=pymm_db):
 		pymm_db = input("Please enter a name for the database: ")
 	# mysql.connector won't allow %s substitution for db name... ? use str.format() method instead
 	createDbSQL = "CREATE DATABASE IF NOT EXISTS {};".format(pymm_db)
+	# set 'use database' setting to True
+	pymmconfig.set_value("database settings",'use_db','y')
 	useDB = "USE {};".format(pymm_db)
 	try:
 		connect = db.DB('root')
 		connect.connect()
 		cursor = connect.query(createDbSQL)
-		print(cursor)
 		cursor = connect.close_cursor()
 	except:
 		print("Check your mysql settings and try again.")
@@ -162,15 +164,19 @@ def create_db(pymm_db=pymm_db):
 			createLTOschemaTable,createLTOidIndex,createLTOcolumnIndex,
 			createObjectCharsTable,createFingerprintsTable,createHashIndex]
 
-	if not check_db_exists():
-		for sql in sqlToDo:
-			try:
-				cursor = connect.query(sql)
-				cursor = connect.close_cursor()
-			except:
-				print("mysql error... check your settings and try again.")
-				sys.exit()
-		pymmconfig.set_value("database settings",'pymm_db',pymm_db)
+	if preexistingDB == '':
+		# skip table/index creation if db exists already...
+		if check_db_exists(pymm_db):
+			for sql in sqlToDo:
+				try:
+					cursor = connect.query(sql)
+					cursor = connect.close_cursor()
+				except:
+					print("mysql error... check your settings and try again.")
+					sys.exit()
+			pymmconfig.set_value("database settings",'pymm_db',pymm_db)
+	else:
+		print("Your database, "+pymm_db+" already exists, silly goose. We are done here. Goodnight.")
 	connect.close_connection()
 
 def create_user(pymm_db=pymm_db):
@@ -222,5 +228,4 @@ def main():
 if __name__ == '__main__':
 	args = set_args()
 	mode = args.mode
-	print(mode)
 	main()

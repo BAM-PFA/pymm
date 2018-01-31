@@ -45,10 +45,11 @@ def set_middle_options(derivType):
 		middleOptions = [
 			'-map','0:v',
 			'-c:v','prores_ks',
-			'-profile','3',
+			'-profile:v','3',
 			 # keep it interlaced
 			'-flags','+ildct+ilme',
-			'-map','0:a',
+			# map for audio if it exists
+			'-map','0:a?',
 			# is 16 bit good for our HQ mezzanine? 
 			'-c:a','pcm_s16le'
 			]
@@ -63,6 +64,7 @@ def set_output_options(derivType,inputFilepath,outputDir):
 	outputOptions = []
 	base = pymmFunctions.get_base(inputFilepath)
 	baseMinusExtension = pymmFunctions.get_base(inputFilepath,'baseMinusExtension')
+	# make a delivery directory for a package that is based on the deriv type
 	derivDeliv = os.path.join(outputDir,derivType)
 	if not os.path.isdir(derivDeliv):
 		print("Making a directory at "+derivDeliv)
@@ -92,7 +94,6 @@ def set_args():
 
 	return parser.parse_args()
 
-# def make_deriv(inputFilepath,derivType,packageDerivDir):
 def main():
 	# DO STUFF
 	args = set_args()
