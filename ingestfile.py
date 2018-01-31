@@ -38,9 +38,9 @@ parser.add_argument('-i','--inputFilepath',help='path of input file')
 parser.add_argument('-m','--mediaID',help='mediaID for input file')
 parser.add_argument('-u','--operator',help='name of the person doing the ingest')
 parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer','multi-pak'],default='video transfer',help='type of file being ingested: film scan, video xfer, multi-pak for a collection of files')
-parser.add_argument('-o','--output_path',help='output path for ingestfile')
-parser.add_argument('-a','--aip_path',help='destination for Archival Information Package')
-parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery')
+parser.add_argument('-o','--output_path',help='output path for ingestfile') # uh, read this from config?
+parser.add_argument('-a','--aip_path',help='destination for Archival Information Package') # uh, read this from config?
+parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery') # uh, read this from config?
 parser.add_argument('-d','--database_reporting',help='report preservation metadata/events to database',action='store_true')
 
 args = parser.parse_args()
@@ -89,7 +89,7 @@ if inputFilepath:
 ingests = {'video transfer':'proresHQ'}
 
 
-# SET UP AIP DIRECTORY PATHS FOR INGEST...
+# SET UP DIRECTORY PATHS FOR INGEST...
 # @fixme REDO THESE WITH OS.PATH.JOIN
 packageOutputDir = pymmConfig['paths']['outdir_ingestfile']+'/'+mediaID+'/'
 packageObjectDir = packageOutputDir+'objects/'
@@ -99,6 +99,8 @@ packageFileMetadataDir = packageMetadataDir+'fileMeta/'
 packageMetadataObjects = packageFileMetadataDir+'objects/'
 packageLogDir = packageMetadataDir+'logs/'
 packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageFileMetadataDir,packageMetadataObjects,packageLogDir]
+if aip_path == None:
+	aip_path = pymmConfig['paths']['aip_staging']
 
 # ... THEN SEE IF THE TOP DIR EXISTS ...
 if os.path.isdir(packageOutputDir):
@@ -216,7 +218,8 @@ if frameMD5 != False:
 # FINISH LOGGING
 
 # RSYNC TO AIP STAGE
-
+sys.argv = ['','-i'+packageOutputDir[:-1],'-d'+aip_path,'-L'+os.path.join(aip_path,mediaID)]
+moveNcopy.main()
 # VERIFY PACKAGE CHECKSUM
 packageVerified = False
 

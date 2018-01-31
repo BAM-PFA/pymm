@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
 import os
+import sys
 import subprocess
 import argparse
 # nonstandard libraries;
 from ffmpy import FFprobe, FFmpeg
 # local modules:
 import pymmFunctions
+import moveNcopy
 
-pymmConfig = pymmFunctions.read_config()
+config = pymmFunctions.read_config()
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputFilepath,ffmpegLogDir=None):
@@ -94,6 +96,19 @@ def set_args():
 
 	return parser.parse_args()
 
+def additional_delivery(derivFilepath,derivType):
+	destinations = 	{'resourcespace': config['paths']['resourcespace_deliver'],'proresHQ':config['paths']['prores_deliver']}
+	deliveryDir = destinations[derivType]
+	if deliveryDir == '':
+		print("there's no directory set for "+derivType+" delivery... SET IT!!")
+		pass
+	else:
+		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+deliveryDir]
+		try:
+			moveNcopy.main()
+		except:
+			print('there was an error in rsyncing the output deriv to the destination folder')
+
 def main():
 	# DO STUFF
 	args = set_args()
@@ -118,6 +133,9 @@ def main():
 		print(err.decode('utf-8'))
 	if ffmpegReportDir:
 		pymmFunctions.unset_ffreport()
+	outputFilePath = outputOptions[-1]
+	additional_delivery(outputFilePath,derivType)
+
 
 if __name__ == '__main__':
 	main()

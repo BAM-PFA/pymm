@@ -45,12 +45,13 @@ def copy_file(inputFilepath,rsyncLogOptions,destination):
 	return False
 
 def copy_dir(inputDir,rsyncLogOptions,destination):
-	destDir = os.path.join(pymmFunctions.get_base(inputDir))
+	# destDir = os.path.join(pymmFunctions.get_base(inputDir))
 	if not rsyncLogOptions == '':
-		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputDir,destDir]
+		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputDir,destination]
 	else:
-		rsyncCommand = ['rsync','-rtvPih',inputDir,destDir]		
+		rsyncCommand = ['rsync','-rtvPih',inputDir,destination]		
 
+	print(rsyncCommand)
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
 			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
@@ -73,7 +74,7 @@ def set_args():
 	parser = argparse.ArgumentParser(description='functions to move and copy stuff')
 	parser.add_argument('-i','--inputPath',help='path of input file')
 	parser.add_argument('-a','--algorithm',choices=['md5','sha1','sha256','sha512'],default='md5',help='choose an algorithm for checksum hashing; default is md5')
-	parser.add_argument('-r','--removeOriginals',action='store_true',help='remove original files if copy is successful')
+	parser.add_argument('-r','--removeOriginals',action='store_true',default=False,help='remove original files if copy is successful')
 	# parser.add_argument('-',choices=['',''],help='')
 	parser.add_argument('-d','--destination',help='set destination for files to move/copy')
 	parser.add_argument('-l','--loglevel',choices=['all','pymm','None'],default='all',help='set the level of logging you want. rsync & pymm logs? just pymm? default is None.')
@@ -113,7 +114,7 @@ def main():
 		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
 		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 		try:
-			rsyncLogpath = os.path.join(logDir,'rsync_log_'+pymmFunctions.timestamp('now')+'.txt')
+			rsyncLogpath = os.path.join(logDir,'rsync_log_'+pymmFunctions.get_base(inputPath)+'_'+pymmFunctions.timestamp('now')+'.txt')
 		except:
 			print("there was a problem getting the rsync log path ....")
 			rsyncLogpath = ''
@@ -127,7 +128,12 @@ def main():
 		sys.exit()
 	# copy the input according to its type
 	elif dir_or_file == 'dir':
-		copy_dir(inputPath,destination)
+		print(destination)
+		# add trailing slash for rsync destination directory
+		if not destination[-1] == '/':
+			destination = destination+'/'
+		print(destination)
+		copy_dir(inputPath,rsyncLogpath,destination)
 	elif dir_or_file == 'file':
 		copy_file(inputPath,rsyncLogpath,destination)
 	else:

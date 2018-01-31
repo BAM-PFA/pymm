@@ -37,7 +37,7 @@ def read_config():
 	return config
 
 def check_missing_ingest_paths(pymmConfig):
-	requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_storage':'the AIP storage path',
+	requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_staging':'the AIP storage path',
 					'resourcespace_deliver':'the resourcespace output path'}
 	missingPaths = 0
 	for path in requiredPaths.items():
