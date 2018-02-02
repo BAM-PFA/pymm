@@ -294,6 +294,18 @@ def get_unix_ip():
 	thestuff = subprocess.Popen(['cut','-d',' ','-f2'],stdin=tail.stdout,stdout=subprocess.PIPE)
 	ip = thestuff.communicate()[0].decode().rstrip()
 	return ip
+
+def boolean_answer(string):
+	thumbsUp = ['YES','Yes','yes','y','Y',True,1,'True','1']
+	thumbsDown = ['NO','No','no','n','N',False,0,'False','0']
+	if string in thumbsUp:
+		return True
+	elif string in thumbsDown:
+		return False
+	else:
+		print("Not a Boolean answer... try again.")
+		return "Not Boolean"
+
 #
 # SYSTEM / ENVIRONMENT STUFF
 #

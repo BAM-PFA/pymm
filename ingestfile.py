@@ -154,13 +154,13 @@ if not is_video(inputFilepath):
 if interactiveMode:
 	# cleanup strategy
 	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if cleanupStrategy in yes:
+	if pymmFunctions.get_boolean(cleanupStrategy):
 		cleanupStrategy = True
-	elif cleanupStrategy in no:
-		cleanupStrategy = False
+	# elif cleanupStrategy in no:
+	# 	cleanupStrategy = False
 	else:
 		cleanupStrategy = False
-		print("Sorry, your answer didn't make sense so we will just leave things where they are when we finish.")
+		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
 
 
 # LOG THAT WE ARE STARTING

@@ -125,7 +125,7 @@ def main():
 	outputOptions = set_output_options(derivType,inputFilepath,outputDir)
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	print(ffmpegArgs)
+	# print(ffmpegArgs)
 	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	out,err = output.communicate()
 	print(out.decode('utf-8'))
@@ -137,7 +137,7 @@ def main():
 	outputFilePath = outputOptions[-1]
 	if config.getboolean('deriv delivery options',derivType):
 		additional_delivery(outputFilePath,derivType)
-	print(outputFilePath)
+	# print(outputFilePath)
 	return outputFilePath
 
 if __name__ == '__main__':
