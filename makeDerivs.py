@@ -64,6 +64,7 @@ def set_middle_options(derivType):
 
 def set_output_options(derivType,inputFilepath,outputDir):
 	outputOptions = []
+	strict = ['-strict','-2'] 
 	base = pymmFunctions.get_base(inputFilepath)
 	baseMinusExtension = pymmFunctions.get_base(inputFilepath,'baseMinusExtension')
 	# make a delivery directory for a package that is based on the deriv type
@@ -76,6 +77,7 @@ def set_output_options(derivType,inputFilepath,outputDir):
 			print("couldn't make a dir at "+derivDeliv)
 	if derivType == 'resourcespace':
 		ext = 'mp4'
+		outputOptions.extend(strict)
 		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_lrp.'+ext)
 		outputOptions.append(outputFilePath)
 	elif derivType == 'proresHQ':
@@ -125,7 +127,7 @@ def main():
 	outputOptions = set_output_options(derivType,inputFilepath,outputDir)
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	# print(ffmpegArgs)
+	print(ffmpegArgs)
 	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	out,err = output.communicate()
 	print(out.decode('utf-8'))

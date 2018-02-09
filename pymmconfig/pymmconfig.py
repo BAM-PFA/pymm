@@ -8,7 +8,14 @@
 
 import os
 import sys
+import inspect
 import configparser
+# local modules:
+# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+import pymmFunctions
 
 def make_config(configPath):
 	if not os.path.isfile(configPath):
@@ -28,7 +35,10 @@ def set_value(section, optionToSet,newValue=None):
 		# the replace() call is a kind of stupid hack fix to get around paths with spaces getting an unnecessary escape slash
 		# when you drag a folder into the terminal on Mac.... 
 		# @fixme
-		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")  
+		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")
+		if pymmFunctions.get_system() == 'linux':
+			# ugh this feels so cheesy, have to strip the leading and trailing single quotes for dragging a folder in linux
+			newValue = newValue[1:-1]
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)

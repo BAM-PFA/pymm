@@ -1,6 +1,6 @@
 # pymediamicroservices
 
-This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). A lot has been changed to be less institutionally specific. Tested only on Mac (El Capitan and Sierra), seems likely to work on Linux....
+This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). A lot has been changed to be less institutionally specific.  Tested on Mac (El Capitan and Sierra), and a bit on Ubuntu 16.04....
 
 The rationale is basically trying to make it easier for us to track issues with `mm` that are really hard to follow in `bash` especially since so much of the CUNY-TV code is not relevant to our workflows. 
 
@@ -15,8 +15,8 @@ Nonstandard python libraries:
 DB modules dependencies: 
 
 * MySQL Connector/Python is used for MySQL access:
-    * Try `brew install mysql-connector-c` and `pip3 install mysql-connector`, which may reaquire `brew install protobuf`. If that fails then try `pip3 install mysql-connector==2.1.6` for a version that is not so picky about Protobuf.
+    * On a Mac: Try `brew install mysql-connector-c` and `pip3 install mysql-connector`, which may reaquire `brew install protobuf`. If that fails then try `pip3 install mysql-connector==2.1.6` for a version that is not so picky about Protobuf.
 * You need MySQL root privileges on the host machine.
-* It really helps things if both Python and MySQL are both `brew`ed installs.
+* It really helps things if both Python and MySQL are both `brew`ed installs. (ON MAC)
 
 
