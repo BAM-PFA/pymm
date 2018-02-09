@@ -10,12 +10,7 @@ import os
 import sys
 import inspect
 import configparser
-# local modules:
-# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
-import pymmFunctions
+
 
 def make_config(configPath):
 	if not os.path.isfile(configPath):
@@ -26,10 +21,18 @@ def make_config(configPath):
 				\n\n[deriv delivery options]\nresourcespace: n\nproresHQ: n\
 				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
 				\n\n[logging]\npymm_log_dir:\
-				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:
+				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:\
+				\n\n[ffmpeg]\nresourcespace:['a','b','c']\nproresHQ:['x','y','z']
 				''')
 
 def set_value(section, optionToSet,newValue=None):
+	# import pymmFunctions here to use get_system.... 
+	# can't import it at top since it makes a circular dependency problem (i.e. if config.ini doesn't exist yet you can't use pymmFunctions)
+	# https://stackoverflow.com/questions/714063/importing-modules-from-parent-folder
+	currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+	parentdir = os.path.dirname(currentdir)
+	sys.path.insert(0,parentdir) 
+	import pymmFunctions
 	if newValue == None:
 		print("So you want to set "+optionToSet)
 		# the replace() call is a kind of stupid hack fix to get around paths with spaces getting an unnecessary escape slash
@@ -38,8 +41,7 @@ def set_value(section, optionToSet,newValue=None):
 		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")
 		if pymmFunctions.get_system() == 'linux':
 			# ugh this feels so cheesy, have to strip the leading and trailing single quotes for dragging a folder in linux
-			if newValue[0] == newValue[-1] == "'":
-				newValue = newValue[1:-1]
+			newValue = newValue[1:-1]
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)
