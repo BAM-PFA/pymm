@@ -38,7 +38,8 @@ def set_value(section, optionToSet,newValue=None):
 		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")
 		if pymmFunctions.get_system() == 'linux':
 			# ugh this feels so cheesy, have to strip the leading and trailing single quotes for dragging a folder in linux
-			newValue = newValue[1:-1]
+			if newValue[0] == newValue[-1] == "'":
+				newValue = newValue[1:-1]
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)

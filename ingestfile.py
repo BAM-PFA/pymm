@@ -17,7 +17,7 @@ import argparse
 # from ffmpy import FFprobe, FFmpeg
 # local modules:
 import pymmFunctions
-from pymmFunctions import *
+# from pymmFunctions import *
 import makeDerivs
 import moveNcopy
 import makeMetadata
@@ -121,50 +121,43 @@ ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('now')+'_inges
 with open(ingestLogPath,'x') as ingestLog:
 	print('Laying a log at '+ingestLogPath)
 ingestLogBoilerplate = [ingestLogPath,mediaID,filename,operator]
-ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
+pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')	
 
 # INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
 
 # check if the input is recognized as an AV file @fixme: redo this with rediddled is_av() function
-if not is_video(inputFilepath):
-	is_av == False
+if not pymmFunctions.is_av(inputFilepath):
+	_is_av = False
 	status = 'warning'
-	message = "WARNING: "+filename+" is not recognized as a video file."
+	message = "WARNING: "+filename+" is not recognized as an a/v file."
 	print(message)
-	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
-	if not is_audio(inputFilepath):
-		status = 'warning'
-		message = "WARNING: "+filename+" is not recognized as an audio file."
-		print(message)
-		ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
+	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 
-		if interactiveMode:
-			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
-			if stayOrGo == 'q':
-				sys.exit()
-				# CLEANUP AND LOG THIS @fixme
-			else:
-				if is_av == False:
-					ingest_log(ingestLogPath,mediaID,filename)
-				pass
-		else:
-			print("Check your file and come back later. Now exiting. Bye!")
+	if interactiveMode:
+		stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
+		if stayOrGo == 'q':
 			sys.exit()
+			# CLEANUP AND LOG THIS @fixme
+		else:
+			if _is_av == False:
+				pymmFunctions.ingest_log(ingestLogPath,mediaID,filename)
+			pass
+	else:
+		print("Check your file and come back later. Now exiting. Bye!")
+		sys.exit()
 
 if interactiveMode:
 	# cleanup strategy
 	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if pymmFunctions.get_boolean(cleanupStrategy):
+	if pymmFunctions.boolean_answer(cleanupStrategy):
 		cleanupStrategy = True
-	# elif cleanupStrategy in no:
-	# 	cleanupStrategy = False
 	else:
 		cleanupStrategy = False
 		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
 
 
 # LOG THAT WE ARE STARTING
-pymm_log(filename,mediaID,operator,'','STARTING')
+pymmFunctions.pymm_log(filename,mediaID,operator,'','STARTING')
 
 # WRITE VARIABLES TO INGEST LOG
 
@@ -178,7 +171,7 @@ if ingest_type == 'film scan':
 		message = filename+" did not pass the MediaConch policy check."
 		status = "not ok, but not critical?"
 
-	ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
+	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
 
 # RSYNC THE INPUT FILE TO THE OUTPUT DIR
 # BUT FIRST GET A HASH OF THE ORIGINAL FILE (can i do this in php for our upload process?)
@@ -186,13 +179,13 @@ sys.argv = ['','-i'+inputFilepath,'-d'+packageObjectDir,'-L'+packageLogDir]
 moveNcopy.main()
 
 # MAKE METADATA FOR INPUT FILE
-ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
+pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
 mediainfo = makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataObjects)
 if mediainfo:
-	ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report for input file written to metadata directory for package.",'OK')
+	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report for input file written to metadata directory for package.",'OK')
 frameMD5 = makeMetadata.make_frame_md5(inputFilepath,packageMetadataObjects)
 if frameMD5 != False:
-	ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
+	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
 
 # MAKE DERIVS
 # WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
@@ -205,6 +198,7 @@ elif ingest_type == 'video transfer':
 	derivTypes.append('proresHQ')
 else:
 	pass
+
 for derivType in derivTypes:
 	sys.argv = ['','-i'+inputFilepath,'-o'+packageObjectDir,'-d'+derivType,'-r'+packageLogDir]
 	deliveredDeriv = makeDerivs.main()

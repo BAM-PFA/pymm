@@ -137,7 +137,7 @@ def main():
 		pymmFunctions.unset_ffreport()
 	# get the output path to rsync the deriv to access directories
 	outputFilePath = outputOptions[-1]
-	if config.getboolean('deriv delivery options',derivType):
+	if pymmFunctions.boolean_answer(config['deriv delivery options'][derivType]):
 		additional_delivery(outputFilePath,derivType)
 	# print(outputFilePath)
 	return outputFilePath
