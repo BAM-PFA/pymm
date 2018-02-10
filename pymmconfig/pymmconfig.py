@@ -22,7 +22,7 @@ def make_config(configPath):
 				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
 				\n\n[logging]\npymm_log_dir:\
 				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:\
-				\n\n[ffmpeg]\nresourcespace:['a','b','c']\nproresHQ:['x','y','z']
+				\n\n[ffmpeg]\nresourcespace_opts:['a','b','c']\nproresHQ_opts:['x','y','z']
 				''')
 
 def set_value(section, optionToSet,newValue=None):
