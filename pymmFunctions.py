@@ -16,6 +16,7 @@ import time
 import hashlib
 # nonstandard libraries:
 from ffmpy import FFprobe, FFmpeg
+import Levenshtein
 
 ################################################################
 # 
@@ -139,15 +140,19 @@ def is_video(inputFilepath):
 	ffprobe = FFprobe(
 	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams v:0'}
 	)
-	FR = ffprobe.run(stdout=subprocess.PIPE)
-	output = json.loads(FR[0].decode('utf-8'))
-	# print(output)
 	try:
-		indexValue = output['streams'][0]['index']
-		if indexValue == 0:
-			return True
+		FR = ffprobe.run(stdout=subprocess.PIPE)
+		output = json.loads(FR[0].decode('utf-8'))
+		# print(output)
+		try:
+			indexValue = output['streams'][0]['index']
+			if indexValue == 0:
+				return True
+		except:
+			return False
 	except:
 		return False
+	
 
 def is_audio(inputFilepath):
 	print("THIS ISN'T A VIDEO FILE\n"
@@ -159,16 +164,20 @@ def is_audio(inputFilepath):
 	ffprobe = FFprobe(
 	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams a:0'}
 	)
-	FR = ffprobe.run(stdout=subprocess.PIPE)
-	output = json.loads(FR[0].decode('utf-8'))
 	try:
-		indexValue = output['streams'][0]['index']
-		if indexValue == 0:
-			print("This appears to be an audio file!")
-			return True
+		FR = ffprobe.run(stdout=subprocess.PIPE)
+		output = json.loads(FR[0].decode('utf-8'))
+		try:
+			indexValue = output['streams'][0]['index']
+			if indexValue == 0:
+				print("This appears to be an audio file!")
+				return True
+		except:
+			print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
+			print(output)
+			return False
 	except:
-		print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
-		print(output)
+		print("INVALID FILE INPUT, NOT AUDIO EITHER")
 		return False
 
 def is_av(inputFilepath):
@@ -305,6 +314,49 @@ def boolean_answer(string):
 	else:
 		print("Not a Boolean answer... try again.")
 		return "Not Boolean"
+
+def abspath_list(directory):
+	# paths = []
+	# for root,_,filenames in os.walk(directory):
+	# 	for _file in filenames:
+	# 		path = os.path.abspath(os.path.join(root, _file))
+	# 		# path = path.replace(' ','\\ ')
+	# 		paths.append(path)
+	# return paths  
+	paths = []
+	for filename in os.listdir(directory):
+		path = os.path.abspath(os.path.join(directory, filename))
+		# path = path.replace(' ','\\ ')
+		paths.append(path)
+	return paths 
+
+def check_dir_filename_distances(directory):
+	# THIS WILL CHECK IF A DIRECTORY TO BE INGESTED CONTAINS FILES WITH WILDLY DIVERGENT FILENAMES.
+	# IF THAT'S THE CASE, MAYBE THE USER INCLUDED FILES THAT SHOULDN'T BE TOGETHER.
+	# IN OUR USE CASE A DIR TO BE INGESTED SHOULD ONLY CONTAIN REEL SCANS AND
+	# THE FILE NAMES SHOULD BE PRETTY SIMILAR: 
+	# title_accession#_barcode_reel#.mov
+	#
+	# ... RIGHT??
+	# ALSO: I ONLY WANT TO CHECK ONE LEVEL.. NO MULTI-LEVEL BS ALLOWED
+
+	_list = abspath_list(directory)
+	names = []
+	for name in _list:
+		if is_av(name):
+			names.append(name)
+	median = Levenshtein.median(_list)
+	print(median)
+	outliers = 0 # start a counter for the number of files that diverge from the median name
+	outlierList = []  # and list them
+	for name in names:
+		distance = Levenshtein.distance(median,name)
+		print(distance)
+		if distance > 10:
+			outliers += 1
+			outlierList.append(name)
+
+	return outliers,outlierList
 
 #
 # SYSTEM / ENVIRONMENT STUFF

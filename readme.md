@@ -22,3 +22,4 @@ DB modules dependencies:
 
 Other dependencies:
 * mediainfo
+* Levenshtein (pip3 install python-Levenshtein)
