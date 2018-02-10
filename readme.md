@@ -16,7 +16,9 @@ DB modules dependencies:
 
 * MySQL Connector/Python is used for MySQL access:
     * On a Mac: Try `brew install mysql-connector-c` and `pip3 install mysql-connector`, which may reaquire `brew install protobuf`. If that fails then try `pip3 install mysql-connector==2.1.6` for a version that is not so picky about Protobuf.
+    * On Ubuntu 16.04 Just running `pip3 install mysql-connector==2.1.6` seems to work.
 * You need MySQL root privileges on the host machine.
-* It really helps things if both Python and MySQL are both `brew`ed installs. (ON MAC)
+* On a Mac it really helps things if both Python and MySQL are both `brew`ed installs.
 
-
+Other dependencies:
+* mediainfo
