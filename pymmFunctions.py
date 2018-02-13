@@ -84,13 +84,13 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(ingestLogPath,mediaID,filename,operator,message,status):
+def ingest_log(message,status,ingestLogPath,mediaID,filename,operator):
 	if message == 'start':
 		message = 'onwards and upwards'
 		status = 'STARTING TO INGEST '+filename
 		startToday = ('#'*50)+'\r\r'+str(date.today())
 	with open(ingestLogPath,'a+') as ingestLog:
-		ingestLog.write(iso8601+' '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
+		ingestLog.write(iso8601+' Status: '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
 		# LOG SOME SHIT
 
 def pymm_log(filename,mediaID,operator,message,status):
@@ -364,6 +364,7 @@ def sanitize_dragged_linux_path(var):
 	else:
 		return var
 	
+
 
 #
 # SYSTEM / ENVIRONMENT STUFF

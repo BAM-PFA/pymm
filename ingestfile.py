@@ -37,7 +37,7 @@ def set_args():
 	parser.add_argument('-u','--operator',help='name of the person doing the ingest')
 	parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer'],default='video transfer',help='type of file(s) being ingested: film scan, video xfer')
 	parser.add_argument('-o','--output_path',help='output path for ingestfile') # uh, read this from config?
-	parser.add_argument('-a','--aip_path',help='destination for Archival Information Package') # uh, read this from config?
+	# parser.add_argument('-a','--aip_path',help='destination for Archival Information Package') # uh, read this from config?
 	parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery') # uh, read this from config?
 	parser.add_argument('-d','--database_reporting',help='report preservation metadata/events to database',action='store_true')
 	parser.add_argument('-z','--cleanup_originals',action='store_true',default=False,help='set this flag to delete source files after ingest')
@@ -48,17 +48,23 @@ def set_args():
 #
 ########################################################
 
-# SET UP DIRECTORY PATHS FOR INGEST...
-def prep_package(mediaID):
+def prep_package(mediaID):#,aip_override):
+	'''
+	Create a directory structure for a SIP (or are we calling it an AIP still?)
+	'''
 	packageOutputDir = os.path.join(pymmConfig['paths']['outdir_ingestfile'],mediaID)
 	packageObjectDir = os.path.join(packageOutputDir,'objects')
 	packageMetadataDir = os.path.join(packageOutputDir,'metadata')
 	packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
 	packageLogDir = os.path.join(packageMetadataDir,'logs')
 	packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir]
-	if aip_path == None:
-		aip_path = pymmConfig['paths']['aip_staging']
-
+	# see if there is an AIP delivery dir set to override the config destination.... 
+	# if aip_override == None:
+	# 	aip_path = pymmConfig['paths']['aip_staging']
+	# else:
+	# 	aip_path = aip_override
+	# packageDirs.append(aip_path)
+	
 	# ... THEN SEE IF THE TOP DIR EXISTS ...
 	if os.path.isdir(packageOutputDir):
 		print('''
@@ -69,53 +75,76 @@ def prep_package(mediaID):
 			''')
 		sys.exit()
 
-	# ... AND OTHERWISE MAKE THEM ALL
+	# ... AND IF NOT, MAKE THEM ALL
 	for directory in packageDirs:
 		os.mkdir(directory)
 
 	return packageDirs
 
-# INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
-# @fixme
-
-def check_av_status(inputFilepath,*args):
+def check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate):
+	'''
+	Check whether or not a file is recognized as an a/v file.
+	If using interactive mode, ask whether to continue, otherwise quit.
+	'''
 	if not pymmFunctions.is_av(inputFilepath):
 		_is_av = False
-		status = 'warning'
-		message = "WARNING: "+filename+" is not recognized as an a/v file."
+		message = "WARNING: "+ingestLogBoilerplate['filename']+" is not recognized as an a/v file."
 		print(message)
-		pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
+		pymmFunctions.ingest_log(
+			# message
+			message,
+			#status
+			'warning',
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
 
 	if interactiveMode:
 		stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
 		if stayOrGo == 'q':
-			sys.exit()
 			# CLEANUP AND LOG THIS @fixme
+			sys.exit()
 		else:
 			if _is_av == False:
-				pymmFunctions.ingest_log(ingestLogPath,mediaID,filename)
+				pymmFunctions.ingest_log(
+					# message
+					message,
+					# status
+					'warning',
+					# ingest boilerplate
+					**ingestLogBoilerplate
+					)
 			pass
 	else:
-		print("Check your file and come back later. Now exiting. Bye!")
-		sys.exit()
-def reset_cleanup_choice(interactiveMode):
-	if interactiveMode:
-		# cleanup strategy
-		cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-		if pymmFunctions.boolean_answer(cleanupStrategy):
-			cleanupStrategy = True
-		else:
-			cleanupStrategy = False
-			print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
-		return cleanupStrategy
-	else:
+		message = ingestLogBoilerplate['filename']+" is an AV file, way to go."
+		status = 'OK'
+		pymmFunctions.ingest_log(
+			# message
+			ingestLogBoilerplate['filename']+" is an AV file, way to go.",
+			# status
+			'OK',
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
 		pass
 
+def reset_cleanup_choice():
+	'''
+	If using interactive mode ask whether or not to remove files when done.
+	'''
+	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
+	if pymmFunctions.boolean_answer(cleanupStrategy):
+		cleanupStrategy = True
+	else:
+		cleanupStrategy = False
+		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
+	return cleanupStrategy
 
-# WRITE VARIABLES TO INGEST LOG
-
-# CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
-def mediaconch_check(inputFilepath,*args):
+def mediaconch_check(inputFilepath,ingest_type,ingestLogBoilerplate):
+	'''
+	Check input file against MediaConch policy.
+	Needs to be cleaned up. Also, we don't have any policies set up yet...
+	'''
 	if ingest_type == 'film scan':
 		policyStatus = pymmFunctions.check_policy(ingest_type,inputFilepath)
 		if policyStatus:
@@ -125,30 +154,65 @@ def mediaconch_check(inputFilepath,*args):
 			message = filename+" did not pass the MediaConch policy check."
 			status = "not ok, but not critical?"
 
-		pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,message,status)
+		pymmFunctions.ingest_log(
+			# message
+			message,
+			# status
+			status,
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
 
-# RSYNC THE INPUT FILE TO THE OUTPUT DIR
-def move_input(inputFilepath,packageObjectDir,packageLogDir):
-	# BUT FIRST GET A HASH OF THE ORIGINAL FILE (can i do this in php for our upload process?)
-	sys.argv = ['','-i'+inputFilepath,'-d'+packageObjectDir,'-L'+packageLogDir]
+def move_input_file(processingVars):
+	'''
+	Put the input file into the package object dir.
+	'''
+	sys.argv = ['','-i'+processingVars['inputFilepath'],'-d'+processingVars['packageObjectDir'],'-L'+processingVars['packageLogDir']]
 	moveNcopy.main()
 
-# MAKE METADATA FOR INPUT FILE
-# log it first
-def input_metadata(inputFilepath,*args):
-	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"The input file MD5 hash is: "+makeMetadata.hash_file(inputFilepath),'OK')
+def input_metadata(ingestLogBoilerplate,processingVars):
+	pymmFunctions.ingest_log(
+		# message
+		"The input file MD5 hash is: "+makeMetadata.hash_file(processingVars['inputFilepath']),
+		# status
+		'OK',
+		# ingest boilerplate
+		**ingestLogBoilerplate
+		)
 
-	mediainfo = makeMetadata.get_mediainfo_report(inputFilepath,packageMetadataObjects)
+	mediainfo = makeMetadata.get_mediainfo_report(processingVars['inputFilepath'],processingVars['packageMetadataObjects'])
 	if mediainfo:
-		pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"mediainfo XML report for input file written to metadata directory for package.",'OK')
-	frameMD5 = makeMetadata.make_frame_md5(inputFilepath,packageMetadataObjects)
+		pymmFunctions.ingest_log(
+			# message
+			"mediainfo XML report for input file written to metadata directory for package.",
+			# status
+			'OK',
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
+	
+	frameMD5 = makeMetadata.make_frame_md5(processingVars['inputFilepath'],processingVars['packageMetadataObjects'])
 	if frameMD5 != False:
-		pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,"frameMD5 report for input file written to metadata directory for package","OK")
+		pymmFunctions.ingest_log(
+			# message
+			"frameMD5 report for input file written to metadata directory for package",
+			# status
+			"OK",
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
 
-# MAKE DERIVS
-# WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
-# DERIVTYPE LIST WITH RESOURCESPACE
-def make_derivs(ingest_type):
+def make_derivs(ingest_type,processingVars):
+	'''
+	Make derivatives based on ingest type....
+	'''
+	inputFilepath = processingVars['inputFilepath']
+	packageObjectDir = processingVars['packageObjectDir']
+	packageLogDir = processingVars['packageLogDir']
+	packageMetadataObjects = processingVars['packageMetadataObjects']
+	
+	# WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
+	# DERIVTYPE LIST WITH RESOURCESPACE
 	derivTypes = ['resourcespace']
 	deliveredDerivPaths = {}
 	if ingest_type == 'film scan':
@@ -170,17 +234,17 @@ def make_derivs(ingest_type):
 			os.mkdir(mdDest)
 		mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
 
-# CHECK DERIVS AGAINST MEDIACONCH POLICIES
 
-# FINISH LOGGING
 
 # RSYNC TO AIP STAGE
-def move_sip(packageOutputDir,aip_path,mediaID):
-	sys.argv = ['','-i'+packageOutputDir,'-d'+aip_path,'-L'+os.path.join(aip_path,mediaID)]
+def move_sip(processingVars):
+	packageOutputDir = processingVars['packageOutputDir']
+	aip_staging = processingVars['aip_staging']
+	mediaID = processingVars['mediaID']
+	sys.argv = ['','-i'+packageOutputDir,'-d'+aip_staging,'-L'+os.path.join(aip_staging,mediaID)]
 	moveNcopy.main()
 
-# VERIFY PACKAGE CHECKSUM
-packageVerified = False
+
 
 # CLEANUP
 def do_cleanup(cleanupStrategy,packageVerified,inputFilepath,packageOutputDir,reason):
@@ -198,28 +262,30 @@ def main():
 	mediaID = args.mediaID
 	operator = args.operator
 	output_path = args.output_path
-	aip_path = args.aip_path
+	# aip_override = args.aip_path
 	resourcespace_deliver = args.resourcespace_deliver
 	report_to_db = args.database_reporting
 	ingest_type = args.ingest_type
 	cleanupStrategy = args.cleanup_originals
+	aip_staging = pymmConfig['paths']['aip_staging']
 
-	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)
+	# 1) SET UP DIRECTORY PATHS FOR INGEST...
+	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)#,aip_override)
 
-	requiredPaths = ['inputFilepath','mediaID','operator']
-
+	# 2) CHECK THAT REQUIRED VARS ARE DECLARED
+	requiredVars = ['inputFilepath','mediaID','operator']
 	if interactiveMode == False:
 		# Quit if there are required variables missing
-		missingPaths = 0
-		for flag in requiredPaths:
+		missingVars = 0
+		for flag in requiredVars:
 			if getattr(args,flag) == None:
 				print('''
 					CONFIGURATION PROBLEM:
 					YOU FORGOT TO SET '''+flag+'''. It is required.
 					Try again, but set '''+flag+''' with the flag --'''+flag
 					)
-				missingPaths += 1
-		if missingPaths > 0:
+				missingVars += 1
+		if missingVars > 0:
 			sys.exit()
 	else:
 		# ask operator/mediaID/input file
@@ -231,19 +297,62 @@ def main():
 	if inputFilepath:
 		filename = os.path.basename(inputFilepath)
 
-	# set up a logfile for this ingest instance
-	ingestLogPath = packageLogDir+mediaID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt'
+	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
+	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,'mediaID':mediaID,'filename':filename,
+						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
+						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
+						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
+
+	# 3) SET UP A LOG FILE FOR THIS INGEST
+	ingestLogPath = os.path.join(packageLogDir,mediaID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
 	with open(ingestLogPath,'x') as ingestLog:
 		print('Laying a log at '+ingestLogPath)
-	ingestLogBoilerplate = [ingestLogPath,mediaID,filename,operator]
-	pymmFunctions.ingest_log(ingestLogPath,mediaID,filename,operator,'start','start')
 
+	ingestLogBoilerplate = {'ingestLogPath':ingestLogPath,'mediaID':mediaID,'filename':filename,'operator':operator}
+	pymmFunctions.ingest_log(
+		# message
+		'start',
+		# status
+		'start',
+		# ingest boilerplate
+		**ingestLogBoilerplate
+		)
 
-	# LOG THAT WE ARE STARTING
+	# 4) TELL THE SYSTEM LOG THAT WE ARE STARTING
 	pymmFunctions.pymm_log(filename,mediaID,operator,'','STARTING')
 
-	# IF INTERACTIVE ASK ABOUT CLEANUP
-	reset_cleanup_choice(interactiveMode)
+	# 5) IF INTERACTIVE ASK ABOUT CLEANUP
+	if interactiveMode:
+		reset_cleanup_choice()
+
+	# 6) INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
+	# @fixme
+
+	# 7) CHECK THAT THE FILE IS ACTUALLY AN AV FILE (SHOULD THIS GO FIRST?)
+	check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate)
+
+	# 8) CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
+	mediaconch_check(inputFilepath,ingest_type,ingestLogBoilerplate)
+	
+	# 9) RSYNC THE INPUT FILE TO THE OUTPUT DIR
+	move_input_file(processingVars)
+
+	# 10) MAKE METADATA FOR INPUT FILE
+	input_metadata(ingestLogBoilerplate,processingVars)
+
+	# 11) MAKE DERIVATTIVES
+	make_derivs(ingest_type,processingVars)
+
+	# 12) CHECK DERIVS AGAINST MEDIACONCH POLICIES
+	
+	# 13) MOVE SIP TO AIP STAGING
+	move_sip(processingVars)
+	
+	# FINISH LOGGING
+
+	# VERIFY PACKAGE CHECKSUM
+	packageVerified = False
+
 
 
 if __name__ == '__main__':
