@@ -11,6 +11,7 @@ Also, since we are [using](https://github.com/BAM-PFA/ingestfiles) `mm` in conju
 Nonstandard python libraries:
 * xmltodict
 * ffmpy
+* Levenshtein
 
 DB modules dependencies: 
 
@@ -22,4 +23,3 @@ DB modules dependencies:
 
 Other dependencies:
 * mediainfo
-* Levenshtein (pip3 install python-Levenshtein)

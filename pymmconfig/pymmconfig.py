@@ -38,11 +38,9 @@ def set_value(section, optionToSet,newValue=None):
 		# the replace() call is a kind of stupid hack fix to get around paths with spaces getting an unnecessary escape slash
 		# when you drag a folder into the terminal on Mac.... 
 		# @fixme
+		# should add mac functionality to sanitize func....
 		newValue = input("Please enter a value for "+optionToSet+": ").rstrip().replace("\ "," ")
-		if pymmFunctions.get_system() == 'linux':
-			# ugh this feels so cheesy, have to strip the leading and trailing single quotes for dragging a folder in linux
-			if len(newValue) >= 3 and newValue[0] == newValue[-1] == "'":
-				newValue = newValue[1:-1]
+		newValue = pymmFunctions.sanitize_dragged_linux_path(newValue)
 	config.set(section,optionToSet,newValue)
 	with open(configPath,'w') as out:
 		config.write(out)

@@ -245,6 +245,43 @@ def get_base(inputPath,base='basename'):
 		except:
 			print("error getting basename")
 			return "_:(_"
+
+def abspath_list(directory):
+	paths = []
+	for filename in os.listdir(directory):
+		path = os.path.abspath(os.path.join(directory, filename))
+		# path = path.replace(' ','\\ ')
+		paths.append(path)
+	return paths 
+
+def check_dir_filename_distances(directory):
+	# THIS WILL CHECK IF A DIRECTORY TO BE INGESTED CONTAINS FILES WITH WILDLY DIVERGENT FILENAMES.
+	# IF THAT'S THE CASE, MAYBE THE USER INCLUDED FILES THAT SHOULDN'T BE TOGETHER.
+	# IN OUR USE CASE A DIR TO BE INGESTED SHOULD ONLY CONTAIN REEL SCANS AND
+	# THE FILE NAMES SHOULD BE PRETTY SIMILAR: 
+	# title_accession#_barcode_reel#.mov
+	#
+	# ... RIGHT??
+	# ALSO: I ONLY WANT TO CHECK ONE LEVEL.. NO MULTI-LEVEL BS ALLOWED
+
+	_list = abspath_list(directory)
+	names = []
+	for name in _list:
+		if is_av(name):
+			names.append(name)
+	median = Levenshtein.median(_list)
+	print(median)
+	outliers = 0 # start a counter for the number of files that diverge from the median name
+	outlierList = []  # and list them
+	for name in names:
+		distance = Levenshtein.distance(median,name)
+		print(distance)
+		if distance > 10:
+			outliers += 1
+			outlierList.append(name)
+
+	return outliers,outlierList
+
 #
 # END FILE CHECK STUFF 
 #
@@ -315,48 +352,18 @@ def boolean_answer(string):
 		print("Not a Boolean answer... try again.")
 		return "Not Boolean"
 
-def abspath_list(directory):
-	# paths = []
-	# for root,_,filenames in os.walk(directory):
-	# 	for _file in filenames:
-	# 		path = os.path.abspath(os.path.join(root, _file))
-	# 		# path = path.replace(' ','\\ ')
-	# 		paths.append(path)
-	# return paths  
-	paths = []
-	for filename in os.listdir(directory):
-		path = os.path.abspath(os.path.join(directory, filename))
-		# path = path.replace(' ','\\ ')
-		paths.append(path)
-	return paths 
+def sanitize_dragged_linux_path(var):
+	if get_system() == 'linux':
+		if len(var) >= 3 and var[0] == var[-1] == "'":
+			var = var[1:-1]
+			return var
 
-def check_dir_filename_distances(directory):
-	# THIS WILL CHECK IF A DIRECTORY TO BE INGESTED CONTAINS FILES WITH WILDLY DIVERGENT FILENAMES.
-	# IF THAT'S THE CASE, MAYBE THE USER INCLUDED FILES THAT SHOULDN'T BE TOGETHER.
-	# IN OUR USE CASE A DIR TO BE INGESTED SHOULD ONLY CONTAIN REEL SCANS AND
-	# THE FILE NAMES SHOULD BE PRETTY SIMILAR: 
-	# title_accession#_barcode_reel#.mov
-	#
-	# ... RIGHT??
-	# ALSO: I ONLY WANT TO CHECK ONE LEVEL.. NO MULTI-LEVEL BS ALLOWED
-
-	_list = abspath_list(directory)
-	names = []
-	for name in _list:
-		if is_av(name):
-			names.append(name)
-	median = Levenshtein.median(_list)
-	print(median)
-	outliers = 0 # start a counter for the number of files that diverge from the median name
-	outlierList = []  # and list them
-	for name in names:
-		distance = Levenshtein.distance(median,name)
-		print(distance)
-		if distance > 10:
-			outliers += 1
-			outlierList.append(name)
-
-	return outliers,outlierList
+		else:
+			print("???")
+			return var
+	else:
+		return var
+	
 
 #
 # SYSTEM / ENVIRONMENT STUFF

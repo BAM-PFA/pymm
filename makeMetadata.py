@@ -95,8 +95,8 @@ def main():
 			''')
 		destination = os.path.dirname(os.path.abspath(inputFilepath))
 	# print(destination,inputFilepath)
-	fileHash = hash_file(inputFilepath)
-	print(fileHash)
+	# fileHash = hash_file(inputFilepath)
+	# print(fileHash)
 	if mediainfo_report:
 		get_mediainfo_report(inputFilepath,destination,getJSON)
 	if frame_md5:
