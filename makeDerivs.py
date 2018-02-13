@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import argparse
+import json
 # nonstandard libraries;
 from ffmpy import FFprobe, FFmpeg
 # local modules:
@@ -29,32 +30,13 @@ def set_middle_options(derivType):
 	if derivType == 'resourcespace':
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
-		middleOptions = [
-			'-movflags','faststart',
-			'-pix_fmt','yuv420p',
-			'-c:v','libx264',
-			'-bufsize','1835k',
-			'-f','mp4',
-			'-crf','18',
-			'-maxrate','8760k',
-			'-c:a','aac',
-			'-ac','2',
-			'-b:a','320k',
-			'-ar','48000'
-			]
+		# have to use double quotes around variables in list of commands
+		middleOptions = json.loads(config['ffmpeg']['resourcespace_opts'])
+
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine for color correction, cropping, etc.
-		middleOptions = [
-			'-map','0:v',
-			'-c:v','prores_ks',
-			'-profile:v','3',
-			 # keep it interlaced
-			'-flags','+ildct+ilme',
-			# map for audio if it exists
-			'-map','0:a?',
-			# is 16 bit good for our HQ mezzanine? 
-			'-c:a','pcm_s16le'
-			]
+		middleOptions = json.loads(config['ffmpeg']['proresHQ_opts'])
+	
 	elif True == True:
 		print('etc')
 		# and so on
