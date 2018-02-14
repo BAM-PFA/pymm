@@ -5,8 +5,6 @@ import sys
 import subprocess
 import argparse
 import json
-# nonstandard libraries;
-from ffmpy import FFprobe, FFmpeg
 # local modules:
 import pymmFunctions
 import moveNcopy

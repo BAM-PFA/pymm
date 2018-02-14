@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-#
-# pymm is a python port of mediamicroservices
-# (https://github.com/mediamicroservices/mm)
-#
-# run `pymmconfig` once at setup to initialize config settings
-# or run it again to change or add values
+'''
+pymm is a python port of mediamicroservices
+(https://github.com/mediamicroservices/mm)
 
+run `pymmconfig` once at setup to initialize config settings
+or run it again to change or add values
+'''
 import os
 import sys
 import inspect

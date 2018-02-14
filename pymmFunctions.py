@@ -15,7 +15,6 @@ from datetime import date
 import time
 import hashlib
 # nonstandard libraries:
-from ffmpy import FFprobe, FFmpeg
 import Levenshtein
 
 ################################################################
@@ -38,8 +37,11 @@ def read_config():
 	return config
 
 def check_missing_ingest_paths(pymmConfig):
-	requiredPaths = {'outdir_ingestfile':'the ingestfile output path','aip_staging':'the AIP storage path',
-					'resourcespace_deliver':'the resourcespace output path'}
+	requiredPaths = {
+					'outdir_ingestfile':'the ingestfile output path',
+					'aip_staging':'the AIP storage path',
+					'resourcespace_deliver':'the resourcespace output path'
+					}
 	missingPaths = 0
 	for path in requiredPaths.items():
 		if not os.path.isdir(pymmConfig['paths'][path[0]]):
@@ -137,9 +139,11 @@ def is_video(inputFilepath):
 	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
 	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
 	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
-	ffprobe = FFprobe(
-	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams v:0'}
-	)
+	ffprobe = 	FFprobe(
+				inputs={
+				inputFilepath:'-v error -print_format json -show_streams -select_streams v:0'
+				}
+				)
 	try:
 		FR = ffprobe.run(stdout=subprocess.PIPE)
 		output = json.loads(FR[0].decode('utf-8'))
@@ -161,9 +165,11 @@ def is_audio(inputFilepath):
 	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
 	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
 	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
-	ffprobe = FFprobe(
-	inputs={inputFilepath:'-v error -print_format json -show_streams -select_streams a:0'}
-	)
+	ffprobe = 	FFprobe(
+				inputs={
+				inputFilepath:'-v error -print_format json -show_streams -select_streams a:0'
+				}
+				)
 	try:
 		FR = ffprobe.run(stdout=subprocess.PIPE)
 		output = json.loads(FR[0].decode('utf-8'))
@@ -197,21 +203,6 @@ def is_dpx_sequence(inputFilepath):
 		for root,dirs,files in os.walk(inputFilepath):
 			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
 
-
-def phase_check(inputFilepath):
-	# THIS PRINTS THE LAVFI.APHASEMETER.PHASE VALUE PLUS 'PTS_TIME' VALUE:
-	#
-	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] frame:128  pts:131072  pts_time:2.97215
-	# [Parsed_ametadata_1 @ 0x7fd720d01dc0] lavfi.aphasemeter.phase=-0.634070
-	# 
-	# GOING TO HAVE TO RETURN TO THIS ONE LATER.
-	ffpmpeg = FFmpeg(
-		inputs={'''
-		/path/to/file':'-af aphasemeter=video=0,ametadata=print:key=lavfi.aphasemeter.phase -f null -'
-		'''
-		}
-		)
-
 def check_policy(ingestType,inputFilepath):
 	print('do policy check stuff')
 	policyStatus = "result of check against mediaconch policy"
@@ -224,8 +215,6 @@ def dir_or_file(inputPath):
 		return 'file'
 	else:
 		return False
-
-
 
 def get_base(inputPath,base='basename'):
 	bases = {'basename':'','baseMinusExtension':'','ext_original':''}
@@ -363,9 +352,6 @@ def sanitize_dragged_linux_path(var):
 			return var
 	else:
 		return var
-	
-
-
 #
 # SYSTEM / ENVIRONMENT STUFF
 #
