@@ -11,7 +11,6 @@ import sys
 import inspect
 import configparser
 
-
 def make_config(configPath):
 	if not os.path.isfile(configPath):
 		print('theres no system config file yet... hang on...')

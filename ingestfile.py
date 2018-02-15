@@ -12,6 +12,7 @@ import sys
 import subprocess
 import os
 import argparse
+import uuid
 # local modules:
 import pymmFunctions
 import makeDerivs
@@ -25,19 +26,44 @@ pymmFunctions.check_missing_ingest_paths(config)
 
 def set_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-x','--interactiveMode',action='store_true',help='enter interactive mode for command line usage')
-	parser.add_argument('-i','--inputFilepath',help='path of input file')
-	parser.add_argument('-m','--mediaID',help='mediaID for input file')
-	parser.add_argument('-u','--operator',help='name of the person doing the ingest')
-	parser.add_argument('-t','--ingest_type',choices=['film scan','video transfer'],default='video transfer',help='type of file(s) being ingested: film scan, video xfer')
-	parser.add_argument('-o','--output_path',help='output path for ingestfile') # uh, read this from config?
-	parser.add_argument('-r','--resourcespace_deliver',help='path for resourcespace proxy delivery') # uh, read this from config?
-	parser.add_argument('-d','--database_reporting',action='store_true',help='report preservation metadata/events to database')
-	parser.add_argument('-z','--cleanup_originals',action='store_true',default=False,help='set this flag to delete source files after ingest')
+	parser.add_argument(
+		'-i','--inputFilepath',
+		help='path of input file'
+		)
+	parser.add_argument(
+		'-m','--mediaID',
+		help='mediaID for input file'
+		)
+	parser.add_argument(
+		'-u','--operator',
+		help='name of the person doing the ingest'
+		)
+	parser.add_argument(
+		'-t','--ingest_type',
+		choices=['film scan','video transfer'],
+		default='video transfer',
+		help='type of file(s) being ingested: film scan, video xfer'
+		)
+	parser.add_argument(
+		'-d','--database_reporting',
+		action='store_true',
+		help='report preservation metadata/events to database'
+		)
+	parser.add_argument(
+		'-x','--interactiveMode',
+		action='store_true',
+		help='enter interactive mode for command line usage'
+		)
+	parser.add_argument(
+		'-z','--cleanup_originals',
+		action='store_true',
+		default=False,
+		help='set this flag to delete source files after ingest'
+		)
 
 	return parser.parse_args()
 
-def prep_package(mediaID):#,aip_override):
+def prep_package(mediaID):
 	'''
 	Create a directory structure for a SIP (or are we calling it an AIP still?)
 	'''
@@ -251,11 +277,26 @@ def main():
 	report_to_db = args.database_reporting
 	ingest_type = args.ingest_type
 	cleanupStrategy = args.cleanup_originals
-	# also read in aip stagin dir from config
+	# read aip staging dir from config
 	aip_staging = config['paths']['aip_staging']
+	# make a uuid for the ingest
+	ingestID = str(uuid.uuid4())
+
+	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
+	inputType = pymmFunctions.dir_or_file(inputFilepath)
+	# DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
+	# EXIT IF THERE IS A DISCREPANCY... WE MAY OR MAY NOT WANT TO LOOSEN THIS?
+	if inputType == 'dir':
+		outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
+		if outliers > 0: 
+			print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
+				"\nHere's a list:"
+				"\n"+'\n'.join(outlierList)
+				)
+			sys.exit()
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
-	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)#,aip_override)
+	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)
 
 	# 2) CHECK THAT REQUIRED VARS ARE DECLARED
 	requiredVars = ['inputFilepath','mediaID','operator']

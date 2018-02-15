@@ -16,6 +16,7 @@ import time
 import hashlib
 # nonstandard libraries:
 import Levenshtein
+from ffmpy import FFprobe, FFmpeg
 
 ################################################################
 # 
@@ -259,12 +260,12 @@ def check_dir_filename_distances(directory):
 		if is_av(name):
 			names.append(name)
 	median = Levenshtein.median(_list)
-	print(median)
+	# print(median)
 	outliers = 0 # start a counter for the number of files that diverge from the median name
 	outlierList = []  # and list them
 	for name in names:
 		distance = Levenshtein.distance(median,name)
-		print(distance)
+		# print(distance)
 		if distance > 10:
 			outliers += 1
 			outlierList.append(name)

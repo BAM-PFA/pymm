@@ -48,6 +48,9 @@ def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
 			buff = infile.read(blocksize) # keep reading
 	return hasher.hexdigest()
 
+def make_hashdeep_manifest(inputPath):
+	manifest = "hello i'm a mainfest"
+
 def make_frame_md5(inputFilepath,metadataDir):
 	print('making frame md5')
 	print(metadataDir)
