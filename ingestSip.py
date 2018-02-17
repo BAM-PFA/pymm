@@ -3,9 +3,14 @@
 pymm is a python port of mediamicroservices
 (https://github.com/mediamicroservices/mm)
 
-`ingestfile` takes an input a/v file, transcodes a derivative,
+`ingestSip` takes an input a/v file, transcodes a derivative,
 produces/extracts some metadata, creates fixity checks,
 and packages the whole lot in an OAIS-like Archival Information Package
+
+It can take a directory of files and concatenate them before performing
+the above steps. Currently we'd only do that on reels/tapes that
+represent parts of a whole.
+
 @fixme = stuff to do
 '''
 import sys
@@ -19,6 +24,7 @@ import pymmFunctions
 import makeDerivs
 import moveNcopy
 import makeMetadata
+import concatFiles
 
 # read in from the config file
 config = pymmFunctions.read_config()
@@ -44,6 +50,11 @@ def set_args():
 		choices=['film scan','video transfer'],
 		default='video transfer',
 		help='type of file(s) being ingested: film scan, video xfer'
+		)
+	parser.add_argument(
+		'-c','--concat',
+		action='store_true',
+		help='try to concatenate files in an input directory'
 		)
 	parser.add_argument(
 		'-d','--database_reporting',
@@ -274,6 +285,7 @@ def main():
 	operator = args.operator
 	report_to_db = args.database_reporting
 	ingest_type = args.ingest_type
+	concatChoice = args.concat
 	cleanupStrategy = args.cleanup_originals
 	interactiveMode = args.interactiveMode
 	# read aip staging dir from config
@@ -294,26 +306,18 @@ def main():
 				)
 			sys.exit()
 
-		# START BUILDING A LIST OF INPUT FILES TO CONCAT
-		source_list = []
-		for _file in os.listdir(inputFilepath):
-			source_list.append(os.path.join(inputFilepath,_file))
-		source_list.sort()
+		# TRY CONCAT... 
+		if concatChoice == True:
+			sys.argv = 	['',
+						'-i'+inputFilepath,
+						'-d'+ingestID
+						]
+			concatFiles.main()
 
-		# BUILD A DICT OF PROFILES TO COMPARE FOR CONCATENATION
-		profiles = {}
-		for sourceFile in source_list:
-			profiles[sourceFile] = {'video':'','audio':''}
-			videoProfile,audioProfile = makeMetadata.get_track_profiles(
-											makeMetadata.get_mediainfo_report(
-												sourceFile,'','GET JSON'
-												))
-			profiles[sourceFile]['video'] = json.loads(videoProfile)
-			profiles[sourceFile]['audio'] = json.loads(audioProfile)
-
-		print(profiles)
-		sys.exit()
-
+			sys.exit()
+		else:
+			print('still testing out concat. input was directory so I QUIT.')
+			sys.exit()
 
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...

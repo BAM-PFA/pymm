@@ -272,6 +272,21 @@ def check_dir_filename_distances(directory):
 
 	return outliers,outlierList
 
+def list_files(_input):
+	if os.path.isdir(_input):
+		source_list = []
+		for _file in os.listdir(_input):
+			if os.path.isdir(_file):
+				print("you have unexpected subdirectories. now exiting.")
+				sys.exit()
+			else:
+				source_list.append(os.path.join(_input,_file))
+		source_list.sort()
+		return source_list
+	else:
+		print("you're trying to list files but the input is a file. go away.")
+		sys.exit()
+
 #
 # END FILE CHECK STUFF 
 #
