@@ -13,6 +13,7 @@ import subprocess
 import os
 import argparse
 import uuid
+import json
 # local modules:
 import pymmFunctions
 import makeDerivs
@@ -268,15 +269,13 @@ def do_cleanup(cleanupStrategy,packageVerified,inputFilepath,packageOutputDir,re
 def main():
 	# parse them args
 	args = set_args()
-	interactiveMode = args.interactiveMode
 	inputFilepath = args.inputFilepath
 	mediaID = args.mediaID
 	operator = args.operator
-	output_path = args.output_path
-	resourcespace_deliver = args.resourcespace_deliver
 	report_to_db = args.database_reporting
 	ingest_type = args.ingest_type
 	cleanupStrategy = args.cleanup_originals
+	interactiveMode = args.interactiveMode
 	# read aip staging dir from config
 	aip_staging = config['paths']['aip_staging']
 	# make a uuid for the ingest
@@ -294,6 +293,28 @@ def main():
 				"\n"+'\n'.join(outlierList)
 				)
 			sys.exit()
+
+		# START BUILDING A LIST OF INPUT FILES TO CONCAT
+		source_list = []
+		for _file in os.listdir(inputFilepath):
+			source_list.append(os.path.join(inputFilepath,_file))
+		source_list.sort()
+
+		# BUILD A DICT OF PROFILES TO COMPARE FOR CONCATENATION
+		profiles = {}
+		for sourceFile in source_list:
+			profiles[sourceFile] = {'video':'','audio':''}
+			videoProfile,audioProfile = makeMetadata.get_track_profiles(
+											makeMetadata.get_mediainfo_report(
+												sourceFile,'','GET JSON'
+												))
+			profiles[sourceFile]['video'] = json.loads(videoProfile)
+			profiles[sourceFile]['audio'] = json.loads(audioProfile)
+
+		print(profiles)
+		sys.exit()
+
+
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
 	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)

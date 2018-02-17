@@ -16,27 +16,78 @@ import xmltodict
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputFilepath,destination,json=False):
+def get_mediainfo_report(inputFilepath,destination,_JSON=False):
 	basename = pymmFunctions.get_base(inputFilepath)
 	# write mediainfo output to a logfile if the destination is a directory
 	if os.path.isdir(destination):
 		mediainfoOutput = '--LogFile='+os.path.join(destination,basename+'_mediainfo.xml')
 		mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
+		# yeah it's an OrderedDict, not JSON, but I will grab the Video track and Audio track as JSON later...
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
-		if json:
+		if _JSON:
+			# videoTrack = mediainfoJSON['Mediainfo']['File']['track'][1]
 			return mediainfoJSON    
 		else:
 			return True
 	# otherwise pass something like '' as a destination and just get the raw mediainfo output
 	else:
-		mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath],stdout=subprocess.PIPE)
+		mediainfoXML = subprocess.Popen(['mediainfo','--Output=XML',inputFilepath],stdout=subprocess.PIPE)
+		# print(mediainfoXML.communicate()[0])
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
-		if json:
+		if _JSON:
+			# print(mediainfoJSON)
 			return mediainfoJSON
 		else:
 			print(destination+" doesn't exist and you didn't say you want the raw mediainfo output.\n"
 					"What do you want??")
 			return False
+
+def get_track_profiles(mediainfoDict):
+	'''
+	Get audio and video track profiles to compare for concatenation of files.
+	Takes an OrderedDict as retrned by get_mediainfo_report.
+
+	Discard attributes that are not necessary but keep relevant attributes
+	that we want to compare between files. Prob can discard even more?
+	Hard coded now to look for track[1] (video) and track[2] (audio),
+	so presumably if there are additional tracks things will get screwy. 
+	'''
+	problems = 0
+	videoAttribsToDiscard = [
+		'@type', 'ID', 'Format_Info', 'Format_profile',
+		'Format_settings__CABAC', 'Format_settings__ReFrames', 
+		'Format_settings__GOP', 'Codec_ID', 'Codec_ID_Info', 'Duration', 
+		'Scan_type', 'Bits__Pixel_Frame_', 'Stream_size', 'Language', 
+		'Tagged_date', 'Encoded_date'
+		]
+	audioAttribsToDiscard = [
+		'@type', 'ID', 'Codec_ID', 'Duration', 'Stream_size', 
+		'Language', 'Encoded_date', 'Tagged_date'
+		]
+	try:
+		videoTrackProfile = mediainfoDict['Mediainfo']['File']['track'][1]
+		for attr in videoAttribsToDiscard:
+			videoTrackProfile.pop(attr,None)
+	except:
+		problems += 1
+		print("mediainfo problem: either there is no video track or you got some issues")
+	try:	
+		audioTrackProfile = mediainfoDict['Mediainfo']['File']['track'][2]
+		for attr in audioAttribsToDiscard:
+			audioTrackProfile.pop(attr,None)
+	except:
+		problems += 1
+		print("mediainfo problem: either there is no audio track or you got some issues")
+	if problems == 0:
+		return json.dumps(videoTrackProfile),json.dumps(audioTrackProfile)
+	else:	
+		print("there might be problems")
+		if videoTrackProfile:
+			return json.dumps(videoTrackProfile)
+		elif audioTrackProfile:
+			return json.dumps(audioTrackProfile)
+		else:
+			return "",""
 
 def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
 	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
@@ -78,7 +129,7 @@ def main():
 	parser.add_argument('-i','--inputFilepath',help='path of input file')
 	parser.add_argument('-m','--mediainfo',action='store_true',help='generate a mediainfo sidecar file')
 	parser.add_argument('-f','--frame_md5',action='store_true',help='make frame md5 report')
-	parser.add_argument('-j','--getJSON',action='store_true',default=False,help='get JSON output as applicable')
+	parser.add_argument('-j','--getJSON',action='store_true',help='get JSON output as applicable')
 	parser.add_argument('-d','--destination',help='set destination for output metadata files')
 	args = parser.parse_args()
 	
