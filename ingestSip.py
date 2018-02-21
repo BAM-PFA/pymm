@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 '''
-pymm is a python port of mediamicroservices
-(https://github.com/mediamicroservices/mm)
-
-`ingestSip` takes an input a/v file, transcodes a derivative,
-produces/extracts some metadata, creates fixity checks,
+`ingestSip` takes an input a/v file or directory of a/v files,
+transcodes a derivative for each file,
+produces/extracts some metadata,
+creates fixity checks,
 and packages the whole lot in an OAIS-like Archival Information Package
 
 It can take a directory of files and concatenate them before performing
@@ -37,10 +36,10 @@ def set_args():
 		'-i','--inputFilepath',
 		help='path of input file'
 		)
-	parser.add_argument(
-		'-m','--mediaID',
-		help='mediaID for input file'
-		)
+	# parser.add_argument(
+	# 	'-m','--mediaID',
+	# 	help='mediaID for input file'
+	# 	)
 	parser.add_argument(
 		'-u','--operator',
 		help='name of the person doing the ingest'
@@ -77,7 +76,7 @@ def set_args():
 
 def prep_package(mediaID):
 	'''
-	Create a directory structure for a SIP (or are we calling it an AIP still?)
+	Create a directory structure for a SIP
 	'''
 	packageOutputDir = os.path.join(config['paths']['outdir_ingestfile'],mediaID)
 	packageObjectDir = os.path.join(packageOutputDir,'objects')
@@ -281,7 +280,7 @@ def main():
 	# parse them args
 	args = set_args()
 	inputFilepath = args.inputFilepath
-	mediaID = args.mediaID
+	# mediaID = args.mediaID
 	operator = args.operator
 	report_to_db = args.database_reporting
 	ingest_type = args.ingest_type
@@ -291,12 +290,16 @@ def main():
 	# read aip staging dir from config
 	aip_staging = config['paths']['aip_staging']
 	# make a uuid for the ingest
-	ingestID = str(uuid.uuid4())
+	ingestUUID = str(uuid.uuid4())
+	# make a temp ID based on input path for the ingested object
+	# this will get replaced by the ingest UUID during final package move ...?
+	tempID = pymmFunctions.get_temp_id(inputFilepath)
 
 	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
 	inputType = pymmFunctions.dir_or_file(inputFilepath)
 	# DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
-	# EXIT IF THERE IS A DISCREPANCY... WE MAY OR MAY NOT WANT TO LOOSEN THIS?
+	# EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
+	# WE MAY OR MAY NOT WANT TO LOOSEN THIS?
 	if inputType == 'dir':
 		outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
 		if outliers > 0: 
@@ -310,7 +313,7 @@ def main():
 		if concatChoice == True:
 			sys.argv = 	['',
 						'-i'+inputFilepath,
-						'-d'+ingestID
+						'-d'+ingestUUID
 						]
 			concatFiles.main()
 
@@ -321,10 +324,10 @@ def main():
 
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
-	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(mediaID)
+	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(tempID)
 
 	# 2) CHECK THAT REQUIRED VARS ARE DECLARED
-	requiredVars = ['inputFilepath','mediaID','operator']
+	requiredVars = ['inputFilepath','operator']
 	if interactiveMode == False:
 		# Quit if there are required variables missing
 		missingVars = 0
@@ -339,23 +342,24 @@ def main():
 		if missingVars > 0:
 			sys.exit()
 	else:
-		# ask operator/mediaID/input file
+		# ask operator/input file
 		operator = input("Please enter your name: ")
 		inputFilepath = input("Please drag the file you want to ingest into this window___").rstrip()
 		inputFilepath = pymmFunctions.sanitize_dragged_linux_paths(inputFilepath)
-		mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
+		# mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
 
-	if inputFilepath:
+	if inputFilepath and if inputType == 'file':
 		filename = os.path.basename(inputFilepath)
 
 	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
-	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,'mediaID':mediaID,'filename':filename,
+	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,'tempID':tempID,
+						'ingestUUID':ingestUUID,'filename':filename,
 						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
 						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
 						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
 
 	# 3) SET UP A LOG FILE FOR THIS INGEST
-	ingestLogPath = os.path.join(packageLogDir,mediaID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
+	ingestLogPath = os.path.join(packageLogDir,tempID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
 	with open(ingestLogPath,'x') as ingestLog:
 		print('Laying a log at '+ingestLogPath)
 

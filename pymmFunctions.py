@@ -287,6 +287,20 @@ def list_files(_input):
 		print("you're trying to list files but the input is a file. go away.")
 		sys.exit()
 
+def get_temp_id(_string):
+	'''
+	Generate a hash of a string (i.e., of an input path) that can be used
+	to produce a *locally* unique temporary ID during the ingestSIP process.
+	For convenience (?) I'm cutting it down to 10 digits.
+	example: ingestSIP -i 'foo.mov' --> tempID = a8bcd6d073
+	where:
+	sha256 = a8bcd6d073c91f6132f6d64674ecaf658a33c4aedde4046b0b7bf64e9c723073
+	'''
+	pathHash = hashlib.sha256(_string.encode()).hexdigest()
+	tempID = pathHash[:10]
+
+	return tempID
+
 #
 # END FILE CHECK STUFF 
 #
