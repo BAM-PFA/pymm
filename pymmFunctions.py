@@ -87,16 +87,16 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(message,status,ingestLogPath,mediaID,filename,operator):
+def ingest_log(message,status,ingestLogPath,tempID,filename,operator):
 	if message == 'start':
 		message = 'onwards and upwards'
 		status = 'STARTING TO INGEST '+filename
 		startToday = ('#'*50)+'\r\r'+str(date.today())
 	with open(ingestLogPath,'a+') as ingestLog:
-		ingestLog.write(iso8601+' Status: '+status+'  Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
+		ingestLog.write(iso8601+' Status: '+status+'  Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
 		# LOG SOME SHIT
 
-def pymm_log(filename,mediaID,operator,message,status):
+def pymm_log(filename,tempID,operator,message,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
 	with open(pymmLogPath,'a') as log:
@@ -109,7 +109,7 @@ def pymm_log(filename,mediaID,operator,message,status):
 		else:
 			prefix = ''
 			suffix = '\n'
-		log.write(prefix+now+' '+'Filename: '+filename+'  mediaID: '+mediaID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
+		log.write(prefix+now+' '+'Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
 
 def cleanup_package(inputFilepath,packageOutputDir,reason):
 	if reason == 'abort ingest':

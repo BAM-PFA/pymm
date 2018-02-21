@@ -74,11 +74,11 @@ def set_args():
 
 	return parser.parse_args()
 
-def prep_package(mediaID):
+def prep_package(tempID):
 	'''
 	Create a directory structure for a SIP
 	'''
-	packageOutputDir = os.path.join(config['paths']['outdir_ingestfile'],mediaID)
+	packageOutputDir = os.path.join(config['paths']['outdir_ingestfile'],tempID)
 	packageObjectDir = os.path.join(packageOutputDir,'objects')
 	packageMetadataDir = os.path.join(packageOutputDir,'metadata')
 	packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
@@ -88,7 +88,7 @@ def prep_package(mediaID):
 	# ... SEE IF THE TOP DIR EXISTS ...
 	if os.path.isdir(packageOutputDir):
 		print('''
-			It looks like '''+mediaID+''' was already ingested.
+			It looks like '''+tempID+''' was already ingested.
 			If you want to replace the existing package please delete the package at
 			'''+packageOutputDir+'''
 			and then try again.
@@ -262,11 +262,11 @@ def make_derivs(ingest_type,processingVars):
 def move_sip(processingVars):
 	packageOutputDir = processingVars['packageOutputDir']
 	aip_staging = processingVars['aip_staging']
-	mediaID = processingVars['mediaID']
+	tempID = processingVars['tempID']
 	sys.argv = 	['',
 				'-i'+packageOutputDir,
 				'-d'+aip_staging,
-				'-L'+os.path.join(aip_staging,mediaID)]
+				'-L'+os.path.join(aip_staging,tempID)]
 	moveNcopy.main()
 
 def do_cleanup(cleanupStrategy,packageVerified,inputFilepath,packageOutputDir,reason):
@@ -348,7 +348,7 @@ def main():
 		inputFilepath = pymmFunctions.sanitize_dragged_linux_paths(inputFilepath)
 		# mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
 
-	if inputFilepath and if inputType == 'file':
+	if inputFilepath and inputType == 'file':
 		filename = os.path.basename(inputFilepath)
 
 	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
@@ -365,7 +365,7 @@ def main():
 
 	ingestLogBoilerplate = 	{
 							'ingestLogPath':ingestLogPath,
-							'mediaID':mediaID,
+							'tempID':tempID,
 							'filename':filename,
 							'operator':operator
 							}
@@ -379,7 +379,7 @@ def main():
 		)
 
 	# 4) TELL THE SYSTEM LOG THAT WE ARE STARTING
-	pymmFunctions.pymm_log(filename,mediaID,operator,'','STARTING')
+	pymmFunctions.pymm_log(filename,tempID,operator,'','STARTING')
 
 	# 5) IF INTERACTIVE ASK ABOUT CLEANUP
 	if interactiveMode:
