@@ -112,32 +112,16 @@ def sniff_input(inputPath,ingestUUID,concatChoice):
 	inputType = pymmFunctions.dir_or_file(inputPath)
 	if inputType == 'dir':
 		# filename sanity check
-		goodNames = check_for_outliers(inputPath)
-		if goodNames and concatChoice == True:
-			try_concat(inputPath,ingestUUID)
+		goodNames = pymmFunctions.check_for_outliers(inputPath)
+		if goodNames:
+			if concatChoice == True:
+				try_concat(inputPath,ingestUUID)
 		else:
-			print('input is a directory')
-			# sys.exit()
+			return False
 	
 	else:
 		print("input is a single file")
 	return inputType
-
-def check_for_outliers(inputPath):
-	'''
-	DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
-	EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
-	WE MAY OR MAY NOT WANT TO LOOSEN THIS?
-	'''
-	outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputPath)
-	if outliers > 0: 
-		print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
-			"\nHere's a list:"
-			"\n"+'\n'.join(outlierList)
-			)
-		return False
-	else:
-		return True
 
 def try_concat(inputPath,ingestUUID):
 	sys.argv = 	['',
@@ -358,6 +342,8 @@ def main():
 
 	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
 	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
+	if not inputType:
+		sys.exit(0)
 	if inputType == 'dir':
 		source_list = pymmFunctions.list_files(inputPath)
 

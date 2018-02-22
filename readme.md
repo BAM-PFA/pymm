@@ -25,3 +25,4 @@ DB modules dependencies:
 
 Other dependencies:
 * mediainfo version 17.10+
+* ffmpeg

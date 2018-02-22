@@ -259,14 +259,12 @@ def abspath_list(directory):
 	return paths 
 
 def check_dir_filename_distances(directory):
-	# THIS WILL CHECK IF A DIRECTORY TO BE INGESTED CONTAINS FILES WITH WILDLY DIVERGENT FILENAMES.
-	# IF THAT'S THE CASE, MAYBE THE USER INCLUDED FILES THAT SHOULDN'T BE TOGETHER.
-	# IN OUR USE CASE A DIR TO BE INGESTED SHOULD ONLY CONTAIN REEL SCANS AND
-	# THE FILE NAMES SHOULD BE PRETTY SIMILAR: 
-	# title_accession#_barcode_reel#.mov
-	#
-	# ... RIGHT??
-	# ALSO: I ONLY WANT TO CHECK ONE LEVEL.. NO MULTI-LEVEL BS ALLOWED
+	'''
+	Check a directory to be ingested for wildly divergent filenames. 
+	We will currently only want to allow single-level directories of 
+	files that represent parts of a whole and thus have fairly 
+	similar filenames.
+	'''
 
 	_list = abspath_list(directory)
 	names = []
@@ -285,6 +283,23 @@ def check_dir_filename_distances(directory):
 			outlierList.append(name)
 
 	return outliers,outlierList
+
+def check_for_outliers(inputPath):
+	'''
+	Use distance check function to approve/deny
+	viability of directory ingest.
+	'''
+	outliers, outlierList = check_dir_filename_distances(inputPath)
+	if outliers > 0: 
+		print(
+			"Hey, there are {} files that seem like they might not belong"
+			" in the input directory.\n".format(str(outliers)))
+		print("Here's a list of them:\n"
+			+'\n'.join(outlierList)
+			)
+		return False
+	else:
+		return True
 
 def list_files(_input):
 	if os.path.isdir(_input):
