@@ -53,7 +53,7 @@ def get_profiles(input_list):
 		profiles[sourceFile]['video'] = json.loads(videoProfile)
 		profiles[sourceFile]['audio'] = json.loads(audioProfile)
 
-	print(profiles)
+	# print(profiles)
 	return profiles
 
 def main(**kwargs):
@@ -61,8 +61,8 @@ def main(**kwargs):
 	_input = args.input
 	ingestID = args.ingestID
 
-	print(type(_input))
 	if os.path.isdir(_input):
+		# get the abs path of each input file
 		source_list = pymmFunctions.list_files(_input)
 	elif type(_input) == 'list':
 		source_list = _input
@@ -70,9 +70,56 @@ def main(**kwargs):
 		print("don't know what you are trying to input. not a dir or list of files.")
 		sys.exit()
 
+	# OK this is cheezy but should get it done.
+	# pick a random input file to call the 'canonical' spec source.
+	# since they all need to match each other it doesn't matter which it is.
+	# then we'll try to match each profile to the canonical spec,
+	# and if any fails we can report which input file failed.
 	profilesDict = get_profiles(source_list)
+	canonicalAudioSpec = list(profilesDict.items())[0][1]['audio']
+	canonicalVideoSpec = list(profilesDict.items())[0][1]['video']
+	# print(canonicalAudioSpec)
+	# print(canonicalVideoSpec)
 
-	print(profilesDict.keys())
+	for inputFile in source_list:
+		safeToConcat = False
+		if profilesDict[inputFile]['audio'] == canonicalAudioSpec:
+			print("{} passed the spec check.".format(os.path.basename(inputFile)))
+		else:
+			print("{} failed the audio spec check. Exiting".format(os.path.basename(inputFile)))
+			sys.exit()
+		if profilesDict[inputFile]['video'] == canonicalVideoSpec:
+			print("{} passed the spec check.".format(os.path.basename(inputFile)))
+			safeToConcat = True
+		else:
+			print("{} failed the video spec check. Exiting".format(os.path.basename(inputFile)))
+			sys.exit()
+
+	if safeToConcat == True:
+		print('go ahead')
+
+	concattedFile = cocnat(source_list)
+
+
+
+
+
+
+	# audioSpecList = []
+	# videoSpecList = []
+	# for item in profilesDict.keys():
+	# 	profileAudioList = list(profilesDict[item]['audio'].items())
+	# 	audioSpecList.append(profileAudioList)
+	# 	profileVideoList = list(profilesDict[item]['video'].items())
+	# 	videoSpecList.append(profileVideoList)
+	# 	# print(profileAudioList)
+	
+	# print(audioSpecList)
+	# for (key, value) in set()
+	# print(profilesDict.keys().keys())
+
+	# for constituent in profilesDict.keys():
+
 
 if __name__ == '__main__':
 	main(sys.argv[1:])

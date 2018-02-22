@@ -101,6 +101,44 @@ def prep_package(tempID):
 
 	return packageDirs
 
+def sniff_input(inputFilepath,ingestUUID,concatChoice):
+	'''
+	Check whether the input path from command line is a directory
+	or single file. If it's a directory, see if the user wanted
+	to concatenate the files and do/don't concatenate.
+
+	'''
+
+	inputType = pymmFunctions.dir_or_file(inputFilepath)
+	# DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
+	# EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
+	# WE MAY OR MAY NOT WANT TO LOOSEN THIS?
+	if inputType == 'dir':
+		outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
+		if outliers > 0: 
+			print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
+				"\nHere's a list:"
+				"\n"+'\n'.join(outlierList)
+				)
+			sys.exit()
+
+		# TRY CONCAT... 
+		if concatChoice == True:
+			sys.argv = 	['',
+						'-i'+inputFilepath,
+						'-d'+ingestUUID
+						]
+			if concatFiles.main():
+				return True
+			sys.exit()
+		else:
+			print('still testing out concat. input was directory so I QUIT.')
+			return False
+			sys.exit()
+	
+	else:
+		return True
+
 def check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate):
 	'''
 	Check whether or not a file is recognized as an a/v file.
@@ -296,32 +334,7 @@ def main():
 	tempID = pymmFunctions.get_temp_id(inputFilepath)
 
 	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
-	inputType = pymmFunctions.dir_or_file(inputFilepath)
-	# DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
-	# EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
-	# WE MAY OR MAY NOT WANT TO LOOSEN THIS?
-	if inputType == 'dir':
-		outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
-		if outliers > 0: 
-			print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
-				"\nHere's a list:"
-				"\n"+'\n'.join(outlierList)
-				)
-			sys.exit()
-
-		# TRY CONCAT... 
-		if concatChoice == True:
-			sys.argv = 	['',
-						'-i'+inputFilepath,
-						'-d'+ingestUUID
-						]
-			concatFiles.main()
-
-			sys.exit()
-		else:
-			print('still testing out concat. input was directory so I QUIT.')
-			sys.exit()
-
+	sniff_input(inputFilepath,ingestUUID,concatChoice)
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
 	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(tempID)
