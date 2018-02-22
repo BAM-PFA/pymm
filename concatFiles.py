@@ -56,6 +56,14 @@ def get_profiles(input_list):
 	# print(profiles)
 	return profiles
 
+def concat(source_list):
+	# do stuff:
+	# -set ffmpeg report 
+	# -get length of files for chapter markers
+	# -do the concat
+	# -make mkv chapter markers
+	return True
+
 def main(**kwargs):
 	args = parse_args(**kwargs)
 	_input = args.input
@@ -81,24 +89,30 @@ def main(**kwargs):
 	# print(canonicalAudioSpec)
 	# print(canonicalVideoSpec)
 
-	for inputFile in source_list:
-		safeToConcat = False
-		if profilesDict[inputFile]['audio'] == canonicalAudioSpec:
-			print("{} passed the spec check.".format(os.path.basename(inputFile)))
-		else:
-			print("{} failed the audio spec check. Exiting".format(os.path.basename(inputFile)))
-			sys.exit()
-		if profilesDict[inputFile]['video'] == canonicalVideoSpec:
-			print("{} passed the spec check.".format(os.path.basename(inputFile)))
-			safeToConcat = True
-		else:
-			print("{} failed the video spec check. Exiting".format(os.path.basename(inputFile)))
-			sys.exit()
+	numberOfFiles = len(source_list)
+	checkedFiles = 0
+	outlierFiles = []
+
+	while checkedFiles < numberOfFiles:
+		for inputFile in source_list:
+			safeToConcat = False
+			if profilesDict[inputFile]['audio'] == canonicalAudioSpec:
+				print("{} passed the spec check.".format(os.path.basename(inputFile)))
+			else:
+				print("{} failed the audio spec check. Exiting".format(os.path.basename(inputFile)))
+				sys.exit()
+			if profilesDict[inputFile]['video'] == canonicalVideoSpec:
+				print("{} passed the spec check.".format(os.path.basename(inputFile)))
+				safeToConcat = True
+			else:
+				print("{} failed the video spec check. Exiting".format(os.path.basename(inputFile)))
+				sys.exit()
 
 	if safeToConcat == True:
 		print('go ahead')
 
-	concattedFile = cocnat(source_list)
+	concattedFile = concat(source_list)
+	return True
 
 
 

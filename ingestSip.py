@@ -36,19 +36,21 @@ def set_args():
 		'-i','--inputFilepath',
 		help='path of input file'
 		)
-	# parser.add_argument(
-	# 	'-m','--mediaID',
-	# 	help='mediaID for input file'
-	# 	)
 	parser.add_argument(
 		'-u','--operator',
 		help='name of the person doing the ingest'
 		)
 	parser.add_argument(
-		'-t','--ingest_type',
+		'-t','--ingestType',
 		choices=['film scan','video transfer'],
 		default='video transfer',
 		help='type of file(s) being ingested: film scan, video xfer'
+		)
+	parser.add_argument(
+		'-p','--makeProres',
+		action='store_true',
+		help='override whatever config default you have set '
+			'and make a prores HQ mezzanine file'
 		)
 	parser.add_argument(
 		'-c','--concat',
@@ -129,15 +131,14 @@ def sniff_input(inputFilepath,ingestUUID,concatChoice):
 						'-d'+ingestUUID
 						]
 			if concatFiles.main():
-				return True
-			sys.exit()
+				sys.exit()
 		else:
 			print('still testing out concat. input was directory so I QUIT.')
-			return False
 			sys.exit()
 	
 	else:
-		return True
+		print("input is a single file")
+	return inputType
 
 def check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate):
 	'''
@@ -194,13 +195,13 @@ def reset_cleanup_choice():
 		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
 	return cleanupStrategy
 
-def mediaconch_check(inputFilepath,ingest_type,ingestLogBoilerplate):
+def mediaconch_check(inputFilepath,ingestType,ingestLogBoilerplate):
 	'''
 	Check input file against MediaConch policy.
 	Needs to be cleaned up. Also, we don't have any policies set up yet...
 	'''
-	if ingest_type == 'film scan':
-		policyStatus = pymmFunctions.check_policy(ingest_type,inputFilepath)
+	if ingestType == 'film scan':
+		policyStatus = pymmFunctions.check_policy(ingestType,inputFilepath)
 		if policyStatus:
 			message = filename+" passed the MediaConch policy check."
 			status = "ok"
@@ -260,22 +261,37 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			**ingestLogBoilerplate
 			)
 
-def make_derivs(ingest_type,processingVars):
+def make_derivs(processingVars):
 	'''
-	Make derivatives based on ingest type....
+	Make derivatives based on options declared in config...
+	
+	Based on discussions w Dave Taylor it makes more sense
+	for our workflows to just have him make a mezzanine file 
+	if he needs it. And otherwise there's no reason for us to 
+	make and store a ProRes mezzanineby default.
+
+	However, the option to create & deliver any number of derivs by default
+	still exists in the config file.
 	'''
 	inputFilepath = processingVars['inputFilepath']
 	packageObjectDir = processingVars['packageObjectDir']
 	packageLogDir = processingVars['packageLogDir']
 	packageMetadataObjects = processingVars['packageMetadataObjects']
-	
-	# WE'LL ALWAYS OUTPUT A RESOURCESPACE VERSION, SO INIT THE 
-	# DERIVTYPES LIST WITH `RESOURCESPACE`
-	derivTypes = ['resourcespace']
+	makeProres = processingVars['makeProres']
+	ingestType = processingVars['ingestType']
+
+	# WE'LL ALWAYS OUTPUT A RESOURCESPACE ACCESS FILE FOR VIDEO INGESTS,
+	# SO INIT THE DERIVTYPES LIST WITH `RESOURCESPACE`
+	if ingestType in ('film scan','video transfer'):
+		derivTypes = ['resourcespace']
 	deliveredDerivPaths = {}
-	if ingest_type == 'film scan':
-		derivTypes.append('filmMezzanine')
-	elif ingest_type == 'video transfer':
+	
+	if pymmFunctions.boolean_answer(config['deriv delivery options']['proresHQ']):
+	# if ingestType == 'film scan':
+	# 	derivTypes.append('filmMezzanine')
+	# elif ingestType == 'video transfer':
+		derivTypes.append('proresHQ')
+	elif makeProres == True:
 		derivTypes.append('proresHQ')
 	else:
 		pass
@@ -291,7 +307,6 @@ def make_derivs(ingest_type,processingVars):
 		deliveredDerivPaths[derivType] = deliveredDeriv
 
 	for key,value in deliveredDerivPaths.items():
-		# print([key,value])
 		mdDest = os.path.join(packageMetadataObjects,key)
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
@@ -318,10 +333,10 @@ def main():
 	# parse them args
 	args = set_args()
 	inputFilepath = args.inputFilepath
-	# mediaID = args.mediaID
 	operator = args.operator
 	report_to_db = args.database_reporting
-	ingest_type = args.ingest_type
+	ingestType = args.ingestType
+	makeProres = args.makeProres
 	concatChoice = args.concat
 	cleanupStrategy = args.cleanup_originals
 	interactiveMode = args.interactiveMode
@@ -334,7 +349,7 @@ def main():
 	tempID = pymmFunctions.get_temp_id(inputFilepath)
 
 	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
-	sniff_input(inputFilepath,ingestUUID,concatChoice)
+	inputType = sniff_input(inputFilepath,ingestUUID,concatChoice)
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
 	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(tempID)
@@ -359,14 +374,15 @@ def main():
 		operator = input("Please enter your name: ")
 		inputFilepath = input("Please drag the file you want to ingest into this window___").rstrip()
 		inputFilepath = pymmFunctions.sanitize_dragged_linux_paths(inputFilepath)
-		# mediaID = input("Please enter a valid mediaID for the input file (only use 'A-Z' 'a-z' '0-9' '_' or '-') : ")
 
 	if inputFilepath and inputType == 'file':
 		filename = os.path.basename(inputFilepath)
 
 	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
-	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,'tempID':tempID,
+	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,
+						'tempID':tempID,'ingestType':ingestType,
 						'ingestUUID':ingestUUID,'filename':filename,
+						'makeProres':makeProres,
 						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
 						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
 						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
@@ -405,7 +421,7 @@ def main():
 	check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate)
 
 	# 8) CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
-	mediaconch_check(inputFilepath,ingest_type,ingestLogBoilerplate)
+	mediaconch_check(inputFilepath,ingestType,ingestLogBoilerplate)
 	
 	# 9) RSYNC THE INPUT FILE TO THE OUTPUT DIR
 	move_input_file(processingVars)
@@ -414,7 +430,7 @@ def main():
 	input_file_metadata(ingestLogBoilerplate,processingVars)
 
 	# 11) MAKE DERIVATTIVES
-	make_derivs(ingest_type,processingVars)
+	make_derivs(processingVars)
 
 	# 12) CHECK DERIVS AGAINST MEDIACONCH POLICIES
 	
