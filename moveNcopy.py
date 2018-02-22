@@ -85,10 +85,14 @@ def set_args():
 def main():
 	config = pymmFunctions.read_config()
 	args = set_args()
-
-	print(args)
-
 	requiredArgs = ['inputPath','destination']
+	inputPath = args.inputPath
+	algorithm = args.algorithm
+	removeOriginals = args.removeOriginals
+	destination = args.destination
+	loglevel = args.loglevel
+	logDir = args.logDir
+	now = pymmFunctions.timestamp('now')
 	# Quit if there are required variables missing
 	missingArgs = 0
 	for _arg in requiredArgs:
@@ -100,14 +104,6 @@ def main():
 			missingArgs += 1
 	if missingArgs > 0:
 		sys.exit()
-
-	inputPath = args.inputPath
-	algorithm = args.algorithm
-	removeOriginals = args.removeOriginals
-	destination = args.destination
-	loglevel = args.loglevel
-	logDir = args.logDir
-	now = pymmFunctions.timestamp('now')
 
 	# set up rsync log
 	if loglevel == 'all':
@@ -128,11 +124,9 @@ def main():
 		sys.exit()
 	# copy the input according to its type
 	elif dir_or_file == 'dir':
-		print(destination)
 		# add trailing slash for rsync destination directory
 		if not destination[-1] == '/':
 			destination = destination+'/'
-		print(destination)
 		copy_dir(inputPath,rsyncLogpath,destination)
 	elif dir_or_file == 'file':
 		copy_file(inputPath,rsyncLogpath,destination)

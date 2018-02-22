@@ -13,8 +13,6 @@ config = pymmFunctions.read_config()
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None):
-	# ARE THERE CASES WHERE I WILL ACTUALLY WANT TO SET MORE INPUT OPTIONS?
-	# IT'S USED IN mm BUT WILL WE??
 	inputOptions = ['-i']
 	inputOptions.append(inputPath)
 	if ffmpegLogDir:
@@ -28,7 +26,7 @@ def set_middle_options(derivType):
 	if derivType == 'resourcespace':
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
-		# have to use double quotes around variables in list of commands
+		# list in config setting requires double quotes
 		middleOptions = json.loads(config['ffmpeg']['resourcespace_opts'])
 
 	elif derivType == 'proresHQ':
@@ -39,7 +37,6 @@ def set_middle_options(derivType):
 		print('etc')
 		# and so on
 
-	# print(middleOptions)
 	return middleOptions
 
 def set_output_options(derivType,inputPath,outputDir):

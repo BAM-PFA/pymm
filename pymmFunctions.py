@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-#
-# pymm is a python port of mediamicroservices
-#
-# this is a set of functions used by pymm scripts
-#
+'''
+this is a set of functions used by pymm scripts
+'''
 
 import json
 import subprocess
@@ -316,6 +314,18 @@ def get_temp_id(_string):
 	tempID = pathHash[:10]
 
 	return tempID
+
+def rename_dir(_dir,newName):
+	if os.path.isdir(_dir):
+		path = os.path.dirname(_dir)
+		newPath = os.path.join(path,newName)
+		try:
+			newDir = os.rename(_dir,newPath)
+			return newPath
+		except OSError as e:
+			print("OOPS: {}".format(e))
+	else:
+		print("{} is not a directory so go away.".format(_dir))
 
 #
 # END FILE CHECK STUFF 

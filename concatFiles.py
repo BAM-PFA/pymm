@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 '''
-pymm is a python port of mediamicroservices
-(https://github.com/mediamicroservices/mm)
-
 `concatFiles` is basically ripping off `concat.py` from the Irish Film Archive:
  https://github.com/kieranjol/IFIscripts/blob/master/concat.py
 

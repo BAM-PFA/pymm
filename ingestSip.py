@@ -312,14 +312,23 @@ def make_derivs(processingVars):
 		mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
 
 def move_sip(processingVars):
+	'''
+	Move a prepped SIP to the AIP staging area.
+	Rename the directory to the ingest UUID.
+	'''
 	packageOutputDir = processingVars['packageOutputDir']
 	aip_staging = processingVars['aip_staging']
 	tempID = processingVars['tempID']
+	ingestUUID = processingVars['ingestUUID']
 	sys.argv = 	['',
 				'-i'+packageOutputDir,
 				'-d'+aip_staging,
-				'-L'+os.path.join(aip_staging,tempID)]
+				'-L'+os.path.join(aip_staging,ingestUUID)]
 	moveNcopy.main()
+	# rename the staged dir
+	stagedSIP = os.path.join(aip_staging,tempID)
+	UUIDpath = os.path.join(aip_staging,ingestUUID)
+	pymmFunctions.rename_dir(stagedSIP,UUIDpath)
 
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
@@ -351,7 +360,6 @@ def main():
 	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
 	if inputType == 'dir':
 		source_list = pymmFunctions.list_files(inputPath)
-		# print(source_list)
 
 	# CREATE DIRECTORY PATHS FOR INGEST...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\
@@ -427,9 +435,11 @@ def main():
 	# INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
 	# @fixme
 
-	# CHECK THAT THE FILE IS ACTUALLY AN AV FILE (SHOULD THIS GO FIRST?)
+##           ##
+## DO STUFF! ##
+##           ##
 	if inputType == 'file':
-		# DO THE STUFF
+		# CHECK THAT INPUT FILE IS ACTUALLY A/V
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate)
 		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate)
 		move_input_file(processingVars)
@@ -437,10 +447,11 @@ def main():
 		make_derivs(processingVars)
 	elif inputType == 'dir':
 		for _file in source_list:
-			print("OIEWFKJNWEKJFNKWEJFNEWKFJNWKFJWNFKJNWEKFJN")
+			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
 			processingVars['filename'] = os.path.basename(_file)
 			processingVars['inputPath'] = _file
+			# CHECK THAT INPUT FILE IS ACTUALLY A/V
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate)
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate)
 			move_input_file(processingVars)
@@ -450,16 +461,16 @@ def main():
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
 
-	
 	# MOVE SIP TO AIP STAGING
-	# a) make a hashdeep manifest
-	# b) move it
+	# a) make a hashdeep manifest @fixme
+	# b) move it 
 	move_sip(processingVars)
 	packageVerified = False
-	# c) audit the hashdeep manifest
-	# packageVerified = result of audit
+	# c) audit the hashdeep manifest @fixme
+	# packageVerified = result of audit @fixme
 
 	# FINISH LOGGING
+	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done')
 
 if __name__ == '__main__':
 	main()

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-#
-# these are functions to output metadata files
-# and structured data (xml/json)
-#
+'''
+these are functions to output metadata files
+and structured data (xml/json) about a/v files
+'''
 
 import os
 import subprocess
@@ -18,24 +18,21 @@ import pymmFunctions
 
 def get_mediainfo_report(inputPath,destination,_JSON=False):
 	basename = pymmFunctions.get_base(inputPath)
-	# write mediainfo output to a logfile if the destination is a directory
+	# write mediainfo output to a logfile if the destination is a directory ...
 	if os.path.isdir(destination):
 		mediainfoOutput = '--LogFile='+os.path.join(destination,basename+'_mediainfo.xml')
 		mediainfoXML = subprocess.Popen(['mediainfo',inputPath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
 		# yeah it's an OrderedDict, not JSON, but I will grab the Video track and Audio track as JSON later...
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
-			# videoTrack = mediainfoJSON['Mediainfo']['File']['track'][1]
 			return mediainfoJSON    
 		else:
 			return True
-	# otherwise pass something like '' as a destination and just get the raw mediainfo output
+	# ... otherwise pass something like '' as a destination and just get the raw mediainfo output
 	else:
 		mediainfoXML = subprocess.Popen(['mediainfo','--Output=XML',inputPath],stdout=subprocess.PIPE)
-		# print(mediainfoXML.communicate()[0])
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
-			# print(mediainfoJSON)
 			return mediainfoJSON
 		else:
 			print(destination+" doesn't exist and you didn't say you want the raw mediainfo output.\n"
@@ -52,8 +49,6 @@ def get_track_profiles(mediainfoDict):
 	Hard coded now to look for track[1] (video) and track[2] (audio),
 	so presumably if there are additional tracks things will get screwy. 
 	'''
-	# investigating mac vs linux mediainfo output. this is mac video stream:
-	# print(mediainfoDict['MediaInfo']['media']['track'][1])
 	problems = 0
 	videoAttribsToDiscard = [
 		'@type', 'ID', 'Format_Info', 'Format_profile',
@@ -106,7 +101,6 @@ def make_hashdeep_manifest(inputPath):
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
-	print(metadataDir)
 	if not pymmFunctions.is_av(inputPath):
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
 		print(inputPath+" IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
@@ -150,9 +144,6 @@ def main():
 			SO WE'LL PUT ANY SIDECAR FILES IN THE SAME DIRECTORY AS YOUR INPUT FILE.
 			''')
 		destination = os.path.dirname(os.path.abspath(inputPath))
-	# print(destination,inputPath)
-	# fileHash = hash_file(inputPath)
-	# print(fileHash)
 	if mediainfo_report:
 		get_mediainfo_report(inputPath,destination,getJSON)
 	if frame_md5:
