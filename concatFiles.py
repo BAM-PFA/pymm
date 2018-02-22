@@ -15,7 +15,6 @@ Currently this will only happen if some conditions are met:
    and are named accordingly.
 3) the files match each others' technical profiles
    (i.e. the pixel dimensions, frame rate, etc. need to match)
-
 '''
 import subprocess
 import os
@@ -25,8 +24,6 @@ import json
 # local modules:
 import pymmFunctions
 import makeMetadata
-
-
 
 def parse_args(**kwargs):
 	parser = argparse.ArgumentParser()
@@ -116,27 +113,6 @@ def main(**kwargs):
 
 	concattedFile = concat(source_list)
 	return True
-
-
-
-
-
-
-	# audioSpecList = []
-	# videoSpecList = []
-	# for item in profilesDict.keys():
-	# 	profileAudioList = list(profilesDict[item]['audio'].items())
-	# 	audioSpecList.append(profileAudioList)
-	# 	profileVideoList = list(profilesDict[item]['video'].items())
-	# 	videoSpecList.append(profileVideoList)
-	# 	# print(profileAudioList)
-	
-	# print(audioSpecList)
-	# for (key, value) in set()
-	# print(profilesDict.keys().keys())
-
-	# for constituent in profilesDict.keys():
-
 
 if __name__ == '__main__':
 	main(sys.argv[1:])

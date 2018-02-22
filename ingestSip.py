@@ -108,31 +108,13 @@ def sniff_input(inputFilepath,ingestUUID,concatChoice):
 	Check whether the input path from command line is a directory
 	or single file. If it's a directory, see if the user wanted
 	to concatenate the files and do/don't concatenate.
-
-	@fixme separate out the different activities from this function!
 	'''
-
 	inputType = pymmFunctions.dir_or_file(inputFilepath)
-	# DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
-	# EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
-	# WE MAY OR MAY NOT WANT TO LOOSEN THIS?
 	if inputType == 'dir':
-		outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
-		if outliers > 0: 
-			print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
-				"\nHere's a list:"
-				"\n"+'\n'.join(outlierList)
-				)
-			sys.exit()
-
-		# TRY CONCAT... 
-		if concatChoice == True:
-			sys.argv = 	['',
-						'-i'+inputFilepath,
-						'-d'+ingestUUID
-						]
-			if concatFiles.main():
-				sys.exit()
+		# filename sanity check
+		goodNames = check_for_outliers(inputFilepath)
+		if goodNames and concatChoice == True:
+			try_concat(inputFilepath,ingestUUID)
 		else:
 			print('still testing out concat. input was directory so I QUIT.')
 			sys.exit()
@@ -140,6 +122,33 @@ def sniff_input(inputFilepath,ingestUUID,concatChoice):
 	else:
 		print("input is a single file")
 	return inputType
+
+def check_for_outliers(inputFilepath):
+	'''
+	DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
+	EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
+	WE MAY OR MAY NOT WANT TO LOOSEN THIS?
+	'''
+	outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
+	if outliers > 0: 
+		print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
+			"\nHere's a list:"
+			"\n"+'\n'.join(outlierList)
+			)
+		return False
+	else:
+		return True
+
+def try_concat(inputFilepath,ingestUUID):
+	sys.argv = 	['',
+						'-i'+inputFilepath,
+						'-d'+ingestUUID
+						]
+	try:
+		concatFiles.main()
+		return True
+	except:
+		return False
 
 def check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate):
 	'''
@@ -353,7 +362,8 @@ def main():
 	inputType = sniff_input(inputFilepath,ingestUUID,concatChoice)
 
 	# 1) CREATE DIRECTORY PATHS FOR INGEST...
-	packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir = prep_package(tempID)
+	packageOutputDir,packageObjectDir,packageMetadataDir,\
+	packageMetadataObjects,packageLogDir = prep_package(tempID)
 
 	# 2) CHECK THAT REQUIRED VARS ARE DECLARED
 	requiredVars = ['inputFilepath','operator']

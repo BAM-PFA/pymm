@@ -52,6 +52,8 @@ def get_track_profiles(mediainfoDict):
 	Hard coded now to look for track[1] (video) and track[2] (audio),
 	so presumably if there are additional tracks things will get screwy. 
 	'''
+	# investigating mac vs linux mediainfo output. this is mac video stream:
+	# print(mediainfoDict['MediaInfo']['media']['track'][1])
 	problems = 0
 	videoAttribsToDiscard = [
 		'@type', 'ID', 'Format_Info', 'Format_profile',
