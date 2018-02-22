@@ -109,6 +109,7 @@ def sniff_input(inputFilepath,ingestUUID,concatChoice):
 	or single file. If it's a directory, see if the user wanted
 	to concatenate the files and do/don't concatenate.
 
+	@fixme separate out the different activities from this function!
 	'''
 
 	inputType = pymmFunctions.dir_or_file(inputFilepath)
