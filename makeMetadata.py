@@ -16,12 +16,12 @@ import xmltodict
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputFilepath,destination,_JSON=False):
-	basename = pymmFunctions.get_base(inputFilepath)
+def get_mediainfo_report(inputPath,destination,_JSON=False):
+	basename = pymmFunctions.get_base(inputPath)
 	# write mediainfo output to a logfile if the destination is a directory
 	if os.path.isdir(destination):
 		mediainfoOutput = '--LogFile='+os.path.join(destination,basename+'_mediainfo.xml')
-		mediainfoXML = subprocess.Popen(['mediainfo',inputFilepath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
+		mediainfoXML = subprocess.Popen(['mediainfo',inputPath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
 		# yeah it's an OrderedDict, not JSON, but I will grab the Video track and Audio track as JSON later...
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
@@ -31,7 +31,7 @@ def get_mediainfo_report(inputFilepath,destination,_JSON=False):
 			return True
 	# otherwise pass something like '' as a destination and just get the raw mediainfo output
 	else:
-		mediainfoXML = subprocess.Popen(['mediainfo','--Output=XML',inputFilepath],stdout=subprocess.PIPE)
+		mediainfoXML = subprocess.Popen(['mediainfo','--Output=XML',inputPath],stdout=subprocess.PIPE)
 		# print(mediainfoXML.communicate()[0])
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
@@ -91,10 +91,10 @@ def get_track_profiles(mediainfoDict):
 		else:
 			return "",""
 
-def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
+def hash_file(inputPath,algorithm='md5',blocksize=65536):
 	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py
 	hasher = hashlib.new(algorithm)
-	with open(inputFilepath,'rb') as infile:
+	with open(inputPath,'rb') as infile:
 		buff = infile.read(blocksize) # read the file into a buffer cause it's more efficient for big files
 		while len(buff) > 0: # little loop to keep reading
 			hasher.update(buff) # here's where the hash is actually generated
@@ -104,17 +104,17 @@ def hash_file(inputFilepath,algorithm='md5',blocksize=65536):
 def make_hashdeep_manifest(inputPath):
 	manifest = "hello i'm a mainfest"
 
-def make_frame_md5(inputFilepath,metadataDir):
+def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
 	print(metadataDir)
-	if not pymmFunctions.is_av(inputFilepath):
+	if not pymmFunctions.is_av(inputPath):
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
-		print(inputFilepath+" IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
+		print(inputPath+" IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
 		return False
 	else:
-		md5File = pymmFunctions.get_base(inputFilepath)+"_frame-md5.txt"
+		md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
 		frameMd5Filepath = os.path.join(metadataDir,md5File)
-		frameMd5Command = ['ffmpeg','-i',inputFilepath,'-f','framemd5',frameMd5Filepath]
+		frameMd5Command = ['ffmpeg','-i',inputPath,'-f','framemd5',frameMd5Filepath]
 		output = subprocess.Popen(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		try:
 			out,err = output.communicate()
@@ -128,20 +128,20 @@ def main():
 	config = pymmFunctions.read_config() # THIS IS PROBABLY NOT GOING TO BE NEEDED
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-i','--inputFilepath',help='path of input file')
+	parser.add_argument('-i','--inputPath',help='path of input file')
 	parser.add_argument('-m','--mediainfo',action='store_true',help='generate a mediainfo sidecar file')
 	parser.add_argument('-f','--frame_md5',action='store_true',help='make frame md5 report')
 	parser.add_argument('-j','--getJSON',action='store_true',help='get JSON output as applicable')
 	parser.add_argument('-d','--destination',help='set destination for output metadata files')
 	args = parser.parse_args()
 	
-	inputFilepath = args.inputFilepath
+	inputPath = args.inputPath
 	destination = args.destination
 	frame_md5 = args.frame_md5
 	mediainfo_report = args.mediainfo
 	getJSON = args.getJSON
 
-	if not inputFilepath:
+	if not inputPath:
 		print("\n\nHEY THERE, YOU NEED TO SET AN INPUT FILE TO RUN THIS SCRIPT ON.\rNOW EXITING")
 		sys.exit()
 	if not destination:
@@ -149,14 +149,14 @@ def main():
 			YOU DIDN'T TELL ME WHERE TO PUT THE OUTPUT OF THIS SCRIPT,
 			SO WE'LL PUT ANY SIDECAR FILES IN THE SAME DIRECTORY AS YOUR INPUT FILE.
 			''')
-		destination = os.path.dirname(os.path.abspath(inputFilepath))
-	# print(destination,inputFilepath)
-	# fileHash = hash_file(inputFilepath)
+		destination = os.path.dirname(os.path.abspath(inputPath))
+	# print(destination,inputPath)
+	# fileHash = hash_file(inputPath)
 	# print(fileHash)
 	if mediainfo_report:
-		get_mediainfo_report(inputFilepath,destination,getJSON)
+		get_mediainfo_report(inputPath,destination,getJSON)
 	if frame_md5:
-		frameMd5Filepath = make_frame_md5(inputFilepath,destination)
+		frameMd5Filepath = make_frame_md5(inputPath,destination)
 		print(frameMd5Filepath)
 
 if __name__ == '__main__':

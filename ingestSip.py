@@ -33,7 +33,7 @@ pymmFunctions.check_missing_ingest_paths(config)
 def set_args():
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
-		'-i','--inputFilepath',
+		'-i','--inputPath',
 		help='path of input file'
 		)
 	parser.add_argument(
@@ -103,33 +103,33 @@ def prep_package(tempID):
 
 	return packageDirs
 
-def sniff_input(inputFilepath,ingestUUID,concatChoice):
+def sniff_input(inputPath,ingestUUID,concatChoice):
 	'''
 	Check whether the input path from command line is a directory
 	or single file. If it's a directory, see if the user wanted
 	to concatenate the files and do/don't concatenate.
 	'''
-	inputType = pymmFunctions.dir_or_file(inputFilepath)
+	inputType = pymmFunctions.dir_or_file(inputPath)
 	if inputType == 'dir':
 		# filename sanity check
-		goodNames = check_for_outliers(inputFilepath)
+		goodNames = check_for_outliers(inputPath)
 		if goodNames and concatChoice == True:
-			try_concat(inputFilepath,ingestUUID)
+			try_concat(inputPath,ingestUUID)
 		else:
-			print('still testing out concat. input was directory so I QUIT.')
-			sys.exit()
+			print('input is a directory')
+			# sys.exit()
 	
 	else:
 		print("input is a single file")
 	return inputType
 
-def check_for_outliers(inputFilepath):
+def check_for_outliers(inputPath):
 	'''
 	DO A SANITY CHECK ON FILENAMES IN AN INPUT DIRECTORY
 	EXIT IF THERE IS A DISCREPANCY (IF FILENAMES ARE TOO DIFFERENT)... 
 	WE MAY OR MAY NOT WANT TO LOOSEN THIS?
 	'''
-	outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputFilepath)
+	outliers, outlierList = pymmFunctions.check_dir_filename_distances(inputPath)
 	if outliers > 0: 
 		print("Hey, there are "+str(outliers)+" files that seem like they might not belong in the input directory."
 			"\nHere's a list:"
@@ -139,9 +139,9 @@ def check_for_outliers(inputFilepath):
 	else:
 		return True
 
-def try_concat(inputFilepath,ingestUUID):
+def try_concat(inputPath,ingestUUID):
 	sys.argv = 	['',
-						'-i'+inputFilepath,
+						'-i'+inputPath,
 						'-d'+ingestUUID
 						]
 	try:
@@ -150,12 +150,12 @@ def try_concat(inputFilepath,ingestUUID):
 	except:
 		return False
 
-def check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate):
+def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	'''
 	Check whether or not a file is recognized as an a/v file.
 	If it isn't and user declares interactive mode, ask whether to continue, otherwise quit.
 	'''
-	if not pymmFunctions.is_av(inputFilepath):
+	if not pymmFunctions.is_av(inputPath):
 		_is_av = False
 		message = "WARNING: "+ingestLogBoilerplate['filename']+" is not recognized as an a/v file."
 		print(message)
@@ -205,13 +205,13 @@ def reset_cleanup_choice():
 		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
 	return cleanupStrategy
 
-def mediaconch_check(inputFilepath,ingestType,ingestLogBoilerplate):
+def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
 	Check input file against MediaConch policy.
 	Needs to be cleaned up. Also, we don't have any policies set up yet...
 	'''
 	if ingestType == 'film scan':
-		policyStatus = pymmFunctions.check_policy(ingestType,inputFilepath)
+		policyStatus = pymmFunctions.check_policy(ingestType,inputPath)
 		if policyStatus:
 			message = filename+" passed the MediaConch policy check."
 			status = "ok"
@@ -233,7 +233,7 @@ def move_input_file(processingVars):
 	Put the input file into the package object dir.
 	'''
 	sys.argv = 	['',
-				'-i'+processingVars['inputFilepath'],
+				'-i'+processingVars['inputPath'],
 				'-d'+processingVars['packageObjectDir'],
 				'-L'+processingVars['packageLogDir']
 				]
@@ -242,14 +242,14 @@ def move_input_file(processingVars):
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	pymmFunctions.ingest_log(
 		# message
-		"The input file MD5 hash is: "+makeMetadata.hash_file(processingVars['inputFilepath']),
+		"The input file MD5 hash is: "+makeMetadata.hash_file(processingVars['inputPath']),
 		# status
 		'OK',
 		# ingest boilerplate
 		**ingestLogBoilerplate
 		)
 
-	mediainfo = makeMetadata.get_mediainfo_report(processingVars['inputFilepath'],processingVars['packageMetadataObjects'])
+	mediainfo = makeMetadata.get_mediainfo_report(processingVars['inputPath'],processingVars['packageMetadataObjects'])
 	if mediainfo:
 		pymmFunctions.ingest_log(
 			# message
@@ -260,7 +260,7 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			**ingestLogBoilerplate
 			)
 	
-	frameMD5 = makeMetadata.make_frame_md5(processingVars['inputFilepath'],processingVars['packageMetadataObjects'])
+	frameMD5 = makeMetadata.make_frame_md5(processingVars['inputPath'],processingVars['packageMetadataObjects'])
 	if frameMD5 != False:
 		pymmFunctions.ingest_log(
 			# message
@@ -274,16 +274,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 def make_derivs(processingVars):
 	'''
 	Make derivatives based on options declared in config...
-	
-	Based on discussions w Dave Taylor it makes more sense
-	for our workflows to just have him make a mezzanine file 
-	if he needs it. And otherwise there's no reason for us to 
-	make and store a ProRes mezzanineby default.
-
-	However, the option to create & deliver any number of derivs by default
-	still exists in the config file.
 	'''
-	inputFilepath = processingVars['inputFilepath']
+	inputPath = processingVars['inputPath']
 	packageObjectDir = processingVars['packageObjectDir']
 	packageLogDir = processingVars['packageLogDir']
 	packageMetadataObjects = processingVars['packageMetadataObjects']
@@ -297,9 +289,6 @@ def make_derivs(processingVars):
 	deliveredDerivPaths = {}
 	
 	if pymmFunctions.boolean_answer(config['deriv delivery options']['proresHQ']):
-	# if ingestType == 'film scan':
-	# 	derivTypes.append('filmMezzanine')
-	# elif ingestType == 'video transfer':
 		derivTypes.append('proresHQ')
 	elif makeProres == True:
 		derivTypes.append('proresHQ')
@@ -308,7 +297,7 @@ def make_derivs(processingVars):
 
 	for derivType in derivTypes:
 		sys.argv = 	['',
-					'-i'+inputFilepath,
+					'-i'+inputPath,
 					'-o'+packageObjectDir,
 					'-d'+derivType,
 					'-r'+packageLogDir
@@ -332,17 +321,17 @@ def move_sip(processingVars):
 				'-L'+os.path.join(aip_staging,tempID)]
 	moveNcopy.main()
 
-def do_cleanup(cleanupStrategy,packageVerified,inputFilepath,packageOutputDir,reason):
+def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
 		print("LET'S CLEEEEEAN!")
-		cleanup_package(inputFilepath,packageOutputDir,reason)
+		cleanup_package(inputPath,packageOutputDir,reason)
 	else:
 		print("BUH-BYE")
 
 def main():
 	# parse them args
 	args = set_args()
-	inputFilepath = args.inputFilepath
+	inputPath = args.inputPath
 	operator = args.operator
 	report_to_db = args.database_reporting
 	ingestType = args.ingestType
@@ -356,17 +345,20 @@ def main():
 	ingestUUID = str(uuid.uuid4())
 	# make a temp ID based on input path for the ingested object
 	# this will get replaced by the ingest UUID during final package move ...?
-	tempID = pymmFunctions.get_temp_id(inputFilepath)
+	tempID = pymmFunctions.get_temp_id(inputPath)
 
 	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
-	inputType = sniff_input(inputFilepath,ingestUUID,concatChoice)
+	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
+	if inputType == 'dir':
+		source_list = pymmFunctions.list_files(inputPath)
+		# print(source_list)
 
-	# 1) CREATE DIRECTORY PATHS FOR INGEST...
+	# CREATE DIRECTORY PATHS FOR INGEST...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\
 	packageMetadataObjects,packageLogDir = prep_package(tempID)
 
-	# 2) CHECK THAT REQUIRED VARS ARE DECLARED
-	requiredVars = ['inputFilepath','operator']
+	# CHECK THAT REQUIRED VARS ARE DECLARED & INIT OTHER VARS
+	requiredVars = ['inputPath','operator']
 	if interactiveMode == False:
 		# Quit if there are required variables missing
 		missingVars = 0
@@ -383,29 +375,36 @@ def main():
 	else:
 		# ask operator/input file
 		operator = input("Please enter your name: ")
-		inputFilepath = input("Please drag the file you want to ingest into this window___").rstrip()
-		inputFilepath = pymmFunctions.sanitize_dragged_linux_paths(inputFilepath)
+		inputPath = input("Please drag the file you want to ingest into this window___").rstrip()
+		inputPath = pymmFunctions.sanitize_dragged_linux_paths(inputPath)
 
-	if inputFilepath: # and inputType == 'file':
-		filename = os.path.basename(inputFilepath)
+	# Set up a canonical name that will be passed to each log entry.
+	# For files it's the basename, for dirs it's the dir name.
+	if inputPath:
+		canonicalName = os.path.basename(inputPath)
+		if inputType == 'file':
+			filename = input_name = canonicalName
+		elif inputType == 'dir':
+			filename = ''
+			input_name = canonicalName
 
 	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
-	processingVars =	{'operator':operator,'inputFilepath':inputFilepath,
+	processingVars =	{'operator':operator,'inputPath':inputPath,
 						'tempID':tempID,'ingestType':ingestType,
 						'ingestUUID':ingestUUID,'filename':filename,
-						'makeProres':makeProres,
+						'input_name':input_name,'makeProres':makeProres,
 						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
 						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
 						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
 
-	# 3) SET UP A LOG FILE FOR THIS INGEST
+	# SET UP A LOG FILE FOR THIS INGEST
 	ingestLogPath = os.path.join(packageLogDir,tempID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
 	with open(ingestLogPath,'x') as ingestLog:
 		print('Laying a log at '+ingestLogPath)
-
 	ingestLogBoilerplate = 	{
 							'ingestLogPath':ingestLogPath,
 							'tempID':tempID,
+							'input_name':input_name,
 							'filename':filename,
 							'operator':operator
 							}
@@ -418,34 +417,41 @@ def main():
 		**ingestLogBoilerplate
 		)
 
-	# 4) TELL THE SYSTEM LOG THAT WE ARE STARTING
-	pymmFunctions.pymm_log(filename,tempID,operator,'','STARTING')
+	# TELL THE SYSTEM LOG THAT WE ARE STARTING
+	pymmFunctions.pymm_log(input_name,tempID,operator,'','STARTING')
 
-	# 5) IF INTERACTIVE ASK ABOUT CLEANUP
+	# IF INTERACTIVE ASK ABOUT CLEANUP
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# 6) INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
+	# INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
 	# @fixme
 
-	# 7) CHECK THAT THE FILE IS ACTUALLY AN AV FILE (SHOULD THIS GO FIRST?)
-	check_av_status(inputFilepath,interactiveMode,ingestLogBoilerplate)
+	# CHECK THAT THE FILE IS ACTUALLY AN AV FILE (SHOULD THIS GO FIRST?)
+	if inputType == 'file':
+		# DO THE STUFF
+		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate)
+		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate)
+		move_input_file(processingVars)
+		input_file_metadata(ingestLogBoilerplate,processingVars)
+		make_derivs(processingVars)
+	elif inputType == 'dir':
+		for _file in source_list:
+			print("OIEWFKJNWEKJFNKWEJFNEWKFJNWKFJWNFKJNWEKFJN")
+			ingestLogBoilerplate['filename'] = os.path.basename(_file)
+			processingVars['filename'] = os.path.basename(_file)
+			processingVars['inputPath'] = _file
+			check_av_status(_file,interactiveMode,ingestLogBoilerplate)
+			mediaconch_check(_file,ingestType,ingestLogBoilerplate)
+			move_input_file(processingVars)
+			input_file_metadata(ingestLogBoilerplate,processingVars)
+			make_derivs(processingVars)
+		# reset the processing variables to the original state 
+		processingVars['filename'] = ''
+		processingVars['inputPath'] = inputPath
 
-	# 8) CHECK INPUT FILE AGAINST MEDIACONCH POLICIES
-	mediaconch_check(inputFilepath,ingestType,ingestLogBoilerplate)
 	
-	# 9) RSYNC THE INPUT FILE TO THE OUTPUT DIR
-	move_input_file(processingVars)
-
-	# 10) MAKE METADATA FOR INPUT FILE
-	input_file_metadata(ingestLogBoilerplate,processingVars)
-
-	# 11) MAKE DERIVATTIVES
-	make_derivs(processingVars)
-
-	# 12) CHECK DERIVS AGAINST MEDIACONCH POLICIES
-	
-	# 13) MOVE SIP TO AIP STAGING
+	# MOVE SIP TO AIP STAGING
 	# a) make a hashdeep manifest
 	# b) move it
 	move_sip(processingVars)

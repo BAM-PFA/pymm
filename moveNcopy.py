@@ -22,15 +22,15 @@ def check_write_permissions(destination):
 	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
 	return True
 
-def copy_file(inputFilepath,rsyncLogOptions,destination):
+def copy_file(inputPath,rsyncLogOptions,destination):
 	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
 	# hashing redundant when using rsync.... 
-	# inputFileHash = hash_file(inputFilepath)
-	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputFilepath))
+	# inputFileHash = hash_file(inputPath)
+	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputPath))
 	if not rsyncLogOptions == '':
-		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputFilepath,destFilepath]
+		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputPath,destFilepath]
 	else:
-		rsyncCommand = ['rsync','-rtvPih',inputFilepath,destFilepath]		
+		rsyncCommand = ['rsync','-rtvPih',inputPath,destFilepath]		
 	# print(' '.join(rsyncCommand))
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:

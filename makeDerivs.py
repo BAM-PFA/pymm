@@ -12,11 +12,11 @@ import moveNcopy
 config = pymmFunctions.read_config()
 
 # SET FFMPEG INPUT OPTIONS
-def set_input_options(derivType,inputFilepath,ffmpegLogDir=None):
+def set_input_options(derivType,inputPath,ffmpegLogDir=None):
 	# ARE THERE CASES WHERE I WILL ACTUALLY WANT TO SET MORE INPUT OPTIONS?
 	# IT'S USED IN mm BUT WILL WE??
 	inputOptions = ['-i']
-	inputOptions.append(inputFilepath)
+	inputOptions.append(inputPath)
 	if ffmpegLogDir:
 		inputOptions.append('-report')
 	
@@ -42,11 +42,11 @@ def set_middle_options(derivType):
 	# print(middleOptions)
 	return middleOptions
 
-def set_output_options(derivType,inputFilepath,outputDir):
+def set_output_options(derivType,inputPath,outputDir):
 	outputOptions = []
 	strict = ['-strict','-2'] 
-	base = pymmFunctions.get_base(inputFilepath)
-	baseMinusExtension = pymmFunctions.get_base(inputFilepath,'baseMinusExtension')
+	base = pymmFunctions.get_base(inputPath)
+	baseMinusExtension = pymmFunctions.get_base(inputPath,'baseMinusExtension')
 	# make a delivery directory for a package that is based on the deriv type
 	derivDeliv = os.path.join(outputDir,derivType)
 	if not os.path.isdir(derivDeliv):
@@ -71,7 +71,7 @@ def set_output_options(derivType,inputFilepath,outputDir):
 
 def set_args():
 	parser = argparse.ArgumentParser(description='make derivatives of an input a/v file')
-	parser.add_argument('-i','--inputFilepath',help='path of input file')
+	parser.add_argument('-i','--inputPath',help='path of input file')
 	parser.add_argument('-d','--derivType',choices=['resourcespace','proresHQ'],help='choose a derivative type to output')
 	parser.add_argument('-o','--outputDir',help='set output directory for deriv delivery')
 	parser.add_argument('-r','--ffmpegReportDir',help='set output directory for ffmpeg report')
@@ -94,7 +94,7 @@ def additional_delivery(derivFilepath,derivType):
 def main():
 	# DO STUFF
 	args = set_args()
-	inputFilepath = args.inputFilepath
+	inputPath = args.inputPath
 	# for ingestfile.py this is the packageDerivDir
 	outputDir = args.outputDir
 	derivType = args.derivType
@@ -102,9 +102,9 @@ def main():
 	if ffmpegReportDir:
 		pymmFunctions.set_ffreport(ffmpegReportDir,'makeDerivs')
 	ffmpegArgs = []
-	inputOptions = set_input_options(derivType,inputFilepath,ffmpegReportDir)
+	inputOptions = set_input_options(derivType,inputPath,ffmpegReportDir)
 	middleOptions = set_middle_options(derivType)
-	outputOptions = set_output_options(derivType,inputFilepath,outputDir)
+	outputOptions = set_output_options(derivType,inputPath,outputDir)
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
 	print(ffmpegArgs)

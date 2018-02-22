@@ -87,13 +87,29 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(message,status,ingestLogPath,tempID,filename,operator):
+def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator):
 	if message == 'start':
 		message = 'onwards and upwards'
-		status = 'STARTING TO INGEST '+filename
+		status = 'STARTING TO INGEST '+input_name
 		startToday = ('#'*50)+'\r\r'+str(date.today())
 	with open(ingestLogPath,'a+') as ingestLog:
-		ingestLog.write(iso8601+' Status: '+status+'  Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+'\n')
+		if filename == '':
+			ingestLog.write(
+				iso8601
+				+' Status: '+status
+				+' Input Name: '+input_name
+				+' tempID: '+tempID
+				+' operator: '+operator
+				+' MESSAGE: '+message+'\n\n')
+		else:
+			ingestLog.write(
+				iso8601
+				+' Status: '+status
+				+' Input Name: '+input_name
+				+' Filename: '+filename
+				+' tempID: '+tempID
+				+' operator: '+operator
+				+' MESSAGE: '+message+'\n\n')
 		# LOG SOME SHIT
 
 def pymm_log(filename,tempID,operator,message,status):
@@ -111,14 +127,14 @@ def pymm_log(filename,tempID,operator,message,status):
 			suffix = '\n'
 		log.write(prefix+now+' '+'Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
 
-def cleanup_package(inputFilepath,packageOutputDir,reason):
+def cleanup_package(inputPath,packageOutputDir,reason):
 	if reason == 'abort ingest':
 		status = 'ABORTING'
 		message = ("Something went critically wrong and the process was aborted. "
 					+packageOutputDir+
 					" and all its contents have been deleted."
 					)
-	pymm_log(inputFilepath,'','',message,status)
+	pymm_log(inputPath,'','',message,status)
 	if os.path.isdir(packageOutputDir):
 		print(packageOutputDir)
 		try:
@@ -135,14 +151,14 @@ def cleanup_package(inputFilepath,packageOutputDir,reason):
 #
 # FILE CHECK STUFF
 #
-def is_video(inputFilepath):
+def is_video(inputPath):
 	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
 	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
 	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
 	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
 	ffprobe = 	FFprobe(
 				inputs={
-				inputFilepath:'-v error -print_format json -show_streams -select_streams v:0'
+				inputPath:'-v error -print_format json -show_streams -select_streams v:0'
 				}
 				)
 	try:
@@ -159,7 +175,7 @@ def is_video(inputFilepath):
 		return False
 	
 
-def is_audio(inputFilepath):
+def is_audio(inputPath):
 	print("THIS ISN'T A VIDEO FILE\n"
 		'¿maybe this is an audio file?')
 	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
@@ -168,7 +184,7 @@ def is_audio(inputFilepath):
 	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
 	ffprobe = 	FFprobe(
 				inputs={
-				inputFilepath:'-v error -print_format json -show_streams -select_streams a:0'
+				inputPath:'-v error -print_format json -show_streams -select_streams a:0'
 				}
 				)
 	try:
@@ -187,24 +203,24 @@ def is_audio(inputFilepath):
 		print("INVALID FILE INPUT, NOT AUDIO EITHER")
 		return False
 
-def is_av(inputFilepath):
-	_is_video = is_video(inputFilepath)
+def is_av(inputPath):
+	_is_video = is_video(inputPath)
 	if not _is_video:
-		_is_audio = is_audio(inputFilepath)
+		_is_audio = is_audio(inputPath)
 		if not _is_audio:
 			print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
 			return False
 	else:
 		return True
 
-def is_dpx_sequence(inputFilepath):
+def is_dpx_sequence(inputPath):
 	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
 	# AUTOMATICALLY? 
-	if os.path.isdir(inputFilepath):
-		for root,dirs,files in os.walk(inputFilepath):
+	if os.path.isdir(inputPath):
+		for root,dirs,files in os.walk(inputPath):
 			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
 
-def check_policy(ingestType,inputFilepath):
+def check_policy(ingestType,inputPath):
 	print('do policy check stuff')
 	policyStatus = "result of check against mediaconch policy"
 	return policyStatus
