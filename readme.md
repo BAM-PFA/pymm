@@ -24,4 +24,4 @@ DB modules dependencies:
 * On a Mac it really helps things if both Python and MySQL are both `brew`ed installs.
 
 Other dependencies:
-* mediainfo
+* mediainfo version 17.10+

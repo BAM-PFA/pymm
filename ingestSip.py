@@ -386,7 +386,7 @@ def main():
 		inputFilepath = input("Please drag the file you want to ingest into this window___").rstrip()
 		inputFilepath = pymmFunctions.sanitize_dragged_linux_paths(inputFilepath)
 
-	if inputFilepath and inputType == 'file':
+	if inputFilepath: # and inputType == 'file':
 		filename = os.path.basename(inputFilepath)
 
 	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND

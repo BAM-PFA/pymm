@@ -67,14 +67,14 @@ def get_track_profiles(mediainfoDict):
 		'Language', 'Encoded_date', 'Tagged_date'
 		]
 	try:
-		videoTrackProfile = mediainfoDict['Mediainfo']['File']['track'][1]
+		videoTrackProfile = mediainfoDict['MediaInfo']['media']['track'][1]
 		for attr in videoAttribsToDiscard:
 			videoTrackProfile.pop(attr,None)
 	except:
 		problems += 1
 		print("mediainfo problem: either there is no video track or you got some issues")
 	try:	
-		audioTrackProfile = mediainfoDict['Mediainfo']['File']['track'][2]
+		audioTrackProfile = mediainfoDict['MediaInfo']['media']['track'][2]
 		for attr in audioAttribsToDiscard:
 			audioTrackProfile.pop(attr,None)
 	except:

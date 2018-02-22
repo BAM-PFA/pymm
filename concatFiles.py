@@ -95,12 +95,12 @@ def main(**kwargs):
 			safeToConcat = False
 			checkedFiles += 1
 			if profilesDict[inputFile]['audio'] == canonicalAudioSpec:
-				print("{} passed the spec check.".format(os.path.basename(inputFile)))
+				print("{} passed the audio spec check.".format(os.path.basename(inputFile)))
 			else:
 				print("{} failed the audio spec check. Exiting".format(os.path.basename(inputFile)))
 				outlierFiles.append((inputFile,(profilesDict[inputFile]['audio'])))
 			if profilesDict[inputFile]['video'] == canonicalVideoSpec:
-				print("{} passed the spec check.".format(os.path.basename(inputFile)))
+				print("{} passed the video spec check.".format(os.path.basename(inputFile)))
 				safeToConcat = True
 			else:
 				print("{} failed the video spec check. Exiting".format(os.path.basename(inputFile)))
@@ -111,8 +111,12 @@ def main(**kwargs):
 	if safeToConcat == True:
 		print('go ahead')
 
-	concattedFile = concat(source_list)
-	return True
+	try: 
+		concattedFile = concat(source_list)
+		return True
+	except:
+		print("bleh")
+		return False
 
 if __name__ == '__main__':
 	main(sys.argv[1:])
