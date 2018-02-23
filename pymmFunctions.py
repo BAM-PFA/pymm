@@ -140,6 +140,21 @@ def cleanup_package(inputPath,packageOutputDir,reason):
 		except:
 			print("Could not delete the package at "+packageOutputDir+". Try deleting it manually? Now exiting.")
 	# sys.exit()
+
+def reset_cleanup_choice():
+	'''
+	If using interactive mode ask whether or not to remove files when done.
+	'''
+	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
+	if pymmFunctions.boolean_answer(cleanupStrategy):
+		cleanupStrategy = True
+	else:
+		cleanupStrategy = False
+		print(
+			"Either you selected no or your answer didn't make sense"
+			"so we will just leave things where they are when we finish."
+			)
+	return cleanupStrategy
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #

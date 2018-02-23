@@ -177,22 +177,13 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-def reset_cleanup_choice():
-	'''
-	If using interactive mode ask whether or not to remove files when done.
-	'''
-	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if pymmFunctions.boolean_answer(cleanupStrategy):
-		cleanupStrategy = True
-	else:
-		cleanupStrategy = False
-		print("Either you selected no or your answer didn't make sense so we will just leave things where they are when we finish.")
-	return cleanupStrategy
+
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
 	Check input file against MediaConch policy.
-	Needs to be cleaned up. Also, we don't have any policies set up yet...
+	Needs to be cleaned up. Move logic to pymmFunctions and keep logging here.
+	Also, we don't have any policies set up yet...
 	'''
 	if ingestType == 'film scan':
 		policyStatus = pymmFunctions.check_policy(ingestType,inputPath)
@@ -266,8 +257,8 @@ def make_derivs(processingVars):
 	makeProres = processingVars['makeProres']
 	ingestType = processingVars['ingestType']
 
-	# WE'LL ALWAYS OUTPUT A RESOURCESPACE ACCESS FILE FOR VIDEO INGESTS,
-	# SO INIT THE DERIVTYPES LIST WITH `RESOURCESPACE`
+	# we'll always output a resourcespace access file for video ingests,
+	# so init the derivtypes list with `resourcespace`
 	if ingestType in ('film scan','video transfer'):
 		derivTypes = ['resourcespace']
 	deliveredDerivPaths = {}
@@ -317,12 +308,13 @@ def move_sip(processingVars):
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
 		print("LET'S CLEEEEEAN!")
-		cleanup_package(inputPath,packageOutputDir,reason)
+		pymmFunctions.cleanup_package(inputPath,packageOutputDir,reason)
 	else:
 		print("BUH-BYE")
 
 def main():
-	# parse them args
+	#########################
+	#### SET INGEST ARGS ####
 	args = set_args()
 	inputPath = args.inputPath
 	operator = args.operator
@@ -339,19 +331,23 @@ def main():
 	# make a temp ID based on input path for the ingested object
 	# this will get replaced by the ingest UUID during final package move ...?
 	tempID = pymmFunctions.get_temp_id(inputPath)
+	#### END SET INGEST ARGS #### 
+	#############################
 
-	# SNIFF WHETHER THE INPUT IS A FILE OR DIRECTORY
+	#############################
+	#### TEST / SET ENV VARS ####
+	# sniff whether the input is a file or directory
 	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
 	if not inputType:
-		sys.exit(0)
+		sys.exit(1)
 	if inputType == 'dir':
 		source_list = pymmFunctions.list_files(inputPath)
 
-	# CREATE DIRECTORY PATHS FOR INGEST...
+	# create directory paths for ingest...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\
 	packageMetadataObjects,packageLogDir = prep_package(tempID)
 
-	# CHECK THAT REQUIRED VARS ARE DECLARED & INIT OTHER VARS
+	# check that required vars are declared & init other vars
 	requiredVars = ['inputPath','operator']
 	if interactiveMode == False:
 		# Quit if there are required variables missing
@@ -382,7 +378,7 @@ def main():
 			filename = ''
 			input_name = canonicalName
 
-	# SET UP A DICT FOR PROCESSING VARIABLES TO PASS AROUND
+	# set up a dict for processing variables to pass around
 	processingVars =	{'operator':operator,'inputPath':inputPath,
 						'tempID':tempID,'ingestType':ingestType,
 						'ingestUUID':ingestUUID,'filename':filename,
@@ -390,18 +386,22 @@ def main():
 						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
 						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
 						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
+	#### END TEST / SET ENV VARS ####
+	#################################
 
-	# SET UP A LOG FILE FOR THIS INGEST
+	###########################
+	#### LOGGING / CLEANUP ####
+	# set up a log file for this ingest
 	ingestLogPath = os.path.join(packageLogDir,tempID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
 	with open(ingestLogPath,'x') as ingestLog:
 		print('Laying a log at '+ingestLogPath)
-	ingestLogBoilerplate = 	{
-							'ingestLogPath':ingestLogPath,
-							'tempID':tempID,
-							'input_name':input_name,
-							'filename':filename,
-							'operator':operator
-							}
+	ingestLogBoilerplate = {
+		'ingestLogPath':ingestLogPath,
+		'tempID':tempID,
+		'input_name':input_name,
+		'filename':filename,
+		'operator':operator
+		}
 	pymmFunctions.ingest_log(
 		# message
 		'start',
@@ -411,21 +411,24 @@ def main():
 		**ingestLogBoilerplate
 		)
 
-	# TELL THE SYSTEM LOG THAT WE ARE STARTING
+	# tell the system log that we are starting
 	pymmFunctions.pymm_log(input_name,tempID,operator,'','STARTING')
 
-	# IF INTERACTIVE ASK ABOUT CLEANUP
+	# if interactive ask about cleanup
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# INSERT DATABASE RECORD FOR THIS INGEST (log 'ingestion start')
+	# insert database record for this ingest (log 'ingestion start')
 	# @fixme
 
-##           ##
-## DO STUFF! ##
-##           ##
+	#### END LOGGING / CLEANUP ####
+	###############################
+
+	###############
+	## DO STUFF! ##
+	###############
 	if inputType == 'file':
-		# CHECK THAT INPUT FILE IS ACTUALLY A/V
+		# check that input file is actually a/v
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate)
 		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate)
 		move_input_file(processingVars)
@@ -437,7 +440,7 @@ def main():
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
 			processingVars['filename'] = os.path.basename(_file)
 			processingVars['inputPath'] = _file
-			# CHECK THAT INPUT FILE IS ACTUALLY A/V
+			# check that input file is actually a/v
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate)
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate)
 			move_input_file(processingVars)
