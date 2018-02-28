@@ -177,8 +177,6 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-
-
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
 	Check input file against MediaConch policy.
@@ -342,6 +340,15 @@ def main():
 		sys.exit(1)
 	if inputType == 'dir':
 		source_list = pymmFunctions.list_files(inputPath)
+		subs = 0
+		for _object in source_list:
+			if os.path.isdir(_object):
+				subs += 1
+				print("\nYou have subdirectory(ies) in your input:"
+					"\n({})\n".format(_object))
+		if subs > 0:
+			print("This is not currently supported. Exiting!")
+			sys.exit()
 
 	# create directory paths for ingest...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\
