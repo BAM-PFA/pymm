@@ -425,8 +425,10 @@ def main():
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# insert database record for this ingest (log 'ingestion start')
+	# insert database record for this ingest (log 'ingestion start') 
+	# --> http://id.loc.gov/vocabulary/preservation/eventType/ins.html
 	# @fixme
+	# @logme # @dbme
 
 	#### END LOGGING / CLEANUP ####
 	###############################
@@ -436,23 +438,23 @@ def main():
 	###############
 	if inputType == 'file':
 		# check that input file is actually a/v
-		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate)
-		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate)
-		move_input_file(processingVars)
-		input_file_metadata(ingestLogBoilerplate,processingVars)
-		make_derivs(processingVars)
+		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbme
+		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+		move_input_file(processingVars) # @logme # @dbme
+		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		make_derivs(processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		for _file in source_list:
 			# set processing variables per file 
-			ingestLogBoilerplate['filename'] = os.path.basename(_file)
-			processingVars['filename'] = os.path.basename(_file)
-			processingVars['inputPath'] = _file
+			ingestLogBoilerplate['filename'] = os.path.basename(_file) # @dbme
+			processingVars['filename'] = os.path.basename(_file) # @dbme
+			processingVars['inputPath'] = _file # @dbme
 			# check that input file is actually a/v
-			check_av_status(_file,interactiveMode,ingestLogBoilerplate)
-			mediaconch_check(_file,ingestType,ingestLogBoilerplate)
-			move_input_file(processingVars)
-			input_file_metadata(ingestLogBoilerplate,processingVars)
-			make_derivs(processingVars)
+			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
+			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
+			move_input_file(processingVars) # @dbme
+			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
+			make_derivs(processingVars) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
@@ -460,13 +462,13 @@ def main():
 	# MOVE SIP TO AIP STAGING
 	# a) make a hashdeep manifest @fixme
 	# b) move it 
-	move_sip(processingVars)
+	move_sip(processingVars) # @dbme
 	packageVerified = False
 	# c) audit the hashdeep manifest @fixme
 	# packageVerified = result of audit @fixme
 
 	# FINISH LOGGING
-	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done')
+	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
 
 if __name__ == '__main__':
 	main()
