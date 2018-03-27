@@ -52,7 +52,11 @@ class PBCoreDocument:
 					},
 				nsmap=self.NS_MAP
 				)
-			self.descriptionDoc = ET.ElementTree(self.descriptionRoot)
+		else:
+			self.descriptionRoot = ET.parse(pbcoreDescriptionDocumentPath)
+
+		self.descriptionDoc = ET.ElementTree(self.descriptionRoot)
+
 
 	def tidy(self):
 		'''
@@ -103,6 +107,24 @@ class PBCoreDocument:
 			instantiation.insert(0,comment)
 
 		return instantiation
+
+	def add_element_to_instantiation(self,identifier,element,attributes,text):
+		targetInstantiationXpath = (
+				"/pbcoreDescriptionDocument/pbcoreInstantiation/"
+				"instantiationIdentifier[@source='filename']/"
+				"[text()[contains(.,{})]]".format(identifier)
+				)
+		targetInstantiation = self.descriptionRoot.xpath(
+			targetInstantiationXpath,
+			namespaces=self.XPATH_NS_MAP
+			)
+		self.add_SubElement(
+			targetInstantiation,
+			element,
+			_attrib=attributes,
+			_text=text,
+			nsmap=self.NS_MAP
+			)
 
 	def add_related_physical(self,instantiation,_id=None):
 		if _id == None:

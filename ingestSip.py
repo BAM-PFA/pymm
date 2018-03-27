@@ -226,7 +226,8 @@ def move_input_file(processingVars):
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFileMD5 = makeMetadata.hash_file(processingVars['inputPath'])
-
+	if processingVars['pbcore'] != '':
+		pbcoreFile = processingVars['pbcore']
 	pymmFunctions.ingest_log(
 		# message
 		"The input file MD5 hash is: {}".format(
@@ -415,6 +416,7 @@ def main():
 		'operator':operator,
 		'inputPath':inputPath,
 		'objectBAMPFAjson':objectBAMPFAjson,
+		'pbcore':'',
 		'tempID':tempID,
 		'ingestType':ingestType,
 		'ingestUUID':ingestUUID,

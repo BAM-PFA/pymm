@@ -39,6 +39,11 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 					"What do you want??")
 			return False
 
+def get_mediainfo_pbcore(inputPath):
+	call = subprocess.Popen(['mediainfo','--Output=PBCore2',inputPath])
+	pbcore = call.communicate()[0]
+	return pbcore 
+
 def get_track_profiles(mediainfoDict):
 	'''
 	Get audio and video track profiles to compare for concatenation of files.
