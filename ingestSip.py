@@ -25,6 +25,8 @@ import moveNcopy
 import makeMetadata
 import concatFiles
 
+from bampfa_pbcore import pbcore
+
 # read in from the config file
 config = pymmFunctions.read_config()
 # check that paths required for ingest are declared in config.ini
