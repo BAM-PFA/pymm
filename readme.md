@@ -1,6 +1,6 @@
 # pymediamicroservices
 
-This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). A lot has been changed to be less institutionally specific. And of course there's a lot added back to be institutionally specific to BAMPFA.
+This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). It also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. A lot has been changed to be less institutionally specific. And of course there's a lot added back to be institutionally specific to BAMPFA.
 
 Tested on Mac (El Capitan and Sierra), and on Ubuntu 16.04....
 

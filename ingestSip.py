@@ -41,6 +41,10 @@ def set_args():
 		help='name of the person doing the ingest'
 		)
 	parser.add_argument(
+		'-j','--metadataJSON',
+		help='full path to a JSON file containing descriptive metadata'
+		)
+	parser.add_argument(
 		'-t','--ingestType',
 		choices=['film scan','video transfer'],
 		default='video transfer',
@@ -90,11 +94,11 @@ def prep_package(tempID):
 	# ... SEE IF THE TOP DIR EXISTS ...
 	if os.path.isdir(packageOutputDir):
 		print('''
-			It looks like '''+tempID+''' was already ingested.
+			It looks like {} was already ingested.
 			If you want to replace the existing package please delete the package at
-			'''+packageOutputDir+'''
+			{}
 			and then try again.
-			''')
+			'''.format(tempID,packageOutputDir))
 		sys.exit()
 
 	# ... AND IF NOT, MAKE THEM ALL
@@ -124,10 +128,11 @@ def sniff_input(inputPath,ingestUUID,concatChoice):
 	return inputType
 
 def try_concat(inputPath,ingestUUID):
-	sys.argv = 	['',
-						'-i'+inputPath,
-						'-d'+ingestUUID
-						]
+	sys.argv = [
+		'',
+		'-i'+inputPath,
+		'-d'+ingestUUID
+		]
 	try:
 		concatFiles.main()
 		return True
@@ -141,7 +146,9 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	'''
 	if not pymmFunctions.is_av(inputPath):
 		_is_av = False
-		message = "WARNING: "+ingestLogBoilerplate['filename']+" is not recognized as an a/v file."
+		message = "WARNING: {} is not recognized as an a/v file.".format(
+			ingestLogBoilerplate['filename']
+			)
 		print(message)
 		pymmFunctions.ingest_log(
 			# message
@@ -205,24 +212,30 @@ def move_input_file(processingVars):
 	'''
 	Put the input file into the package object dir.
 	'''
-	sys.argv = 	['',
-				'-i'+processingVars['inputPath'],
-				'-d'+processingVars['packageObjectDir'],
-				'-L'+processingVars['packageLogDir']
-				]
+	sys.argv = [
+		'',
+		'-i'+processingVars['inputPath'],
+		'-d'+processingVars['packageObjectDir'],
+		'-L'+processingVars['packageLogDir']
+		]
 	moveNcopy.main()
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	pymmFunctions.ingest_log(
 		# message
-		"The input file MD5 hash is: "+makeMetadata.hash_file(processingVars['inputPath']),
+		"The input file MD5 hash is: {}".format(
+			makeMetadata.hash_file(processingVars['inputPath'])
+			),
 		# status
 		'OK',
 		# ingest boilerplate
 		**ingestLogBoilerplate
 		)
 
-	mediainfo = makeMetadata.get_mediainfo_report(processingVars['inputPath'],processingVars['packageMetadataObjects'])
+	mediainfo = makeMetadata.get_mediainfo_report(
+		processingVars['inputPath'],
+		processingVars['packageMetadataObjects']
+		)
 	if mediainfo:
 		pymmFunctions.ingest_log(
 			# message
@@ -233,7 +246,10 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			**ingestLogBoilerplate
 			)
 	
-	frameMD5 = makeMetadata.make_frame_md5(processingVars['inputPath'],processingVars['packageMetadataObjects'])
+	frameMD5 = makeMetadata.make_frame_md5(
+		processingVars['inputPath'],
+		processingVars['packageMetadataObjects']
+		)
 	if frameMD5 != False:
 		pymmFunctions.ingest_log(
 			# message
@@ -386,20 +402,34 @@ def main():
 			input_name = canonicalName
 
 	# set up a dict for processing variables to pass around
-	processingVars =	{'operator':operator,'inputPath':inputPath,
-						'tempID':tempID,'ingestType':ingestType,
-						'ingestUUID':ingestUUID,'filename':filename,
-						'input_name':input_name,'makeProres':makeProres,
-						'packageOutputDir':packageOutputDir,'packageObjectDir':packageObjectDir,
-						'packageMetadataDir':packageMetadataDir,'packageMetadataObjects':packageMetadataObjects,
-						'packageLogDir':packageLogDir,'aip_staging':aip_staging}
+	processingVars = {
+		'operator':operator,
+		'inputPath':inputPath,
+		'tempID':tempID,
+		'ingestType':ingestType,
+		'ingestUUID':ingestUUID,
+		'filename':filename,
+		'input_name':input_name,
+		'makeProres':makeProres,
+		'packageOutputDir':packageOutputDir,
+		'packageObjectDir':packageObjectDir,
+		'packageMetadataDir':packageMetadataDir,
+		'packageMetadataObjects':packageMetadataObjects,
+		'packageLogDir':packageLogDir,
+		'aip_staging':aip_staging
+		}
 	#### END TEST / SET ENV VARS ####
 	#################################
 
 	###########################
 	#### LOGGING / CLEANUP ####
 	# set up a log file for this ingest
-	ingestLogPath = os.path.join(packageLogDir,tempID+'_'+pymmFunctions.timestamp('now')+'_ingestfile-log.txt')
+	ingestLogPath = os.path.join(
+		packageLogDir,
+		'{}_{}_ingestfile-log.txt'.format(
+			tempID,pymmFunctions.timestamp('now')
+			)
+		)
 	with open(ingestLogPath,'x') as ingestLog:
 		print('Laying a log at '+ingestLogPath)
 	ingestLogBoilerplate = {
