@@ -12,12 +12,14 @@ represent parts of a whole.
 
 @fixme = stuff to do
 '''
-import sys
-import subprocess
-import os
+# standard library modules
 import argparse
-import uuid
 import json
+import os
+import shutil
+import subprocess
+import sys
+import uuid
 # local modules:
 import pymmFunctions
 import makeDerivs
@@ -223,10 +225,12 @@ def move_input_file(processingVars):
 	moveNcopy.main()
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
+	inputFileMD5 = makeMetadata.hash_file(processingVars['inputPath'])
+
 	pymmFunctions.ingest_log(
 		# message
 		"The input file MD5 hash is: {}".format(
-			makeMetadata.hash_file(processingVars['inputPath'])
+			inputFileMD5
 			),
 		# status
 		'OK',
@@ -241,7 +245,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 	if mediainfo:
 		pymmFunctions.ingest_log(
 			# message
-			"mediainfo XML report for input file written to metadata directory for package.",
+			("mediainfo XML report for input file "
+			"written to metadata directory for package."),
 			# status
 			'OK',
 			# ingest boilerplate
@@ -255,7 +260,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 	if frameMD5 != False:
 		pymmFunctions.ingest_log(
 			# message
-			"frameMD5 report for input file written to metadata directory for package",
+			("frameMD5 report for input file "
+			"written to metadata directory for package"),
 			# status
 			"OK",
 			# ingest boilerplate
@@ -334,6 +340,7 @@ def main():
 	args = set_args()
 	inputPath = args.inputPath
 	operator = args.operator
+	objectBAMPFAjson = args.metadataJSON
 	report_to_db = args.database_reporting
 	ingestType = args.ingestType
 	makeProres = args.makeProres
@@ -407,6 +414,7 @@ def main():
 	processingVars = {
 		'operator':operator,
 		'inputPath':inputPath,
+		'objectBAMPFAjson':objectBAMPFAjson,
 		'tempID':tempID,
 		'ingestType':ingestType,
 		'ingestUUID':ingestUUID,
@@ -461,6 +469,28 @@ def main():
 	# --> http://id.loc.gov/vocabulary/preservation/eventType/ins.html
 	# @fixme
 	# @logme # @dbme
+
+	# create a PBCore XML file and send any existing BAMPFA metadata JSON
+	# to the object metadata directory.
+	pbcoreXML = pbcore.PBCoreDocument()
+	if objectBAMPFAjson != None:
+		# move it
+		copy = shutil.copy2(
+			objectBAMPFAjson,
+			processingVars['packageMetadataDir']
+			)
+		# reset var to new path
+		processingVars['objectBAMPFAjson'] = os.path.abspath(copy)
+		pbcoreXML.add_physical_elements(
+			processingVars['objectBAMPFAjson']
+			)
+		pbcoreFile = pbcoreXML.xml_to_file(
+			os.path.join(
+				processingVars['packageMetadataDir'],
+				canonicalName+"_pbcore.xml"
+				)
+			)
+		processingVars['pbcore'] = pbcoreFile
 
 	#### END LOGGING / CLEANUP ####
 	###############################
