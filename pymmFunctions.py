@@ -376,7 +376,7 @@ def get_system():
 	else:
 		return False
 
-def timestamp(style):
+def timestamp(style=None):
 	knownStyles = ['iso8601','YMD','now']
 	if style in knownStyles:
 		if style == 'iso8601':

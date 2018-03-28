@@ -70,8 +70,9 @@ def add_element_to_instantiation(self,identifier,element,attributes,text):
 	targetInstantiationXpath = (
 			"/p:pbcoreDescriptionDocument/pbcoreInstantiation/"
 			"p:instantiationIdentifier[@source='filename']/"
-			"[text()[contains(.,{})]]".format(identifier)
+			"text()[contains(.,'{}')]".format(identifier)
 			)
+	print(targetInstantiationXpath)
 	targetInstantiation = self.descriptionRoot.xpath(
 		targetInstantiationXpath,
 		namespaces=self.XPATH_NS_MAP

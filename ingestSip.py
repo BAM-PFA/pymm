@@ -225,9 +225,38 @@ def move_input_file(processingVars):
 	moveNcopy.main()
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
-	inputFileMD5 = makeMetadata.hash_file(processingVars['inputPath'])
+	inputFile = processingVars['inputPath']
+	inputFileMD5 = makeMetadata.hash_file(inputFile)
 	if processingVars['pbcore'] != '':
 		pbcoreFile = processingVars['pbcore']
+		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
+		# add md5 as an identifier to the pbcoreInstantiation for the file
+		attributes = {
+			"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
+			"annotation":"messageDigest",
+			"version":"MD5"
+		}
+		makePbcore.add_element_to_instantiation(
+			pbcoreXML,
+			processingVars['filename'],
+			'instantiationIdentifier',
+			attributes,
+			inputFileMD5
+			)
+		# add 'BAMPFA Digital Repository' as instantiationLocation
+		attributes = {}
+		makePbcore.add_element_to_instantiation(
+			pbcoreXML,
+			processingVars['filename'],
+			'instantiationLocation',
+			attributes,
+			"BAMPFA Digital Repository"
+			)
+		makePbcore.xml_to_file(
+			pbcoreXML,
+			pbcoreFile
+			)
+	
 	pymmFunctions.ingest_log(
 		# message
 		"The input file MD5 hash is: {}".format(
@@ -238,7 +267,6 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		# ingest boilerplate
 		**ingestLogBoilerplate
 		)
-
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
 		processingVars['packageMetadataObjects']
@@ -551,8 +579,8 @@ def main():
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbme
 		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
-		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
 		add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
+		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
 		make_derivs(processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		for _file in source_list:
@@ -564,8 +592,8 @@ def main():
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			move_input_file(processingVars) # @dbme
-			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
 			add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
+			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
 			make_derivs(processingVars) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
