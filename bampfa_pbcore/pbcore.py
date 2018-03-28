@@ -7,7 +7,7 @@ from copy import deepcopy
 # nonstandard libraries
 import lxml.etree as ET
 # local modules
-import pbcore_map
+from . import pbcore_map
 class PBCoreDocument:
 	'''
 	Takes a preexisting well-formed pbcoreInstantiationDocument

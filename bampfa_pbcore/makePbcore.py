@@ -7,8 +7,8 @@ from copy import deepcopy
 # nonstandard libraries
 import lxml.etree as ET
 # local modules
-import pbcore_map
-import pbcore
+from . import pbcore_map
+from . import pbcore
 
 def tidy(self):
 	'''
@@ -32,8 +32,13 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 		# print(pbcoreInstantiation)
 
 	except:
-		print('not a valid xml input ... probably?')
-		sys.exit()
+		try:
+			# see if it's a bytes type object... 
+			pbcoreString = ET.fromstring(pbcoreInstantiationPath)
+			pbcoreInstantiation = ET.ElementTree(pbcoreString)
+		except:
+			print('not a valid xml input ... probably?')
+			sys.exit()
 	
 	instantiation = add_SubElement(
 		self,
@@ -328,6 +333,7 @@ def xml_to_file(self,outputPath):
 			encoding='utf-8', 
 			xml_declaration=True,
 			pretty_print=True)
+	return outputPath
 
 def main():
 	'''

@@ -27,7 +27,7 @@ import moveNcopy
 import makeMetadata
 import concatFiles
 
-from bampfa_pbcore import pbcore
+from bampfa_pbcore import pbcore, makePbcore
 
 # read in from the config file
 config = pymmFunctions.read_config()
@@ -269,6 +269,21 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			**ingestLogBoilerplate
 			)
 
+def add_pbcore_instantiation(processingVars,level):
+	_file = processingVars['inputPath']
+	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
+	descriptiveJSONpath = processingVars['objectBAMPFAjson']
+	pbcoreFile = processingVars['pbcore']
+	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
+
+	makePbcore.add_instantiation(
+		pbcoreXML,
+		pbcoreReport,
+		descriptiveJSONpath=descriptiveJSONpath,
+		level=level
+		)
+	makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
+
 def make_derivs(processingVars):
 	'''
 	Make derivatives based on options declared in config...
@@ -315,8 +330,16 @@ def make_derivs(processingVars):
 		mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
 
 		if processingVars['pbcore'] != '':
-			pbcoreFile = processingVars['pbcore']
+			if derivType in ('resourcespace'):
+				level = 'Access copy'
+			elif derivType in ('proresHQ'):
+				level = 'Mezzanine'
+			else:
+				level = 'Derivative'
+			
+			add_pbcore_instantiation(processingVars,level)
 
+			
 
 def move_sip(processingVars):
 	'''
@@ -492,10 +515,12 @@ def main():
 			)
 		# reset var to new path
 		processingVars['objectBAMPFAjson'] = os.path.abspath(copy)
-		pbcoreXML.add_physical_elements(
+		makePbcore.add_physical_elements(
+			pbcoreXML,
 			processingVars['objectBAMPFAjson']
 			)
-		pbcoreFile = pbcoreXML.xml_to_file(
+		pbcoreFile = makePbcore.xml_to_file(
+			pbcoreXML,
 			os.path.join(
 				processingVars['packageMetadataDir'],
 				canonicalName+"_pbcore.xml"
@@ -515,6 +540,7 @@ def main():
 		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
 		make_derivs(processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		for _file in source_list:
@@ -526,7 +552,8 @@ def main():
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			move_input_file(processingVars) # @dbme
-			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
+			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
+			add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
 			make_derivs(processingVars) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''

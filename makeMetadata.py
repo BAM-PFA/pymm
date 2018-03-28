@@ -40,7 +40,10 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 			return False
 
 def get_mediainfo_pbcore(inputPath):
-	call = subprocess.Popen(['mediainfo','--Output=PBCore2',inputPath])
+	call = subprocess.Popen(
+		['mediainfo','--Output=PBCore2',inputPath],
+		stdout=subprocess.PIPE
+		)
 	pbcore = call.communicate()[0]
 	return pbcore 
 
