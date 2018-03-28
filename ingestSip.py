@@ -284,6 +284,9 @@ def make_derivs(processingVars):
 	# so init the derivtypes list with `resourcespace`
 	if ingestType in ('film scan','video transfer'):
 		derivTypes = ['resourcespace']
+	
+	# deliveredDerivPaths is a dict as follows:
+	# {derivtype1:/path/to/deriv/file1}
 	deliveredDerivPaths = {}
 	
 	if pymmFunctions.boolean_answer(config['deriv delivery options']['proresHQ']):
@@ -304,10 +307,16 @@ def make_derivs(processingVars):
 		deliveredDerivPaths[derivType] = deliveredDeriv
 
 	for key,value in deliveredDerivPaths.items():
+		# metadata for each deriv is stored in a folder named
+		# for the derivtype under the main Metadata folder
 		mdDest = os.path.join(packageMetadataObjects,key)
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
 		mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
+
+		if processingVars['pbcore'] != '':
+			pbcoreFile = processingVars['pbcore']
+
 
 def move_sip(processingVars):
 	'''
