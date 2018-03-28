@@ -528,6 +528,18 @@ def main():
 			)
 		processingVars['pbcore'] = pbcoreFile
 
+	else:
+		# if no bampfa metadata, just make a pbcore.xml w/o a
+		# representation of the physical asset
+		pbcoreFile = makePbcore.xml_to_file(
+			pbcoreXML,
+			os.path.join(
+				processingVars['packageMetadataDir'],
+				canonicalName+"_pbcore.xml"
+				)
+			)
+		processingVars['pbcore'] = pbcoreFile
+
 	#### END LOGGING / CLEANUP ####
 	###############################
 
