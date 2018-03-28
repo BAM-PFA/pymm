@@ -7,8 +7,8 @@ from copy import deepcopy
 # nonstandard libraries
 import lxml.etree as ET
 # local modules
-from . import pbcore_map
-
+# from . import pbcore_map
+import pbcore_map
 class PBCoreDocument:
 	'''
 	Takes a preexisting well-formed pbcoreInstantiationDocument
@@ -52,10 +52,11 @@ class PBCoreDocument:
 					},
 				nsmap=self.NS_MAP
 				)
-		else:
-			self.descriptionRoot = ET.parse(pbcoreDescriptionDocumentPath)
+			self.descriptionDoc = ET.ElementTree(self.descriptionRoot)
 
-		self.descriptionDoc = ET.ElementTree(self.descriptionRoot)
+		else:
+			self.descriptionDoc = ET.parse(pbcoreDescriptionDocumentPath)
+			self.descriptionRoot = self.descriptionDoc.getroot()
 
 
 	def tidy(self):
@@ -110,21 +111,22 @@ class PBCoreDocument:
 
 	def add_element_to_instantiation(self,identifier,element,attributes,text):
 		targetInstantiationXpath = (
-				"/pbcoreDescriptionDocument/pbcoreInstantiation/"
-				"instantiationIdentifier[@source='filename']/"
+				"/p:pbcoreDescriptionDocument/pbcoreInstantiation/"
+				"p:instantiationIdentifier[@source='filename']/"
 				"[text()[contains(.,{})]]".format(identifier)
 				)
 		targetInstantiation = self.descriptionRoot.xpath(
 			targetInstantiationXpath,
 			namespaces=self.XPATH_NS_MAP
 			)
-		self.add_SubElement(
-			targetInstantiation,
-			element,
-			_attrib=attributes,
-			_text=text,
-			nsmap=self.NS_MAP
-			)
+		if targetInstantiation != []:
+			self.add_SubElement(
+				targetInstantiation[0],
+				element,
+				_attrib=attributes,
+				_text=text,
+				nsmap=self.NS_MAP
+				)
 
 	def add_related_physical(self,instantiation,_id=None):
 		if _id == None:
@@ -170,8 +172,8 @@ class PBCoreDocument:
 
 		if assetAccNo != "":
 			physicalAccXpath = (
-				"/pbcoreDescriptionDocument/pbcoreInstantiation/"
-				"instantiationIdentifier[@source='PFA accession number']/text()"
+				"/p:pbcoreDescriptionDocument/p:pbcoreInstantiation/"
+				"p:instantiationIdentifier[@source='PFA accession number']/text()"
 				)
 			physicalAccNo = self.descriptionRoot.xpath(
 				physicalAccXpath,
@@ -184,8 +186,8 @@ class PBCoreDocument:
 
 		elif assetAccNo == "" and assetBarcode != "":
 			physicalBarcodeXpath = (
-				"/pbcoreDescriptionDocument/pbcoreInstantiation/"
-				"instantiationIdentifier[@source='PFA barcode']/text()"
+				"/p:pbcoreDescriptionDocument/p:pbcoreInstantiation/"
+				"p:instantiationIdentifier[@source='PFA barcode']/text()"
 				)
 			physicalBarcode = self.descriptionRoot.xpath(
 				physicalBarcodeXpath,
