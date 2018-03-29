@@ -107,7 +107,7 @@ def main():
 	print(ffmpegArgs)
 	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	out,err = output.communicate()
-	print(out.decode('utf-8'))
+	# print(out.decode('utf-8'))
 	if err:
 		print(err.decode('utf-8'))
 	if ffmpegReportDir:

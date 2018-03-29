@@ -227,35 +227,36 @@ def move_input_file(processingVars):
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
-	if processingVars['pbcore'] != '':
-		pbcoreFile = processingVars['pbcore']
-		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
-		# add md5 as an identifier to the pbcoreInstantiation for the file
-		attributes = {
-			"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
-			"annotation":"messageDigest",
-			"version":"MD5"
-		}
-		makePbcore.add_element_to_instantiation(
-			pbcoreXML,
-			processingVars['filename'],
-			'instantiationIdentifier',
-			attributes,
-			inputFileMD5
-			)
-		# add 'BAMPFA Digital Repository' as instantiationLocation
-		attributes = {}
-		makePbcore.add_element_to_instantiation(
-			pbcoreXML,
-			processingVars['filename'],
-			'instantiationLocation',
-			attributes,
-			"BAMPFA Digital Repository"
-			)
-		makePbcore.xml_to_file(
-			pbcoreXML,
-			pbcoreFile
-			)
+	add_pbcore_md5_location(processingVars,inputFileMD5)
+	# if processingVars['pbcore'] != '':
+	# 	pbcoreFile = processingVars['pbcore']
+	# 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
+	# 	# add md5 as an identifier to the pbcoreInstantiation for the file
+	# 	attributes = {
+	# 		"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
+	# 		"annotation":"messageDigest",
+	# 		"version":"MD5"
+	# 	}
+	# 	makePbcore.add_element_to_instantiation(
+	# 		pbcoreXML,
+	# 		processingVars['filename'],
+	# 		'instantiationIdentifier',
+	# 		attributes,
+	# 		inputFileMD5
+	# 		)
+	# 	# add 'BAMPFA Digital Repository' as instantiationLocation
+	# 	attributes = {}
+	# 	makePbcore.add_element_to_instantiation(
+	# 		pbcoreXML,
+	# 		processingVars['filename'],
+	# 		'instantiationLocation',
+	# 		attributes,
+	# 		"BAMPFA Digital Repository"
+	# 		)
+	# 	makePbcore.xml_to_file(
+	# 		pbcoreXML,
+	# 		pbcoreFile
+	# 		)
 	
 	pymmFunctions.ingest_log(
 		# message
@@ -297,6 +298,38 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			**ingestLogBoilerplate
 			)
 
+def add_pbcore_md5_location(processingVars, inputFileMD5):
+	if processingVars['pbcore'] != '':
+		pbcoreFile = processingVars['pbcore']
+		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
+		# add md5 as an identifier to the pbcoreInstantiation for the file
+		attributes = {
+			"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
+			"annotation":"messageDigest",
+			"version":"MD5"
+		}
+		# print(attributes)
+		makePbcore.add_element_to_instantiation(
+			pbcoreXML,
+			processingVars['filename'],
+			'instantiationIdentifier',
+			attributes,
+			inputFileMD5
+			)
+		# add 'BAMPFA Digital Repository' as instantiationLocation
+		attributes = {}
+		makePbcore.add_element_to_instantiation(
+			pbcoreXML,
+			processingVars['filename'],
+			'instantiationLocation',
+			attributes,
+			"BAMPFA Digital Repository"
+			)
+		makePbcore.xml_to_file(
+			pbcoreXML,
+			pbcoreFile
+			)
+
 def add_pbcore_instantiation(processingVars,level):
 	_file = processingVars['inputPath']
 	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
@@ -312,7 +345,7 @@ def add_pbcore_instantiation(processingVars,level):
 		)
 	makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
 
-def make_derivs(processingVars):
+def make_derivs(ingestLogBoilerplate,processingVars):
 	'''
 	Make derivatives based on options declared in config...
 	'''
@@ -364,10 +397,15 @@ def make_derivs(processingVars):
 				level = 'Mezzanine'
 			else:
 				level = 'Derivative'
-			
-			add_pbcore_instantiation(processingVars,level)
-
-			
+			# basename = pymmFunctions.get_base(value)
+			processingVars['inputPath'] = value
+			processingVars['filename'] = pymmFunctions.get_base(value)
+			# print(processingVars)
+			fileMD5 = makeMetadata.hash_file(value)
+			add_pbcore_instantiation(processingVars, level)
+			add_pbcore_md5_location(processingVars, fileMD5)
+			# SHOULD ADD INPUT_FILE_METADATA CALL HERE?
+			# input_file_metadata(ingestLogBoilerplate,processingVars)
 
 def move_sip(processingVars):
 	'''
@@ -579,9 +617,12 @@ def main():
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbme
 		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
-		add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
+		add_pbcore_instantiation(
+			processingVars,
+			"Preservation master"
+			) # @dbme
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
-		make_derivs(processingVars) # @logme # @dbme
+		make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		for _file in source_list:
 			# set processing variables per file 
@@ -592,9 +633,11 @@ def main():
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			move_input_file(processingVars) # @dbme
-			add_pbcore_instantiation(processingVars,"Preservation master") # @dbme
+			add_pbcore_instantiation(processingVars,
+				"Preservation master"
+				) # @dbme
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
-			make_derivs(processingVars) # @dbme
+			make_derivs(ingestLogBoilerplate,processingVars) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
