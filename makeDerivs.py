@@ -82,7 +82,7 @@ def additional_delivery(derivFilepath,derivType):
 		print("there's no directory set for "+derivType+" delivery... SET IT!!")
 		pass
 	else:
-		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+deliveryDir]
+		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+derivFilepath]
 		try:
 			moveNcopy.main()
 		except:

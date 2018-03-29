@@ -1,0 +1,139 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pbcoreDescriptionDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.pbcore.org/PBCore/PBCoreNamespace.html" xsi:schemaLocation="http://www.pbcore.org/PBCore/PBCoreNamespace.html https://raw.githubusercontent.com/WGBH/PBCore_2.1/master/pbcore-2.1.xsd">
+  <pbcoreInstantiation>
+    <!--Physical Asset-->
+    <instantiationAnnotation annotationType="Condition note">Newish</instantiationAnnotation>
+    <instantiationDuration annotation="May be specific to BAMPFA projectors, scan rates, etc.">3 min.</instantiationDuration>
+    <instantiationIdentifier source="PFA accession number">1604-01-15056</instantiationIdentifier>
+    <instantiationDimensions source="BAMPFA controlled vocabulary">16 mm.</instantiationDimensions>
+    <instantiationMediaType annotation="BAMPFA source material medium." source="BAMPFA controlled vocabulary">motion picture</instantiationMediaType>
+    <instantiationIdentifier source="PFA barcode">PM0029829</instantiationIdentifier>
+    <instantiationAnnotation annotation="Sound or silent">si.</instantiationAnnotation>
+  </pbcoreInstantiation>
+  <pbcoreCreator>
+    <creator>Scott Stark</creator>
+    <creatorRole ref="http://metadataregistry.org/concept/show/id/1303.html" source="PBCore creatorRole">Director(s)</creatorRole>
+  </pbcoreCreator>
+  <pbcoreCoverage>
+    <coverageType ref="http://metadataregistry.org/concept/show/id/2522.html">Spatial</coverageType>
+    <coverage>United States</coverage>
+  </pbcoreCoverage>
+  <pbcoreAssetDate dateType="Released">1982</pbcoreAssetDate>
+  <pbcoreTitle titleType="Main">Degrees of limitation</pbcoreTitle>
+<pbcoreInstantiation><!--Preservation master--><instantiationAnnotation annotationType="IsStreamable">No</instantiationAnnotation>
+<instantiationAnnotation annotationType="FooterSize">151711</instantiationAnnotation>
+	<instantiationAnnotation annotationType="DataSize">6691979825</instantiationAnnotation>
+	<instantiationAnnotation annotationType="HeaderSize">20</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FrameCount">7523</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FrameRate">24.000</instantiationAnnotation>
+	<instantiationAnnotation annotationType="CodecID_Compatible">qt  </instantiationAnnotation>
+	<instantiationAnnotation annotationType="CodecID_Version">0000.00</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Format_Profile">QuickTime</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Format">MPEG-4</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FileNameExtension">degrees-of-limitation_15056_PM0029829_R01of01.mov</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Language_List">English</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Format_WithHint_List">QuickTime TC</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Format_List">QuickTime TC</instantiationAnnotation>
+	<instantiationAnnotation annotationType="OtherCount">1</instantiationAnnotation>
+	<instantiationEssenceTrack>
+		<essenceTrackType>Video</essenceTrackType>
+		<essenceTrackIdentifier source="ID (Mediainfo)">1</essenceTrackIdentifier>
+		<essenceTrackIdentifier source="StreamKindID (Mediainfo)">0</essenceTrackIdentifier>
+		<essenceTrackIdentifier source="StreamOrder (Mediainfo)">0</essenceTrackIdentifier>
+		<essenceTrackEncoding source="codecid" ref="apch" version="Version 1" annotation="profile:422 HQ">ProRes</essenceTrackEncoding>
+		<essenceTrackDataRate unitsOfMeasure="bits/second" annotation="VBR">170790156</essenceTrackDataRate>
+		<essenceTrackFrameRate annotation="CFR">24.000</essenceTrackFrameRate>
+		<essenceTrackFrameSize>1920x1080</essenceTrackFrameSize>
+		<essenceTrackAspectRatio>1.778</essenceTrackAspectRatio>
+		<essenceTrackDuration>00:05:13.459</essenceTrackDuration>
+		<essenceTrackLanguage>eng</essenceTrackLanguage>
+		<essenceTrackAnnotation annotationType="PixelAspectRatio">1.000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Rotation">0.000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="FrameCount">7523</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ColorSpace">YUV</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ChromaSubsampling">4:2:2</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ScanType">Progressive</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay">3620000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_Settings">DropFrame=No / 24HourMax=No / IsVisual=No</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_DropFrame">No</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_Source">Container</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="StreamSize">6691949717</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="colour_description_present">Yes</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="colour_primaries">BT.709</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="transfer_characteristics">BT.709</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="matrix_coefficients">BT.709</essenceTrackAnnotation>
+	</instantiationEssenceTrack>
+	<instantiationTracks>1</instantiationTracks>
+	<instantiationDataRate unitsOfMeasure="bits/second" annotation="VBR">170794432</instantiationDataRate>
+	<instantiationDuration>00:05:13.459</instantiationDuration>
+	<instantiationTimeStart>01:00:20.000</instantiationTimeStart>
+	<instantiationFileSize unitsOfMeasure="bytes">6692131556</instantiationFileSize>
+	<instantiationMediaType>Moving Image</instantiationMediaType>
+	<instantiationLocation>/home/jalopy/JALOPY_RAID/raid_share/degrees-of-limitation_15056_PM0029829_R01of01.mov</instantiationLocation>
+	<instantiationDigital>video/mp4</instantiationDigital>
+	<instantiationDate dateType="tagged">2017-11-10T02:28:10Z</instantiationDate>
+	<instantiationDate dateType="encoded">2017-11-10T02:28:10Z</instantiationDate>
+	<instantiationDate dateType="file modification">2017-11-10T02:34:32Z</instantiationDate>
+	<instantiationIdentifier source="File Name">degrees-of-limitation_15056_PM0029829_R01of01.mov</instantiationIdentifier>
+	<instantiationRelation><instantiationRelationType ref="http://metadataregistry.org/concept/list/vocabulary_id/161.html" source="PBCore relationType">Derived from</instantiationRelationType><instantiationRelationIdentifier>1604-01-15056</instantiationRelationIdentifier></instantiationRelation><instantiationIdentifier annotation="messageDigest" source="BAMPFA 2018-03-29" version="MD5">7ef091deee3e151e026e0fdf80104d68</instantiationIdentifier><instantiationLocation>BAMPFA Digital Repository</instantiationLocation></pbcoreInstantiation><pbcoreInstantiation><!--Access copy--><instantiationAnnotation annotationType="Encoded_Application">Lavf57.83.100</instantiationAnnotation>
+<instantiationAnnotation annotationType="IsStreamable">Yes</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FooterSize">0</instantiationAnnotation>
+	<instantiationAnnotation annotationType="DataSize">230406494</instantiationAnnotation>
+	<instantiationAnnotation annotationType="HeaderSize">63404</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FrameCount">7523</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FrameRate">24.000</instantiationAnnotation>
+	<instantiationAnnotation annotationType="CodecID_Compatible">isom/iso2/avc1/mp41</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Format_Profile">Base Media</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Format">MPEG-4</instantiationAnnotation>
+	<instantiationAnnotation annotationType="FileNameExtension">degrees-of-limitation_15056_PM0029829_R01of01_lrp.mp4</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Language_List">English</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Format_WithHint_List">QuickTime TC</instantiationAnnotation>
+	<instantiationAnnotation annotationType="Other_Format_List">QuickTime TC</instantiationAnnotation>
+	<instantiationAnnotation annotationType="OtherCount">1</instantiationAnnotation>
+	<instantiationEssenceTrack>
+		<essenceTrackType>Video</essenceTrackType>
+		<essenceTrackIdentifier source="ID (Mediainfo)">1</essenceTrackIdentifier>
+		<essenceTrackIdentifier source="StreamKindID (Mediainfo)">0</essenceTrackIdentifier>
+		<essenceTrackIdentifier source="StreamOrder (Mediainfo)">0</essenceTrackIdentifier>
+		<essenceTrackEncoding source="codecid" ref="avc1" annotation="profile:High@L4">AVC</essenceTrackEncoding>
+		<essenceTrackDataRate unitsOfMeasure="bits/second">5880373</essenceTrackDataRate>
+		<essenceTrackFrameRate annotation="CFR">24.000</essenceTrackFrameRate>
+		<essenceTrackBitDepth>8</essenceTrackBitDepth>
+		<essenceTrackFrameSize>1920x1080</essenceTrackFrameSize>
+		<essenceTrackAspectRatio>1.778</essenceTrackAspectRatio>
+		<essenceTrackDuration>00:05:13.459</essenceTrackDuration>
+		<essenceTrackLanguage>eng</essenceTrackLanguage>
+		<essenceTrackAnnotation annotationType="Format_Settings">CABAC / 4 Ref Frames</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Format_Settings_CABAC">Yes</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Format_Settings_RefFrames">4</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Stored_Height">1088</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Sampled_Width">1920</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Sampled_Height">1080</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="PixelAspectRatio">1.000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Rotation">0.000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="FrameRate_Mode_Original">VFR</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="FrameCount">7523</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ColorSpace">YUV</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ChromaSubsampling">4:2:0</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="ScanType">Progressive</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Interlacement">PPF</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay">3620000</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_Settings">DropFrame=No / 24HourMax=No / IsVisual=No</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_DropFrame">No</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Delay_Source">Container</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="StreamSize">230406482</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Encoded_Library_Name">x264</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Encoded_Library_Version">core 152 r2854 e9a5903</essenceTrackAnnotation>
+		<essenceTrackAnnotation annotationType="Encoded_Library_Settings">cabac=1 / ref=3 / deblock=1:0:0 / analyse=0x3:0x113 / me=hex / subme=7 / psy=1 / psy_rd=1.00:0.00 / mixed_ref=1 / me_range=16 / chroma_me=1 / trellis=1 / 8x8dct=1 / cqm=0 / deadzone=21,11 / fast_pskip=1 / chroma_qp_offset=-2 / threads=30 / lookahead_threads=5 / sliced_threads=0 / nr=0 / decimate=1 / interlaced=0 / bluray_compat=0 / constrained_intra=0 / bframes=3 / b_pyramid=2 / b_adapt=1 / b_bias=0 / direct=1 / weightb=1 / open_gop=0 / weightp=2 / keyint=250 / keyint_min=24 / scenecut=40 / intra_refresh=0 / rc_lookahead=40 / rc=crf / mbtree=1 / crf=18.0 / qcomp=0.60 / qpmin=0 / qpmax=69 / qpstep=4 / vbv_maxrate=8760 / vbv_bufsize=1835 / crf_max=0.0 / nal_hrd=none / filler=0 / ip_ratio=1.40 / aq=1:1.00</essenceTrackAnnotation>
+	</instantiationEssenceTrack>
+	<instantiationTracks>1</instantiationTracks>
+	<instantiationDataRate unitsOfMeasure="bits/second">5881979</instantiationDataRate>
+	<instantiationDuration>00:05:13.459</instantiationDuration>
+	<instantiationTimeStart>01:00:20.000</instantiationTimeStart>
+	<instantiationFileSize unitsOfMeasure="bytes">230469898</instantiationFileSize>
+	<instantiationMediaType>Moving Image</instantiationMediaType>
+	<instantiationLocation>/home/jalopy/PROJECTS/pymm files/out/156778b00c/objects/resourcespace/degrees-of-limitation_15056_PM0029829_R01of01_lrp.mp4</instantiationLocation>
+	<instantiationDigital>video/mp4</instantiationDigital>
+	<instantiationDate dateType="file modification">2018-03-29T17:09:51Z</instantiationDate>
+	<instantiationIdentifier source="File Name">degrees-of-limitation_15056_PM0029829_R01of01_lrp.mp4</instantiationIdentifier>
+	<instantiationRelation><instantiationRelationType ref="http://metadataregistry.org/concept/list/vocabulary_id/161.html" source="PBCore relationType">Derived from</instantiationRelationType><instantiationRelationIdentifier>1604-01-15056</instantiationRelationIdentifier></instantiationRelation><instantiationIdentifier annotation="messageDigest" source="BAMPFA 2018-03-29" version="MD5">c6de5191c1bdd9e253e328b3c6eaced7</instantiationIdentifier><instantiationLocation>BAMPFA Digital Repository</instantiationLocation></pbcoreInstantiation></pbcoreDescriptionDocument>
