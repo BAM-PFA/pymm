@@ -66,23 +66,25 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 
 	return instantiation
 
-def add_element_to_instantiation(self,identifier,element,attributes,text):
+def add_element_to_instantiation(self,identifier,element,attributes={},text=None):
 	targetInstantiationXpath = (
-			"/p:pbcoreDescriptionDocument/pbcoreInstantiation/"
-			"p:instantiationIdentifier[@source='filename']/"
-			"text()[contains(.,'{}')]".format(identifier)
+			"/p:pbcoreDescriptionDocument/p:pbcoreInstantiation"
+			"[p:instantiationIdentifier[@source='File Name']/"
+			"text()[contains(.,'{}')]]".format(identifier)
 			)
-	print(targetInstantiationXpath)
+	# print(targetInstantiationXpath)
 	targetInstantiation = self.descriptionRoot.xpath(
 		targetInstantiationXpath,
 		namespaces=self.XPATH_NS_MAP
 		)
+	print(targetInstantiation)
+	print(attributes)
 	if targetInstantiation != []:
 		add_SubElement(
 			self,
 			targetInstantiation[0],
 			element,
-			_attrib=attributes,
+			attrib=attributes,
 			_text=text,
 			nsmap=self.NS_MAP
 			)

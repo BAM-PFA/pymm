@@ -8,6 +8,7 @@ from copy import deepcopy
 import lxml.etree as ET
 # local modules
 from . import pbcore_map
+# import pbcore_map
 class PBCoreDocument:
 	'''
 	Takes a preexisting well-formed pbcoreInstantiationDocument
