@@ -426,6 +426,8 @@ def move_sip(processingVars):
 	UUIDpath = os.path.join(aip_staging,ingestUUID)
 	pymmFunctions.rename_dir(stagedSIP,UUIDpath)
 
+	return UUIDpath
+
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
 		print("LET'S CLEEEEEAN!")
@@ -451,7 +453,7 @@ def main():
 	# make a uuid for the ingest
 	ingestUUID = str(uuid.uuid4())
 	# make a temp ID based on input path for the ingested object
-	# this will get replaced by the ingest UUID during final package move ...?
+	# this will get replaced by the ingest UUID during final package move
 	tempID = pymmFunctions.get_temp_id(inputPath)
 	#### END SET INGEST ARGS #### 
 	#############################
@@ -643,12 +645,20 @@ def main():
 		processingVars['inputPath'] = inputPath
 
 	# MOVE SIP TO AIP STAGING
+	#VERIFY PACKAGE
 	# a) make a hashdeep manifest @fixme
+	manifestPath = makeMetadata.make_hashdeep_manifest(
+		processingVars['packageOutputDir']
+		)
 	# b) move it 
-	move_sip(processingVars) # @dbme
+	_SIP = move_sip(processingVars) # @dbme
 	packageVerified = False
 	# c) audit the hashdeep manifest @fixme
-	# packageVerified = result of audit @fixme
+	# packageVerified = result of audit
+	packageVerified = makeMetadata.hashdeep_audit(
+		_SIP,
+		manifestPath
+		)
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme

@@ -105,7 +105,83 @@ def hash_file(inputPath,algorithm='md5',blocksize=65536):
 	return hasher.hexdigest()
 
 def make_hashdeep_manifest(inputPath):
-	manifest = "hello i'm a mainfest"
+	'''
+	given a directory, make a hashdeep manifest.
+	chdir into target dir, make a manifest with relative paths, and get out.
+	currently the manifest is saved into the parent dir of the target.
+	proposal: store the manfest as a blob (or as text?) in a db entry... yeah.
+	'''
+	_object = pymmFunctions.get_base(inputPath)
+	manifestPath = os.path.join(
+		os.path.abspath(
+			os.path.join(inputPath,os.pardir)
+			),
+		'hashdeep_manifest_{}_{}.txt'.format(
+			_object,
+			pymmFunctions.timestamp('iso8601')
+			)
+		)
+	command = ['hashdeep','-rvvl','-W',manifestPath,'.']
+	# print(command)
+	here = os.getcwd()
+	os.chdir(inputPath)
+	manifest = subprocess.call(command,stdout=subprocess.PIPE)
+	os.chdir(here)
+	return manifestPath
+
+def hashdeep_audit(inputPath,manifestPath):
+	'''
+	given a target directory and an existing manifest, run a hashdeep audit.
+	chdir into the target, audit the relative paths, and get out.
+	same idea as above: read manifest from blob in db and write the audit file
+	as a new blob.
+	'''
+	_object = pymmFunctions.get_base(inputPath)
+	auditPath = os.path.join(
+		os.path.abspath(
+			os.path.join(inputPath,os.pardir)
+			),
+		'hashdeep_audit_{}_{}.txt'.format(
+			_object,
+			pymmFunctions.timestamp('iso8601')
+			)
+		)
+	with open(auditPath,'x') as f:
+		pass
+
+	command = ['hashdeep','-rvval','-k',manifestPath,'-W',auditPath,'.']
+	# print(' '.join(command))
+	here = os.getcwd()
+	os.chdir(inputPath)
+	try:
+		hashaudit = subprocess.call(command,stdout=subprocess.PIPE)
+		print(hashaudit)
+		try:
+			with open(auditPath,'r') as audit:
+				first_line = audit.readline().rstrip()
+				print(first_line)
+				if first_line == 'hashdeep: Audit failed':
+					result = False
+				elif first_line == 'hashdeep: Audit passed':
+					result = True
+				else:
+					print("INCONCLUSIVE AUDIT. SIP PACKAGE NOT VERIFIED.")
+					result = False
+		except:
+			print(
+				"there was a problem reading the hashdeep audit file. "
+				"assuming the package is not verified."
+				)
+			result = False
+
+	except:
+		print(
+			"there was a problem with the hashdeep audit. "
+			"package NOT verified."
+			)
+		result = False
+	os.chdir(here)
+	return result
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
@@ -133,6 +209,7 @@ def main():
 	parser.add_argument('-i','--inputPath',help='path of input file')
 	parser.add_argument('-m','--mediainfo',action='store_true',help='generate a mediainfo sidecar file')
 	parser.add_argument('-f','--frame_md5',action='store_true',help='make frame md5 report')
+	parser.add_argument('-p','--pbcore',action='store_true',help='make mediainfo pbcore report')
 	parser.add_argument('-j','--getJSON',action='store_true',help='get JSON output as applicable')
 	parser.add_argument('-d','--destination',help='set destination for output metadata files')
 	args = parser.parse_args()
@@ -140,6 +217,7 @@ def main():
 	inputPath = args.inputPath
 	destination = args.destination
 	frame_md5 = args.frame_md5
+	_pbcore = args.pbcore
 	mediainfo_report = args.mediainfo
 	getJSON = args.getJSON
 
@@ -157,6 +235,16 @@ def main():
 	if frame_md5:
 		frameMd5Filepath = make_frame_md5(inputPath,destination)
 		print(frameMd5Filepath)
+	if _pbcore:
+		xml = get_mediainfo_pbcore(inputPath)
+		with open(
+			os.path.join(
+				destination,
+				os.path.basename(inputPath)+"_pbcore.xml"
+				),
+			'wb'
+			) as xmlFile:
+			xmlFile.write(xml)
 
 if __name__ == '__main__':
 	main()

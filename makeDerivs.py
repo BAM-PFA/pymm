@@ -71,18 +71,19 @@ def set_args():
 	parser.add_argument('-i','--inputPath',help='path of input file')
 	parser.add_argument('-d','--derivType',choices=['resourcespace','proresHQ'],help='choose a derivative type to output')
 	parser.add_argument('-o','--outputDir',help='set output directory for deriv delivery')
-	parser.add_argument('-r','--ffmpegReportDir',help='set output directory for ffmpeg report')
+	parser.add_argument('-r','--logDir',help='set output directory for ffmpeg and rsync logs')
+	# parser.add_argument('-m','--packageMetadataObjects',help='set directory for deriv metadata')
 
 	return parser.parse_args()
 
-def additional_delivery(derivFilepath,derivType):
+def additional_delivery(derivFilepath,derivType,rsyncLogDir):
 	destinations = 	{'resourcespace': config['paths']['resourcespace_deliver'],'proresHQ':config['paths']['prores_deliver']}
 	deliveryDir = destinations[derivType]
 	if deliveryDir == '':
 		print("there's no directory set for "+derivType+" delivery... SET IT!!")
 		pass
 	else:
-		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+derivFilepath]
+		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+rsyncLogDir]
 		try:
 			moveNcopy.main()
 		except:
@@ -95,11 +96,11 @@ def main():
 	# for ingestfile.py this is the packageDerivDir
 	outputDir = args.outputDir
 	derivType = args.derivType
-	ffmpegReportDir = args.ffmpegReportDir
-	if ffmpegReportDir:
-		pymmFunctions.set_ffreport(ffmpegReportDir,'makeDerivs')
+	logDir = args.logDir
+	if logDir:
+		pymmFunctions.set_ffreport(logDir,'makeDerivs')
 	ffmpegArgs = []
-	inputOptions = set_input_options(derivType,inputPath,ffmpegReportDir)
+	inputOptions = set_input_options(derivType,inputPath,logDir)
 	middleOptions = set_middle_options(derivType)
 	outputOptions = set_output_options(derivType,inputPath,outputDir)
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
@@ -110,12 +111,12 @@ def main():
 	# print(out.decode('utf-8'))
 	if err:
 		print(err.decode('utf-8'))
-	if ffmpegReportDir:
+	if logDir:
 		pymmFunctions.unset_ffreport()
 	# get the output path to rsync the deriv to access directories
 	outputFilePath = outputOptions[-1]
 	if pymmFunctions.boolean_answer(config['deriv delivery options'][derivType]):
-		additional_delivery(outputFilePath,derivType)
+		additional_delivery(outputFilePath,derivType,logDir)
 	# print(outputFilePath)
 	return outputFilePath
 

@@ -22,16 +22,25 @@ def check_write_permissions(destination):
 	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
 	return True
 
-def copy_file(inputPath,rsyncLogOptions,destination):
+def copy_file(inputPath,rsyncLogPath,destination):
 	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
 	# hashing redundant when using rsync.... 
 	# inputFileHash = hash_file(inputPath)
 	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputPath))
-	if not rsyncLogOptions == '':
-		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputPath,destFilepath]
+	if not rsyncLogPath == '':
+		rsyncCommand = [
+			'rsync','-rtvPih',
+			'--log-file={}'.format(rsyncLogPath),
+			inputPath,
+			destination
+			]
 	else:
-		rsyncCommand = ['rsync','-rtvPih',inputPath,destFilepath]		
-	# print(' '.join(rsyncCommand))
+		rsyncCommand = [
+			'rsync','-rtvPih',
+			inputDir,
+			destination
+			]		
+	print(rsyncCommand)
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
 			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
@@ -44,10 +53,15 @@ def copy_file(inputPath,rsyncLogOptions,destination):
 		print('go get a mac, my man.')
 	return False
 
-def copy_dir(inputDir,rsyncLogOptions,destination):
+def copy_dir(inputDir,rsyncLogPath,destination):
 	# destDir = os.path.join(pymmFunctions.get_base(inputDir))
-	if not rsyncLogOptions == '':
-		rsyncCommand = ['rsync','-rtvPih','--log-file='+rsyncLogOptions,inputDir,destination]
+	if not rsyncLogPath == '':
+		rsyncCommand = [
+			'rsync','-rtvPih',
+			'--log-file={}'.format(rsyncLogPath),
+			inputDir,
+			destination
+			]
 	else:
 		rsyncCommand = ['rsync','-rtvPih',inputDir,destination]		
 
