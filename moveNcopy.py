@@ -54,7 +54,6 @@ def copy_file(inputPath,rsyncLogPath,destination):
 	return False
 
 def copy_dir(inputDir,rsyncLogPath,destination):
-	# destDir = os.path.join(pymmFunctions.get_base(inputDir))
 	if not rsyncLogPath == '':
 		rsyncCommand = [
 			'rsync','-rtvPih',
@@ -68,7 +67,21 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 	print(rsyncCommand)
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
-			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
+			process = subprocess.Popen(
+					rsyncCommand,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE
+				)
+			log,err = process.communicate()
+			print("LOG")
+			print(log)
+			print(type(log))
+			if not os.path.isfile(rsyncLogPath):
+				try:
+					with open(rsyncLogPath,'wb') as lf:
+						lf.write(log)
+				except:
+					print("can't write log...")
 			return True
 		except subprocess.CalledProcessError as error:
 			print("rsync failed?")
@@ -81,8 +94,6 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 	# WELL THIS WOUND UP BEING IDENTICAL TO THE ABOVE.... 
 	# MAYBE MAKE AN 'RSYNC_IT' FUNCTION THAT IS CALLED IF
 	# SYS.PLATFORM CHECK == MAC/LINUX
-
-	# MAKE A BAG? HASH THE BAG? CHECK HASH OF DESTIATION BAG?
 
 def set_args():
 	parser = argparse.ArgumentParser(description='functions to move and copy stuff')
@@ -124,12 +135,13 @@ def main():
 		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
 		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 		try:
-			rsyncLogpath = os.path.join(logDir,'rsync_log_'+pymmFunctions.get_base(inputPath)+'_'+pymmFunctions.timestamp('now')+'.txt')
+			rsyncLogPath = os.path.join(logDir,'rsync_log_'+pymmFunctions.get_base(inputPath)+'_'+pymmFunctions.timestamp('now')+'.txt')
+			print('rsyncLogPath')
 		except:
 			print("there was a problem getting the rsync log path ....")
-			rsyncLogpath = ''
+			rsyncLogPath = ''
 	else:
-		rsyncLogpath = ''
+		rsyncLogPath = '.'
 
 	# sniff what the input is
 	dir_or_file = pymmFunctions.dir_or_file(inputPath)
@@ -141,9 +153,9 @@ def main():
 		# add trailing slash for rsync destination directory
 		if not destination[-1] == '/':
 			destination = destination+'/'
-		copy_dir(inputPath,rsyncLogpath,destination)
+		copy_dir(inputPath,rsyncLogPath,destination)
 	elif dir_or_file == 'file':
-		copy_file(inputPath,rsyncLogpath,destination)
+		copy_file(inputPath,rsyncLogPath,destination)
 	else:
 		print("o_O what is going on here? you up to something?")
 		sys.exit()
