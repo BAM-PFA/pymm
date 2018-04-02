@@ -18,25 +18,37 @@ import pymmFunctions
 
 def get_mediainfo_report(inputPath,destination,_JSON=False):
 	basename = pymmFunctions.get_base(inputPath)
-	# write mediainfo output to a logfile if the destination is a directory ...
+	# write mediainfo output to a logfile if the destination is a directory ..
 	if os.path.isdir(destination):
-		mediainfoOutput = '--LogFile='+os.path.join(destination,basename+'_mediainfo.xml')
-		mediainfoXML = subprocess.Popen(['mediainfo',inputPath,'--Output=XML',mediainfoOutput],stdout=subprocess.PIPE)
-		# yeah it's an OrderedDict, not JSON, but I will grab the Video track and Audio track as JSON later...
+		mediainfoOutput = '--LogFile={}_mediainfo.xml'.format(
+			os.path.join(destination,basename
+				)
+			)
+		mediainfoXML = subprocess.Popen(
+			['mediainfo',inputPath,'--Output=XML',mediainfoOutput],
+			stdout=subprocess.PIPE
+			)
+		# yeah it's an OrderedDict, not JSON, but I will grab the 
+		# Video track and Audio track as JSON later
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
 			return mediainfoJSON    
 		else:
 			return True
-	# ... otherwise pass something like '' as a destination and just get the raw mediainfo output
+	# ... otherwise pass something like '' as a destination 
+	# and just get the raw mediainfo output
 	else:
-		mediainfoXML = subprocess.Popen(['mediainfo','--Output=XML',inputPath],stdout=subprocess.PIPE)
+		mediainfoXML = subprocess.Popen(
+			['mediainfo','--Output=XML',inputPath],
+			stdout=subprocess.PIPE
+			)
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
 			return mediainfoJSON
 		else:
-			print(destination+" doesn't exist and you didn't say you want the raw mediainfo output.\n"
-					"What do you want??")
+			print("{} doesn't exist and you didn't say you "
+				"want the raw mediainfo output.\n"
+				"What do you want??".format(destination))
 			return False
 
 def get_mediainfo_pbcore(inputPath):
@@ -75,14 +87,16 @@ def get_track_profiles(mediainfoDict):
 			videoTrackProfile.pop(attr,None)
 	except:
 		problems += 1
-		print("mediainfo problem: either there is no video track or you got some issues")
+		print("mediainfo problem: "
+			"either there is no video track or you got some issues")
 	try:	
 		audioTrackProfile = mediainfoDict['MediaInfo']['media']['track'][2]
 		for attr in audioAttribsToDiscard:
 			audioTrackProfile.pop(attr,None)
 	except:
 		problems += 1
-		print("mediainfo problem: either there is no audio track or you got some issues")
+		print("mediainfo problem: "
+			"either there is no audio track or you got some issues")
 	if problems == 0:
 		return json.dumps(videoTrackProfile),json.dumps(audioTrackProfile)
 	else:	
@@ -197,13 +211,24 @@ def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
 	if not pymmFunctions.is_av(inputPath):
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
-		print(inputPath+" IS NOT AN AV FILE SO WHY ARE YOU TRYING TO MAKE A FRAME MD5 REPORT?")
+		print("{} IS NOT AN AV FILE SO "
+			"WHY ARE YOU TRYING TO MAKE "
+			"A FRAME MD5 REPORT?".format(inputPath))
 		return False
 	else:
 		md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
 		frameMd5Filepath = os.path.join(metadataDir,md5File)
-		frameMd5Command = ['ffmpeg','-i',inputPath,'-f','framemd5',frameMd5Filepath]
-		output = subprocess.Popen(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		frameMd5Command = [
+			'ffmpeg',
+			'-i',inputPath,
+			'-f','framemd5',
+			frameMd5Filepath
+			]
+		output = subprocess.Popen(
+			frameMd5Command,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
 		try:
 			out,err = output.communicate()
 			if err:
@@ -213,15 +238,35 @@ def make_frame_md5(inputPath,metadataDir):
 			return False
 
 def main():
-	config = pymmFunctions.read_config() # THIS IS PROBABLY NOT GOING TO BE NEEDED
-
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-i','--inputPath',help='path of input file')
-	parser.add_argument('-m','--mediainfo',action='store_true',help='generate a mediainfo sidecar file')
-	parser.add_argument('-f','--frame_md5',action='store_true',help='make frame md5 report')
-	parser.add_argument('-p','--pbcore',action='store_true',help='make mediainfo pbcore report')
-	parser.add_argument('-j','--getJSON',action='store_true',help='get JSON output as applicable')
-	parser.add_argument('-d','--destination',help='set destination for output metadata files')
+	parser.add_argument(
+		'-i','--inputPath',
+		help='path of input file'
+		)
+	parser.add_argument(
+		'-m','--mediainfo',
+		action='store_true',
+		help='generate a mediainfo sidecar file'
+		)
+	parser.add_argument(
+		'-f','--frame_md5',
+		action='store_true',
+		help='make frame md5 report'
+		)
+	parser.add_argument(
+		'-p','--pbcore',
+		action='store_true',
+		help='make mediainfo pbcore report'
+		)
+	parser.add_argument(
+		'-j','--getJSON',
+		action='store_true',
+		help='get JSON output as applicable'
+		)
+	parser.add_argument(
+		'-d','--destination',
+		help='set destination for output metadata files'
+		)
 	args = parser.parse_args()
 	
 	inputPath = args.inputPath
@@ -232,12 +277,14 @@ def main():
 	getJSON = args.getJSON
 
 	if not inputPath:
-		print("\n\nHEY THERE, YOU NEED TO SET AN INPUT FILE TO RUN THIS SCRIPT ON.\rNOW EXITING")
+		print("\n\nHEY THERE, YOU NEED TO SET AN INPUT FILE "
+			"TO RUN THIS SCRIPT ON.\rNOW EXITING")
 		sys.exit()
 	if not destination:
 		print('''
 			YOU DIDN'T TELL ME WHERE TO PUT THE OUTPUT OF THIS SCRIPT,
-			SO WE'LL PUT ANY SIDECAR FILES IN THE SAME DIRECTORY AS YOUR INPUT FILE.
+			SO WE'LL PUT ANY SIDECAR FILES IN THE 
+			SAME DIRECTORY AS YOUR INPUT FILE.
 			''')
 		destination = os.path.dirname(os.path.abspath(inputPath))
 	if mediainfo_report:

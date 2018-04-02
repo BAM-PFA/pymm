@@ -2,7 +2,7 @@
 #
 # MOVE AND / OR COPY STUFF -- @fixme : investigate borrowing file transfer code from UCSB or IFI
 #
-# on second thought maybe just use subprocess -> rsync and fuhgeddaboudit. we won't be using windows.
+# This is basically a couple of functions to call rsync :/
 #
 import os
 import sys
