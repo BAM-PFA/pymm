@@ -103,7 +103,7 @@ def prep_package(tempID):
 			{}
 			and then try again.
 			'''.format(tempID,packageOutputDir))
-		sys.exit()
+		sys.exit(1)
 
 	# ... AND IF NOT, MAKE THEM ALL
 	for directory in packageDirs:
@@ -227,36 +227,6 @@ def move_input_file(processingVars):
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
-	add_pbcore_md5_location(processingVars,inputFileMD5)
-	# if processingVars['pbcore'] != '':
-	# 	pbcoreFile = processingVars['pbcore']
-	# 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
-	# 	# add md5 as an identifier to the pbcoreInstantiation for the file
-	# 	attributes = {
-	# 		"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
-	# 		"annotation":"messageDigest",
-	# 		"version":"MD5"
-	# 	}
-	# 	makePbcore.add_element_to_instantiation(
-	# 		pbcoreXML,
-	# 		processingVars['filename'],
-	# 		'instantiationIdentifier',
-	# 		attributes,
-	# 		inputFileMD5
-	# 		)
-	# 	# add 'BAMPFA Digital Repository' as instantiationLocation
-	# 	attributes = {}
-	# 	makePbcore.add_element_to_instantiation(
-	# 		pbcoreXML,
-	# 		processingVars['filename'],
-	# 		'instantiationLocation',
-	# 		attributes,
-	# 		"BAMPFA Digital Repository"
-	# 		)
-	# 	makePbcore.xml_to_file(
-	# 		pbcoreXML,
-	# 		pbcoreFile
-	# 		)
 	
 	pymmFunctions.ingest_log(
 		# message
@@ -474,7 +444,7 @@ def main():
 					"\n({})\n".format(_object))
 		if subs > 0:
 			print("This is not currently supported. Exiting!")
-			sys.exit()
+			sys.exit(1)
 
 	# create directory paths for ingest...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\

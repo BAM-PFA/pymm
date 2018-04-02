@@ -118,7 +118,7 @@ def make_hashdeep_manifest(inputPath):
 			),
 		'hashdeep_manifest_{}_{}.txt'.format(
 			_object,
-			pymmFunctions.timestamp('iso8601')
+			pymmFunctions.timestamp('8601-filename')
 			)
 		)
 	command = ['hashdeep','-rvvl','-W',manifestPath,'.']

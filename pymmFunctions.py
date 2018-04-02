@@ -383,6 +383,8 @@ def timestamp(style=None):
 			timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
 		elif style == 'YMD':
 			timestamp = str(date.today())
+		elif style == '8601-filename':
+			timestamp = time.strftime("%Y-%m-%dT%H-%M-%S")
 		elif style == 'now':
 			timestamp = time.strftime("%Y%m%d_%H%M%S")
 		return timestamp
