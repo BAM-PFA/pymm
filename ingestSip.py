@@ -380,7 +380,6 @@ def make_derivs(ingestLogBoilerplate,processingVars):
 def move_sip(processingVars):
 	'''
 	Move a prepped SIP to the AIP staging area.
-	Rename the directory to the ingest UUID.
 	'''
 	packageOutputDir = processingVars['packageOutputDir']
 	aip_staging = processingVars['aip_staging']
@@ -392,11 +391,45 @@ def move_sip(processingVars):
 				'-L'+os.path.join(aip_staging,ingestUUID)]
 	moveNcopy.main()
 	# rename the staged dir
-	stagedSIP = os.path.join(aip_staging,tempID)
-	UUIDpath = os.path.join(aip_staging,ingestUUID)
-	pymmFunctions.rename_dir(stagedSIP,UUIDpath)
+	stagedSIP = os.path.join(aip_staging,ingestUUID)
+	# UUIDpath = os.path.join(aip_staging,ingestUUID)
+	# pymmFunctions.rename_dir(stagedSIP,UUIDpath)
 
-	return UUIDpath
+	return stagedSIP
+
+def rename_SIP(processingVars):
+	'''
+	Rename the directory to the ingest UUID.
+	'''
+	pymmOutDir = config['paths']['outdir_ingestfile']
+	packageOutputDir = processingVars['packageOutputDir']
+	ingestUUID = processingVars['ingestUUID']
+	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
+	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
+	processingVars['packageOutputDir'] = UUIDpath
+
+	return processingVars,UUIDpath
+
+def envelop_SIP(processingVars):
+	'''
+	Make a parent directory named w UUID to facilitate hashdeeping/logging.
+	'''
+	ingestUUID = processingVars['ingestUUID']
+	UUIDslice = ingestUUID[:8]
+	pymmOutDir = config['paths']['outdir_ingestfile']
+	_SIP = processingVars['packageOutputDir']
+	try:
+		parentSlice = os.path.join(pymmOutDir,UUIDslice)
+		# make a temp parent folder...
+		os.mkdir(parentSlice)
+		# ...move the SIP into it...
+		shutil.move(_SIP,parentSlice)
+		# ...and rename the parent w UUID path
+		pymmFunctions.rename_dir(parentSlice,_SIP)
+	except:
+		print("Something no bueno.")
+
+	return _SIP
 
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
@@ -615,20 +648,23 @@ def main():
 		processingVars['inputPath'] = inputPath
 
 	# MOVE SIP TO AIP STAGING
-	#VERIFY PACKAGE
-	# a) make a hashdeep manifest @fixme
+	# a) rename SIP from temp to UUID
+	processingVars,SIPpath = rename_SIP(processingVars) # @dbme
+	# b) put the package into a UUID parent folder
+	_SIP = envelop_SIP(processingVars) # @dbme
+	# c) make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
-		processingVars['packageOutputDir']
-		)
-	# b) move it 
+		_SIP
+		) # @dbme
+	# b) move the SIP
 	_SIP = move_sip(processingVars) # @dbme
 	packageVerified = False
-	# c) audit the hashdeep manifest @fixme
+	# c) audit the hashdeep manifest 
 	# packageVerified = result of audit
 	packageVerified = makeMetadata.hashdeep_audit(
 		_SIP,
 		manifestPath
-		)
+		) # @dbme
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme

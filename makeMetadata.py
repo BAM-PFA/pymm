@@ -108,42 +108,51 @@ def make_hashdeep_manifest(inputPath):
 	'''
 	given a directory, make a hashdeep manifest.
 	chdir into target dir, make a manifest with relative paths, and get out.
-	currently the manifest is saved into the parent dir of the target.
-	proposal: store the manfest as a blob (or as text?) in a db entry... yeah.
+	Now this relies on a bagit-style tree to contain both the manifest and 
+	the package.
+	proposal: also store the manfest as a blob
+	(or as text?) in a db entry... yeah.
 	'''
 	_object = pymmFunctions.get_base(inputPath)
-	manifestPath = os.path.join(
-		os.path.abspath(
-			os.path.join(inputPath,os.pardir)
-			),
-		'hashdeep_manifest_{}_{}.txt'.format(
-			_object,
-			pymmFunctions.timestamp('8601-filename')
+	# there should be a child dir with the same name as inputPath
+	package = os.path.join(inputPath,_object)
+	if not os.path.isdir(package):
+		print("the expected directory structure is not present.") # @logme
+		sys.exit(1)
+	else:
+		manifestPath = os.path.join(
+			inputPath,
+			'hashdeep_manifest_{}_{}.txt'.format(
+				_object,
+				pymmFunctions.timestamp('8601-filename')
+				)
 			)
-		)
-	command = ['hashdeep','-rvvl','-W',manifestPath,'.']
-	# print(command)
-	here = os.getcwd()
-	os.chdir(inputPath)
-	manifest = subprocess.call(command,stdout=subprocess.PIPE)
-	os.chdir(here)
-	return manifestPath
+		# run hashdeep on the package
+		command = ['hashdeep', '-rvvl', '-W', manifestPath, '.']
+		# print(command)
+		here = os.getcwd()
+		os.chdir(package)
+		manifest = subprocess.call(command,stdout=subprocess.PIPE)
+		os.chdir(here)
+		return manifestPath
 
 def hashdeep_audit(inputPath,manifestPath):
 	'''
-	given a target directory and an existing manifest, run a hashdeep audit.
-	chdir into the target, audit the relative paths, and get out.
+	Given a target directory and an existing manifest, run a hashdeep audit.
+	-> chdir into the target, audit the relative paths, and get out.
+	Updated version creates a bagit-style tree that contains the package,
+	along with the existing mnifest.
 	same idea as above: read manifest from blob in db and write the audit file
 	as a new blob.
 	'''
 	_object = pymmFunctions.get_base(inputPath)
+	package = os.path.join(inputPath,_object)
+	# set up a path for the audit to exist on
 	auditPath = os.path.join(
-		os.path.abspath(
-			os.path.join(inputPath,os.pardir)
-			),
+		inputPath,
 		'hashdeep_audit_{}_{}.txt'.format(
 			_object,
-			pymmFunctions.timestamp('iso8601')
+			pymmFunctions.timestamp('iso8601-filename')
 			)
 		)
 	with open(auditPath,'x') as f:
@@ -152,7 +161,7 @@ def hashdeep_audit(inputPath,manifestPath):
 	command = ['hashdeep','-rvval','-k',manifestPath,'-W',auditPath,'.']
 	# print(' '.join(command))
 	here = os.getcwd()
-	os.chdir(inputPath)
+	os.chdir(package)
 	try:
 		hashaudit = subprocess.call(command,stdout=subprocess.PIPE)
 		print(hashaudit)
@@ -165,7 +174,7 @@ def hashdeep_audit(inputPath,manifestPath):
 				elif first_line == 'hashdeep: Audit passed':
 					result = True
 				else:
-					print("INCONCLUSIVE AUDIT. SIP PACKAGE NOT VERIFIED.")
+					print("INCONCLUSIVE AUDIT. SIP NOT VERIFIED.")
 					result = False
 		except:
 			print(

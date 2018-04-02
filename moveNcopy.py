@@ -72,7 +72,7 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 			return True
 		except subprocess.CalledProcessError as error:
 			print("rsync failed?")
-			print (error)
+			# print (error)
 			return error
 	else:
 		print('go get a mac, my man.')

@@ -77,8 +77,8 @@ def add_element_to_instantiation(self,identifier,element,attributes={},text=None
 		targetInstantiationXpath,
 		namespaces=self.XPATH_NS_MAP
 		)
-	print(targetInstantiation)
-	print(attributes)
+	# print(targetInstantiation)
+	# print(attributes)
 	if targetInstantiation != []:
 		add_SubElement(
 			self,
@@ -157,7 +157,7 @@ def get_related_physical_ID(self, descriptiveJSONpath):
 				)
 			try:
 				_id = physicalAccNo[0]
-				print(_id)
+				# print(_id)
 			except:
 				_id = None
 
