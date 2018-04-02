@@ -127,6 +127,7 @@ def make_hashdeep_manifest(inputPath):
 				pymmFunctions.timestamp('8601-filename')
 				)
 			)
+		print(manifestPath)
 		# run hashdeep on the package
 		command = ['hashdeep', '-rvvl', '-W', manifestPath, '.']
 		# print(command)
@@ -152,7 +153,7 @@ def hashdeep_audit(inputPath,manifestPath):
 		inputPath,
 		'hashdeep_audit_{}_{}.txt'.format(
 			_object,
-			pymmFunctions.timestamp('iso8601-filename')
+			pymmFunctions.timestamp('8601-filename')
 			)
 		)
 	with open(auditPath,'x') as f:

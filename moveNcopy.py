@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 #
-# pymm is a python port of mediamicroservices
-#
 # MOVE AND / OR COPY STUFF -- @fixme : investigate borrowing file transfer code from UCSB or IFI
 #
 # on second thought maybe just use subprocess -> rsync and fuhgeddaboudit. we won't be using windows.
 #
-
 import os
 import sys
 import hashlib
@@ -15,17 +12,10 @@ import subprocess
 # local modules:
 import pymmFunctions
 
-def verify_copy():
-	print('woof')
-
-def check_write_permissions(destination):
-	# check out IFI function: https://github.com/kieranjol/IFIscripts/blob/master/copyit.py#L43
-	return True
-
 def copy_file(inputPath,rsyncLogPath,destination):
-	# GET A HASH, RSYNC THE THING, GET A HASH OF THE DESTINATION FILE, CZECH THE TWO AND RETURN TRUE/FALSE
-	# hashing redundant when using rsync.... 
-	# inputFileHash = hash_file(inputPath)
+	'''
+	call rsync on an input file
+	'''
 	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputPath))
 	if not rsyncLogPath == '':
 		rsyncCommand = [
@@ -40,7 +30,7 @@ def copy_file(inputPath,rsyncLogPath,destination):
 			inputDir,
 			destination
 			]		
-	print(rsyncCommand)
+	# print(rsyncCommand)
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
 			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
@@ -54,6 +44,9 @@ def copy_file(inputPath,rsyncLogPath,destination):
 	return False
 
 def copy_dir(inputDir,rsyncLogPath,destination):
+	'''
+	call rsync on an input dir
+	'''
 	if not rsyncLogPath == '':
 		rsyncCommand = [
 			'rsync','-rtvPih',
@@ -64,7 +57,7 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 	else:
 		rsyncCommand = ['rsync','-rtvPih',inputDir,destination]		
 
-	print(rsyncCommand)
+	# print(rsyncCommand)
 	if pymmFunctions.get_system() in ('mac','linux'):
 		try:
 			process = subprocess.Popen(
@@ -73,9 +66,6 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 					stderr=subprocess.PIPE
 				)
 			log,err = process.communicate()
-			print("LOG")
-			print(log)
-			print(type(log))
 			if not os.path.isfile(rsyncLogPath):
 				try:
 					with open(rsyncLogPath,'wb') as lf:
@@ -85,7 +75,7 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 			return True
 		except subprocess.CalledProcessError as error:
 			print("rsync failed?")
-			# print (error)
+			print (error)
 			return error
 	else:
 		print('go get a mac, my man.')
@@ -96,14 +86,39 @@ def copy_dir(inputDir,rsyncLogPath,destination):
 	# SYS.PLATFORM CHECK == MAC/LINUX
 
 def set_args():
-	parser = argparse.ArgumentParser(description='functions to move and copy stuff')
-	parser.add_argument('-i','--inputPath',help='path of input file')
-	parser.add_argument('-a','--algorithm',choices=['md5','sha1','sha256','sha512'],default='md5',help='choose an algorithm for checksum hashing; default is md5')
-	parser.add_argument('-r','--removeOriginals',action='store_true',default=False,help='remove original files if copy is successful')
-	# parser.add_argument('-',choices=['',''],help='')
-	parser.add_argument('-d','--destination',help='set destination for files to move/copy')
-	parser.add_argument('-l','--loglevel',choices=['all','pymm','None'],default='all',help='set the level of logging you want. rsync & pymm logs? just pymm? default is None.')
-	parser.add_argument('-L','--logDir',help='set a directory for the rsync log to live in')
+	parser = argparse.ArgumentParser(
+		description='functions to move and copy stuff'
+		)
+	parser.add_argument(
+		'-i','--inputPath',
+		help='path of input file'
+		)
+	parser.add_argument(
+		'-a','--algorithm',
+		choices=['md5','sha1','sha256','sha512'],
+		default='md5',
+		help='choose an algorithm for checksum hashing; default is md5'
+		)
+	parser.add_argument(
+		'-r','--removeOriginals',
+		action='store_true',
+		default=False,
+		help='remove original files if copy is successful'
+		)
+	parser.add_argument(
+		'-d','--destination',
+		help='set destination for files to move/copy'
+		)
+	parser.add_argument(
+		'-l','--loglevel',
+		choices=['all','pymm','None'],
+		default='all',
+		help='set level of logging. default is None.'
+		)
+	parser.add_argument(
+		'-L','--logDir',
+		help='set a directory for the rsync log to live in'
+		)
 
 	return parser.parse_args()
 
@@ -123,8 +138,8 @@ def main():
 	for _arg in requiredArgs:
 		if getattr(args,_arg) == None:
 			print("CONFIGURATION PROBLEM:\n"
-				  "You forgot to set "+_arg+". It is required.\n"
-				  "Try again, but set "+_arg+" with the flag --"+_arg+"\n"
+				  "You forgot to set {0}. It is required.\n"
+				  "Try again, but set {0} with the flag --{0}\n".format(_arg)
 				)
 			missingArgs += 1
 	if missingArgs > 0:
@@ -135,8 +150,13 @@ def main():
 		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
 		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 		try:
-			rsyncLogPath = os.path.join(logDir,'rsync_log_'+pymmFunctions.get_base(inputPath)+'_'+pymmFunctions.timestamp('now')+'.txt')
-			print('rsyncLogPath')
+			rsyncLogPath = os.path.join(
+				logDir,
+				'rsync_log_{}_{}.txt'.format(
+					pymmFunctions.get_base(inputPath),
+					pymmFunctions.timestamp('now')
+					)
+				)
 		except:
 			print("there was a problem getting the rsync log path ....")
 			rsyncLogPath = ''
@@ -146,8 +166,9 @@ def main():
 	# sniff what the input is
 	dir_or_file = pymmFunctions.dir_or_file(inputPath)
 	if dir_or_file == False:
-		print("oy you've got big problems. "+inputPath+" is not a directory or a file. what is it? is it a ghost?")
-		sys.exit()
+		print("oy you've got big problems. {} is not a directory or a file."
+			" what is it? is it a ghost?".format(inputPath))
+		sys.exit(1)
 	# copy the input according to its type
 	elif dir_or_file == 'dir':
 		# add trailing slash for rsync destination directory

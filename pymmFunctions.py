@@ -377,7 +377,7 @@ def get_system():
 		return False
 
 def timestamp(style=None):
-	knownStyles = ['iso8601','YMD','now']
+	knownStyles = ['iso8601','YMD','now','8601-filename']
 	if style in knownStyles:
 		if style == 'iso8601':
 			timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
