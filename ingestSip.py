@@ -315,6 +315,33 @@ def add_pbcore_instantiation(processingVars,level):
 		)
 	makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
 
+def make_rs_package(inputObject,rsPackage):
+	'''
+	If the ingest input is a dir of files, put all the _lrp access files
+	into a folder named for the object
+	'''
+	rsPackageDelivery = ''
+	if rsPackage != None:
+		try:
+			rsOutDir = config['paths']['resourcespace_deliver']
+			_object = os.path.basename(inputObject)
+			rsPackageDelivery = os.path.join(rsOutDir,_object)
+
+			if not os.path.isdir(rsPackageDelivery):
+				try:
+					os.mkdir(rsPackageDelivery)
+					# add a trailing slash for rsync
+					rsPackageDelivery = os.path.join(rsPackageDelivery,'')
+					print(rsPackageDelivery)
+				except OSError as e:
+					print("OOPS: {}".format(e))
+		except:
+			pass
+	else:
+		pass
+
+	return rsPackageDelivery
+
 def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	'''
 	Make derivatives based on options declared in config...
@@ -326,24 +353,9 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	makeProres = processingVars['makeProres']
 	ingestType = processingVars['ingestType']
 
-	if rsPackage != None:
-		'''
-		If the input is a dir of files, put all the _lrp access files
-		into a folder named for the object
-		'''
-		rsPackageDelivery = ''
-		try:
-			rsOutDir = config['paths']['resourcespace_deliver']
-			_object = os.path.basename(processingVars['input_name'])
-			rsPackageDelivery = os.path.join(rsOutDir,_object)+"/"
-
-			if not os.path.isdir(rsPackageDelivery):
-				try:
-					os.mkdir(rsPackageDelivery)
-				except OSError as e:
-					print("OOPS: {}".format(e))
-		except:
-			rsPackageDelivery = ''
+	# make an enclosing folder for access copies if the input is a
+	# group of related video files
+	rsPackageDelivery = make_rs_package(processingVars['input_name'],rsPackage)
 
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
