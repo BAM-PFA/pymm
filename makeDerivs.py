@@ -67,27 +67,58 @@ def set_output_options(derivType,inputPath,outputDir):
 	return outputOptions
 
 def set_args():
-	parser = argparse.ArgumentParser(description='make derivatives of an input a/v file')
-	parser.add_argument('-i','--inputPath',help='path of input file')
-	parser.add_argument('-d','--derivType',choices=['resourcespace','proresHQ'],help='choose a derivative type to output')
-	parser.add_argument('-o','--outputDir',help='set output directory for deriv delivery')
-	parser.add_argument('-r','--logDir',help='set output directory for ffmpeg and rsync logs')
-	# parser.add_argument('-m','--packageMetadataObjects',help='set directory for deriv metadata')
+	parser = argparse.ArgumentParser(
+		description='make derivatives of an input a/v file'
+		)
+	parser.add_argument(
+		'-i','--inputPath',
+		help='path of input file'
+		)
+	parser.add_argument(
+		'-d','--derivType',
+		choices=['resourcespace','proresHQ'],
+		help='choose a derivative type to output'
+		)
+	parser.add_argument(
+		'-o','--outputDir',
+		help='set output directory for deriv delivery'
+		)
+	parser.add_argument(
+		'-L','--logDir',
+		help='set output directory for ffmpeg and rsync logs'
+		)
+	parser.add_argument(
+		'-r','--rspaceMulti',
+		help='set directory for multi-file resourcespace object'
+		)
 
 	return parser.parse_args()
 
-def additional_delivery(derivFilepath,derivType,rsyncLogDir):
-	destinations = 	{'resourcespace': config['paths']['resourcespace_deliver'],'proresHQ':config['paths']['prores_deliver']}
+def additional_delivery(derivFilepath,derivType,rsMulti=None):
+	destinations = 	{
+		'resourcespace': config['paths']['resourcespace_deliver'],
+		'proresHQ':config['paths']['prores_deliver']
+		}
 	deliveryDir = destinations[derivType]
+
 	if deliveryDir == '':
 		print("there's no directory set for "+derivType+" delivery... SET IT!!")
 		pass
+	elif deliveryDir != '' and rsMulti != None:
+		sys.argv = ['',
+			'-i'+derivFilepath,
+			'-d'+rsMulti
+			]
 	else:
-		sys.argv = ['','-i'+derivFilepath,'-d'+deliveryDir,'-L'+rsyncLogDir]
-		try:
-			moveNcopy.main()
-		except:
-			print('there was an error in rsyncing the output deriv to the destination folder')
+		sys.argv = ['',
+			'-i'+derivFilepath,
+			'-d'+deliveryDir
+			]
+	
+	try:
+		moveNcopy.main()
+	except:
+		print('there was an error in rsyncing the output deriv to the destination folder')
 
 def main():
 	# DO STUFF
@@ -97,26 +128,32 @@ def main():
 	outputDir = args.outputDir
 	derivType = args.derivType
 	logDir = args.logDir
+	rsMulti = args.rspaceMulti
+
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
+	
 	ffmpegArgs = []
 	inputOptions = set_input_options(derivType,inputPath,logDir)
 	middleOptions = set_middle_options(derivType)
 	outputOptions = set_output_options(derivType,inputPath,outputDir)
+	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
 	# print(ffmpegArgs)
 	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	out,err = output.communicate()
 	# print(out.decode('utf-8'))
+	
 	if err:
 		print(err.decode('utf-8'))
 	if logDir:
 		pymmFunctions.unset_ffreport()
+	
 	# get the output path to rsync the deriv to access directories
 	outputFilePath = outputOptions[-1]
 	if pymmFunctions.boolean_answer(config['deriv delivery options'][derivType]):
-		additional_delivery(outputFilePath,derivType,logDir)
+		additional_delivery(outputFilePath,derivType,rsMulti)
 	# print(outputFilePath)
 	return outputFilePath
 

@@ -141,7 +141,7 @@ def make_hashdeep_manifest(inputPath):
 				pymmFunctions.timestamp('8601-filename')
 				)
 			)
-		print(manifestPath)
+		# print(manifestPath)
 		# run hashdeep on the package
 		command = ['hashdeep', '-rvvl', '-W', manifestPath, '.']
 		# print(command)
@@ -179,7 +179,7 @@ def hashdeep_audit(inputPath,manifestPath):
 	os.chdir(package)
 	try:
 		hashaudit = subprocess.call(command,stdout=subprocess.PIPE)
-		print(hashaudit)
+		# print(hashaudit)
 		try:
 			with open(auditPath,'r') as audit:
 				first_line = audit.readline().rstrip()

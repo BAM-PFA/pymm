@@ -17,7 +17,7 @@ def copy_file(inputPath,rsyncLogPath,destination):
 	call rsync on an input file
 	'''
 	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputPath))
-	if not rsyncLogPath == '':
+	if not rsyncLogPath in ('',None):
 		rsyncCommand = [
 			'rsync','-rtvPih',
 			'--log-file={}'.format(rsyncLogPath),
@@ -27,7 +27,7 @@ def copy_file(inputPath,rsyncLogPath,destination):
 	else:
 		rsyncCommand = [
 			'rsync','-rtvPih',
-			inputDir,
+			inputPath,
 			destination
 			]		
 	# print(rsyncCommand)

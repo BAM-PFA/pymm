@@ -315,7 +315,7 @@ def add_pbcore_instantiation(processingVars,level):
 		)
 	makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
 
-def make_derivs(ingestLogBoilerplate,processingVars):
+def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	'''
 	Make derivatives based on options declared in config...
 	'''
@@ -326,6 +326,25 @@ def make_derivs(ingestLogBoilerplate,processingVars):
 	makeProres = processingVars['makeProres']
 	ingestType = processingVars['ingestType']
 
+	if rsPackage != None:
+		'''
+		If the input is a dir of files, put all the _lrp access files
+		into a folder named for the object
+		'''
+		rsPackageDelivery = ''
+		try:
+			rsOutDir = config['paths']['resourcespace_deliver']
+			_object = os.path.basename(processingVars['input_name'])
+			rsPackageDelivery = os.path.join(rsOutDir,_object)+"/"
+
+			if not os.path.isdir(rsPackageDelivery):
+				try:
+					os.mkdir(rsPackageDelivery)
+				except OSError as e:
+					print("OOPS: {}".format(e))
+		except:
+			rsPackageDelivery = ''
+
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
 	if ingestType in ('film scan','video transfer'):
@@ -335,7 +354,9 @@ def make_derivs(ingestLogBoilerplate,processingVars):
 	# {derivtype1:/path/to/deriv/file1}
 	deliveredDerivPaths = {}
 	
-	if pymmFunctions.boolean_answer(config['deriv delivery options']['proresHQ']):
+	if pymmFunctions.boolean_answer(
+		config['deriv delivery options']['proresHQ']
+		):
 		derivTypes.append('proresHQ')
 	elif makeProres == True:
 		derivTypes.append('proresHQ')
@@ -343,12 +364,16 @@ def make_derivs(ingestLogBoilerplate,processingVars):
 		pass
 
 	for derivType in derivTypes:
-		sys.argv = 	['',
+		sysargs = ['',
 					'-i'+inputPath,
 					'-o'+packageObjectDir,
 					'-d'+derivType,
-					'-r'+packageLogDir
+					'-L'+packageLogDir
 					]
+		if rsPackageDelivery != '':
+			sysargs.append('-r'+rsPackageDelivery)
+		sys.argv = 	sysargs
+		
 		deliveredDeriv = makeDerivs.main()
 		deliveredDerivPaths[derivType] = deliveredDeriv
 
@@ -374,8 +399,6 @@ def make_derivs(ingestLogBoilerplate,processingVars):
 			fileMD5 = makeMetadata.hash_file(value)
 			add_pbcore_instantiation(processingVars, level)
 			add_pbcore_md5_location(processingVars, fileMD5)
-			# SHOULD ADD INPUT_FILE_METADATA CALL HERE?
-			# input_file_metadata(ingestLogBoilerplate,processingVars)
 
 def move_sip(processingVars):
 	'''
@@ -642,7 +665,7 @@ def main():
 				"Preservation master"
 				) # @dbme
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
-			make_derivs(ingestLogBoilerplate,processingVars) # @dbme
+			make_derivs(ingestLogBoilerplate,processingVars,rsPackage=True) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
