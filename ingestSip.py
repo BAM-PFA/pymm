@@ -691,15 +691,22 @@ def main():
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP
 		) # @dbme
-	# b) move the SIP
-	_SIP = move_sip(processingVars) # @dbme
+	# b) move the SIP if needed
 	packageVerified = False
-	# c) audit the hashdeep manifest 
-	# packageVerified = result of audit
-	packageVerified = makeMetadata.hashdeep_audit(
-		_SIP,
-		manifestPath
-		) # @dbme
+	if not aip_staging == config['paths']['outdir_ingestfile']:
+		_SIP = move_sip(processingVars) # @dbme
+		# c) audit the hashdeep manifest 
+		# packageVerified = result of audit
+		packageVerified = makeMetadata.hashdeep_audit(
+			_SIP,
+			manifestPath
+			) # @dbme
+	else:
+		# probably pointless on same filesystem
+		packageVerified = makeMetadata.hashdeep_audit(
+			_SIP,
+			manifestPath
+			) # @dbme
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
