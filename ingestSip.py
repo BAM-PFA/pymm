@@ -498,6 +498,11 @@ def main():
 
 	#############################
 	#### TEST / SET ENV VARS ####
+	# init a dict of outcomes to be returned
+	ingestReults = {
+		'status':False,
+		'UUID':''
+	}
 	# sniff whether the input is a file or directory
 	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
 	if not inputType:
@@ -710,6 +715,12 @@ def main():
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
+
+	if packageVerified:
+		ingestReults['status'] = True
+	ingestReults['UUID'] = ingestUUID
+
+	return ingestReults
 
 if __name__ == '__main__':
 	main()
