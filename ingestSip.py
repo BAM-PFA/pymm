@@ -720,6 +720,7 @@ def main():
 		ingestReults['status'] = True
 	ingestReults['UUID'] = ingestUUID
 
+	print(ingestReults)
 	return ingestReults
 
 if __name__ == '__main__':
