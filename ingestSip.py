@@ -303,6 +303,7 @@ def add_pbcore_md5_location(processingVars, inputFileMD5):
 def add_pbcore_instantiation(processingVars,level):
 	_file = processingVars['inputPath']
 	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
+	# print(pbcoreReport)
 	descriptiveJSONpath = processingVars['objectBAMPFAjson']
 	pbcoreFile = processingVars['pbcore']
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
@@ -411,6 +412,15 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 			fileMD5 = makeMetadata.hash_file(value)
 			add_pbcore_instantiation(processingVars, level)
 			add_pbcore_md5_location(processingVars, fileMD5)
+
+	# get a return value that is the path to the access copy
+	# for a single file it's the single deriv path
+	# for a folder of files it's the path to the enclosing deriv folder
+	if rsPackageDelivery != '':
+		accessPath = rsPackageDelivery
+	else:
+		accessPath = deliveredDerivPaths['resourcespace']
+	return accessPath
 
 def move_sip(processingVars):
 	'''
@@ -667,7 +677,7 @@ def main():
 			"Preservation master"
 			) # @dbme
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
-		make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		for _file in source_list:
 			# set processing variables per file 
@@ -682,7 +692,7 @@ def main():
 				"Preservation master"
 				) # @dbme
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
-			make_derivs(ingestLogBoilerplate,processingVars,rsPackage=True) # @dbme
+			accessPath = make_derivs(ingestLogBoilerplate,processingVars,rsPackage=True) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
@@ -718,7 +728,8 @@ def main():
 
 	if packageVerified:
 		ingestReults['status'] = True
-	ingestReults['UUID'] = ingestUUID
+	ingestReults['ingestUUID'] = ingestUUID
+	ingestReults['accessPath'] = accessPath
 
 	print(ingestReults)
 	return ingestReults
