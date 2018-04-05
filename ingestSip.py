@@ -413,13 +413,17 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 			add_pbcore_instantiation(processingVars, level)
 			add_pbcore_md5_location(processingVars, fileMD5)
 
-	# get a return value that is the path to the access copy
-	# for a single file it's the single deriv path
-	# for a folder of files it's the path to the enclosing deriv folder
+	# get a return value that is the path to the access copy:
+	# for a single file it's the single deriv path.
+	# for a folder of files it's the path to the enclosing deriv folder.
+	# this is going to be used to make an API call to resourcespace
 	if rsPackageDelivery != '':
 		accessPath = rsPackageDelivery
 	else:
-		accessPath = deliveredDerivPaths['resourcespace']
+		SIPaccessPath = deliveredDerivPaths['resourcespace']
+		deliveredAccessBase = os.path.basename(SIPaccessPath)
+		rsOutDir = config['paths']['resourcespace_deliver']
+		accessPath = os.path.join(rsOutDir,deliveredAccessBase)
 	return accessPath
 
 def move_sip(processingVars):
