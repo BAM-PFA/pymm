@@ -26,15 +26,15 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 	`level` should refer to:
 	Preservation master, Access copy, Mezzanine
 	'''
-
+	parser = ET.XMLParser(recover=True)
 	try:
-		pbcoreInstantiation = ET.parse(pbcoreInstantiationPath)
+		pbcoreInstantiation = ET.parse(pbcoreInstantiationPath,parser=parser)
 		# print(pbcoreInstantiation)
 
 	except:
 		try:
-			# see if it's a bytes type object... 
-			pbcoreString = ET.fromstring(pbcoreInstantiationPath)
+			# see if it's a bytes type object...
+			pbcoreString = ET.fromstring(pbcoreInstantiationPath,parser=parser)
 			pbcoreInstantiation = ET.ElementTree(pbcoreString)
 		except:
 			print('not a valid xml input ... probably?')
