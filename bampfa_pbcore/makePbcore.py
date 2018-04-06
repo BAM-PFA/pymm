@@ -313,15 +313,14 @@ def add_physical_elements(self,descriptiveJSONpath):
 						)
 					add_pbcore_subelements(self,top,mappedSubelements,mdValue)
 				else:
-					if not targetInstantiation == []:
-						top = add_SubElement(
-							self,
-							physicalInstantiation,
-							mappingTarget,
-							attrib=mappingAttribs,
-							nsmap=self.NS_MAP
-							)
-						add_pbcore_subelements(self,top,mappedSubelements,mdValue)
+					top = add_SubElement(
+						self,
+						physicalInstantiation,
+						mappingTarget,
+						attrib=mappingAttribs,
+						nsmap=self.NS_MAP
+						)
+					add_pbcore_subelements(self,top,mappedSubelements,mdValue)
 
 def to_string(self):
 	self._string = ET.tostring(self.descriptionRoot, pretty_print=True)
