@@ -26,6 +26,7 @@ import makeDerivs
 import moveNcopy
 import makeMetadata
 import concatFiles
+import premisSQL
 
 from bampfa_pbcore import pbcore, makePbcore
 
@@ -558,6 +559,12 @@ def main():
 		inputPath = input("Please drag the file you want to ingest into this window___").rstrip()
 		inputPath = pymmFunctions.sanitize_dragged_linux_paths(inputPath)
 
+	# get database details
+	if report_to_db != None:
+		pymmDB = config['database settings']['pymm_db']
+		if not operator in config['database users']:
+			print("{} is not a valid user in the pymm database.".format(operator))
+
 	# Set up a canonical name that will be passed to each log entry.
 	# For files it's the basename, for dirs it's the dir name.
 	if inputPath:
@@ -629,6 +636,7 @@ def main():
 	# @fixme
 	# @logme # @dbme
 
+
 	# create a PBCore XML file and send any existing BAMPFA metadata JSON
 	# to the object metadata directory.
 	pbcoreXML = pbcore.PBCoreDocument()
@@ -672,9 +680,25 @@ def main():
 	## DO STUFF! ##
 	###############
 	if inputType == 'file':
+		if report_to_db:
+			objectCategory = 'file'
+			try:
+				objectIdentifierValueID = pymmFunctions.insert_object(
+					operator,
+					canonicalName,
+					objectCategory
+					)
+			except:
+				print("CAN'T MAKE DB CONNECTION")
+				pymmFunctions.pym_log(
+					input_name,
+					tempID,
+					operator,
+					"NO DATABASE CONNECTION!!!",
+					"WARNING"
+					)
 		# check that input file is actually a/v
-		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbme
-		mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbmemediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
 		add_pbcore_instantiation(
 			processingVars,
@@ -683,11 +707,46 @@ def main():
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
 	elif inputType == 'dir':
+		if report_to_db:
+			objectCategory = 'intellectual entity'
+			try:
+				objectIdentifierValueID = pymmFunctions.insert_object(
+					operator,
+					canonicalName,
+					objectCategory
+					)
+			except:
+				print("CAN'T MAKE DB CONNECTION")
+				pymmFunctions.pym_log(
+					input_name,
+					tempID,
+					operator,
+					"NO DATABASE CONNECTION!!!",
+					"WARNING"
+					)
 		for _file in source_list:
+			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file) # @dbme
 			processingVars['filename'] = os.path.basename(_file) # @dbme
 			processingVars['inputPath'] = _file # @dbme
+			if report_to_db:
+				objectCategory = 'file'
+				try:
+					objectIdentifierValueID = pymmFunctions.insert_object(
+						operator,
+						processingVars['filename'],
+						objectCategory
+						)
+				except:
+					print("CAN'T MAKE DB CONNECTION")
+					pymmFunctions.pym_log(
+						input_name,
+						tempID,
+						operator,
+						"NO DATABASE CONNECTION!!!",
+						"WARNING"
+						)
 			# check that input file is actually a/v
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
