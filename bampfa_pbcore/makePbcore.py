@@ -12,8 +12,7 @@ from . import pbcore
 
 def tidy(self):
 	'''
-	Should fix ordering if needed?
-	i.e. put the work-level stuff before the instantiation(s)
+	I need to make the order match the schema order.
 	'''
 	pass
 
@@ -26,6 +25,7 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 	`level` should refer to:
 	Preservation master, Access copy, Mezzanine
 	'''
+	# This parser declaration avoids XPath failure on special characters
 	parser = ET.XMLParser(recover=True)
 	try:
 		pbcoreInstantiation = ET.parse(pbcoreInstantiationPath,parser=parser)
