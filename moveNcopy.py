@@ -4,6 +4,7 @@
 #
 # This is basically a couple of functions to call rsync :/
 #
+import glob
 import os
 import sys
 import hashlib
@@ -15,7 +16,6 @@ import pymmFunctions
 
 def move_n_verify_sip(
 	stagedSIPpath,
-	SIPmanifestPath,
 	destination,
 	destinationLogPath=None
 	):
@@ -30,6 +30,9 @@ def move_n_verify_sip(
 	stagedSIPpath,
 	destination
 	]
+
+	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
+	SIPmanifestPath = glob.glob(manifestPattern)[0]
 	
 	gcp = subprocess.run(
 		gcpCommand,
@@ -162,6 +165,13 @@ def set_args():
 		help='set a directory for the rsync log to live in'
 		)
 
+	parser.add_argument(
+		'-s','--movingSIP',
+		action='store_true',
+		default=False,
+		help='run move_n_verify_sip on input'
+		)
+
 	return parser.parse_args()
 
 def main():
@@ -169,6 +179,7 @@ def main():
 	args = set_args()
 	requiredArgs = ['inputPath','destination']
 	inputPath = args.inputPath
+	movingSIP = args.movingSIP
 	algorithm = args.algorithm
 	removeOriginals = args.removeOriginals
 	destination = args.destination
@@ -187,41 +198,45 @@ def main():
 	if missingArgs > 0:
 		sys.exit()
 
-	# set up rsync log
-	if loglevel == 'all':
-		pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
-		# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
-		try:
-			rsyncLogPath = os.path.join(
-				logDir,
-				'rsync_log_{}_{}.txt'.format(
-					pymmFunctions.get_base(inputPath),
-					pymmFunctions.timestamp('now')
+	if not movingSIP:
+		# set up rsync log
+		if loglevel == 'all':
+			pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
+			# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
+			try:
+				rsyncLogPath = os.path.join(
+					logDir,
+					'rsync_log_{}_{}.txt'.format(
+						pymmFunctions.get_base(inputPath),
+						pymmFunctions.timestamp('now')
+						)
 					)
-				)
-		except:
-			print("there was a problem getting the rsync log path ....")
-			rsyncLogPath = ''
-	else:
-		rsyncLogPath = '.'
+			except:
+				print("there was a problem getting the rsync log path ....")
+				rsyncLogPath = ''
+		else:
+			rsyncLogPath = '.'
 
-	# sniff what the input is
-	dir_or_file = pymmFunctions.dir_or_file(inputPath)
-	if dir_or_file == False:
-		print("oy you've got big problems. {} is not a directory or a file."
-			" what is it? is it a ghost?".format(inputPath))
-		sys.exit(1)
-	# copy the input according to its type
-	elif dir_or_file == 'dir':
-		# add trailing slash for rsync destination directory
-		if not destination[-1] == '/':
-			destination = destination+'/'
-		copy_dir(inputPath,rsyncLogPath,destination)
-	elif dir_or_file == 'file':
-		copy_file(inputPath,rsyncLogPath,destination)
+		# sniff what the input is
+		dir_or_file = pymmFunctions.dir_or_file(inputPath)
+		if dir_or_file == False:
+			print("oy you've got big problems. {} is not a directory or a file."
+				" what is it? is it a ghost?".format(inputPath))
+			sys.exit(1)
+		# copy the input according to its type
+		elif dir_or_file == 'dir':
+			# add trailing slash for rsync destination directory
+			if not destination[-1] == '/':
+				destination = destination+'/'
+			copy_dir(inputPath,rsyncLogPath,destination)
+		elif dir_or_file == 'file':
+			copy_file(inputPath,rsyncLogPath,destination)
+		else:
+			print("o_O what is going on here? you up to something?")
+			sys.exit()
 	else:
-		print("o_O what is going on here? you up to something?")
-		sys.exit()
+		safe = move_n_verify_sip(inputPath,destination)
+		return safe
 
 if __name__ == '__main__':
 	main()
