@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 '''
-this is a set of functions used by pymm scripts
-'''
+This is a set of functions used by pymm scripts
 
+This file is organized into 4 main sections:
+ * CONFIG CHECK STUFF
+ * PYMM ADMIN / LOGGING STUFF
+ * FILE CHECK STUFF
+ * SYSTEM / ENVIRONMENT STUFF
+
+'''
+import glob
 import json
 import subprocess
 import os
@@ -70,7 +77,6 @@ def check_missing_ingest_paths(pymmConfig):
 
 # have to import dbAccess after init config to avoid circular error
 import dbAccess
-
 def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
@@ -161,6 +167,68 @@ def reset_cleanup_choice():
 			"so we will just leave things where they are when we finish."
 			)
 	return cleanupStrategy
+
+def validate_SIP_structure(SIPpath,canonicalName=None):
+	'''
+	Check that all the top-level stuff expected in a package exists.
+	Don't go too deep... 
+	Current expected structure is:
+	UUID/
+	  UUID/
+	    metadata/
+	      objectCanonicalName_pbcore.xml
+	      logs/
+	        ingestLog.txt
+	        ffmpeglog
+	        rsyncLog
+	      objects/
+		    masterobject1_framemd5.md5
+		    masterobject2_framemd5.md5
+	        masterobject1_mediainfo.xml
+	        masterobject2_mediainfo.xml
+	        resourcespace/
+	          resourcespace_mediainfo.xml
+	    objects/
+	      masterobject1
+	      masterobject2
+	      resourcespace/
+	        resourcespace1
+	        resourcespace2
+	    
+	  hashdeep_manifest_UUID_iso8601.txt
+	'''
+	structureValidated = True
+	UUID = os.path.basename(SIPpath)
+	# define the directories to check
+	ingestDir = os.path.join(SIPpath,UUID)
+	metadataDir = os.path.join(ingestDir,'metadata')
+	logDir = os.path.join(metadataDir,'logs')
+	objectMetadataDir = os.path.join(metadataDir,'objects')
+	objectDir = os.path.join(ingestDir,'objects')
+	dirs = [ingestDir,metadataDir,logDir,objectMetadataDir,objectDir]
+	# check that they exist
+	# I should log the non-existence of any of these
+	# maybe rename the SIP to FAILED-UUID?
+	for thing in dirs:
+		if not os.path.isdir(thing):
+			structureValidated = False
+			print("missing {}".format(os.path.basename(thing))) # @logme
+
+	# use glob to search for the existence of
+	# 1) hashdeep manifest
+	# 2) pbcore xml file
+	manfestPattern = os.path.join(SIPpath,'hashdeep_manifest_*')
+	manifest = glob.glob(manfestPattern)
+	if manifest == []:
+		print("missing a hashdeep manifest for the SIP")
+		structureValidated = False # @logme
+	pbcorePattern = os.path.join(metadataDir,'*_pbcore.xml')
+	pbcore = glob.glob(pbcorePattern)
+	if pbcore == []:
+		print("missing a pbcore xml description for the object")
+		structureValidated = False
+
+	return structureValidated
 
 def database_connection(user):
 	connection = dbAccess.DB(user)

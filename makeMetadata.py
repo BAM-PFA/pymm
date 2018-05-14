@@ -156,7 +156,7 @@ def hashdeep_audit(inputPath,manifestPath):
 	Given a target directory and an existing manifest, run a hashdeep audit.
 	-> chdir into the target, audit the relative paths, and get out.
 	Updated version creates a bagit-style tree that contains the package,
-	along with the existing mnifest.
+	along with the existing manifest.
 	same idea as above: read manifest from blob in db and write the audit file
 	as a new blob.
 	'''

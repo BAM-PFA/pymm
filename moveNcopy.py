@@ -12,6 +12,12 @@ import subprocess
 # local modules:
 import pymmFunctions
 
+def move_n_verify_sip(stagedSIPpath,destinationParentDir,destinationLogPath=None):
+	'''
+	move a valid sip to a destination and run a hashdeep audit on it
+	'''
+	pass
+
 def copy_file(inputPath,rsyncLogPath,destination):
 	'''
 	call rsync on an input file

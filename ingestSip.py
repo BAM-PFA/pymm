@@ -427,7 +427,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		accessPath = os.path.join(rsOutDir,deliveredAccessBase)
 	return accessPath
 
-def move_sip(processingVars):
+def stage_sip(processingVars):
 	'''
 	Move a prepped SIP to the AIP staging area.
 	'''
@@ -772,7 +772,7 @@ def main():
 	# b) move the SIP if needed
 	packageVerified = False
 	if not aip_staging == config['paths']['outdir_ingestfile']:
-		_SIP = move_sip(processingVars) # @dbme
+		_SIP = stage_sip(processingVars) # @dbme
 		# c) audit the hashdeep manifest 
 		# packageVerified = result of audit
 		packageVerified = makeMetadata.hashdeep_audit(
