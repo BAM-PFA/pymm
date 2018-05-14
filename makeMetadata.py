@@ -160,42 +160,26 @@ def hashdeep_audit(inputPath,manifestPath):
 	same idea as above: read manifest from blob in db and write the audit file
 	as a new blob.
 	'''
-	_object = pymmFunctions.get_base(inputPath)
+	_object = os.path.basename(inputPath)
 	package = os.path.join(inputPath,_object)
-	# set up a path for the audit to exist on
-	auditPath = os.path.join(
-		inputPath,
-		'hashdeep_audit_{}_{}.txt'.format(
-			_object,
-			pymmFunctions.timestamp('8601-filename')
-			)
-		)
-	with open(auditPath,'x') as f:
-		pass
 
-	command = ['hashdeep','-rvval','-k',manifestPath,'-W',auditPath,'.']
-	# print(' '.join(command))
+	command = ['hashdeep','-rvval','-k',manifestPath,'.']
+
 	here = os.getcwd()
 	os.chdir(package)
 	try:
-		hashaudit = subprocess.call(command,stdout=subprocess.PIPE)
+		hashaudit = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		# print(hashaudit)
-		try:
-			with open(auditPath,'r') as audit:
-				first_line = audit.readline().rstrip()
-				print(first_line)
-				if first_line == 'hashdeep: Audit failed':
-					result = False
-				elif first_line == 'hashdeep: Audit passed':
-					result = True
-				else:
-					print("INCONCLUSIVE AUDIT. SIP NOT VERIFIED.")
-					result = False
-		except:
-			print(
-				"there was a problem reading the hashdeep audit file. "
-				"assuming the package is not verified."
-				)
+		out = hashaudit.stdout.splitlines()
+		for line in out:
+			if line.decode().startswith("hashdeep: Audit"):
+				outcome = line.decode()
+		if outcome == 'hashdeep: Audit failed':
+			result = False
+		elif outcome == 'hashdeep: Audit passed':
+			result = True
+		else:
+			print("INCONCLUSIVE AUDIT. SIP NOT VERIFIED.")
 			result = False
 
 	except:

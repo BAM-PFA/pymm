@@ -10,13 +10,49 @@ import hashlib
 import argparse
 import subprocess
 # local modules:
+import makeMetadata
 import pymmFunctions
 
-def move_n_verify_sip(stagedSIPpath,destinationParentDir,destinationLogPath=None):
+def move_n_verify_sip(
+	stagedSIPpath,
+	SIPmanifestPath,
+	destination,
+	destinationLogPath=None
+	):
 	'''
-	move a valid sip to a destination and run a hashdeep audit on it
+	move a valid sip to a destination 
+	(intended for LTO) and run a hashdeep audit on it
 	'''
-	pass
+	gcpCommand = [
+	'gcp',
+	'--preserve=mode,timestamps',
+	'-nRv',
+	stagedSIPpath,
+	destination
+	]
+	
+	gcp = subprocess.run(
+		gcpCommand,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE
+		)
+
+	if not gcp.stderr.decode() == '':
+		print(gcp.stderr)
+		safe = False
+	else:
+		print(gcp.stdout)
+		verify = makeMetadata.hashdeep_audit(
+			stagedSIPpath,
+			SIPmanifestPath
+			)
+		if verify:
+			safe = True
+		else:
+			safe = False
+
+	return safe
+
 
 def copy_file(inputPath,rsyncLogPath,destination):
 	'''
