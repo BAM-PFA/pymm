@@ -15,6 +15,8 @@ import hashlib
 # nonstandard libraries:
 import Levenshtein
 from ffmpy import FFprobe, FFmpeg
+# local modules:
+import premisSQL
 
 ################################################################
 # 
@@ -65,6 +67,10 @@ def check_missing_ingest_paths(pymmConfig):
 #
 # PYMM ADMIN / LOGGING STUFF
 #
+
+# have to import dbAccess after init config to avoid circular error
+import dbAccess
+
 def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
@@ -155,6 +161,39 @@ def reset_cleanup_choice():
 			"so we will just leave things where they are when we finish."
 			)
 	return cleanupStrategy
+
+def database_connection(user):
+	connection = dbAccess.DB(user)
+	try:
+		connection.connect()
+		return connection
+	except:
+		print("DB connection problem...")
+		return False
+
+def do_query(connection,sql,*args):
+	'''
+	must be passed an open mysql.connector.connection.MySQLConnection object
+	'''
+	cursor = connection.query(sql,*args)
+	return cursor
+
+def insert_object(operator,identifier,objectCategory):
+	try:
+		dbConnection = database_connection(operator)
+		
+		insertObjectSQL = premisSQL.insertObjectSQL
+		cursor = do_query(
+			dbConnection,
+			insertObjectSQL,
+			identifier,
+			objectCategory
+			)
+		objectIdentifierValueID = cursor.lastrowid
+		return objectIdentifierValueID
+	except:
+		return False
+
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #

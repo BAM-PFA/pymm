@@ -16,7 +16,14 @@ from pymmconfig import pymmconfig
 #
 def set_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-m','--mode',choices=['database','user','check'],help='database mode creates a PREMIS database from scratch; user mode adds a user to an existing db')
+	parser.add_argument(
+		'-m','--mode',
+		choices=['database','user','check'],
+		help=(
+			'database mode creates a PREMIS database from scratch; '
+			'user mode adds a user to an existing db'
+			)
+		)
 	return parser.parse_args()
 #
 #
@@ -24,9 +31,11 @@ def set_args():
 
 config = pymmFunctions.read_config()
 pymm_db = config['database settings']['pymm_db']
-preexistingDB = pymm_db
 
-print("THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!")
+print(
+	"THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n"
+	"\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!"
+	)
 
 def connect_to_mysql(user='root'):
 	try:
@@ -34,18 +43,20 @@ def connect_to_mysql(user='root'):
 		connection = connect.connect()
 		return connect
 	except:
-		print("you got some mysql connection issues, maybe the user doesn't exist?")
+		print("you got some mysql connection issues, "
+			"maybe the user doesn't exist?")
 		sys.exit()
 
 def check_db_exists(pymm_db=pymm_db):
 	if pymm_db == '':
-		print("There is no Pymm database set in the config file yet. Now exiting.")
+		print("There is no Pymm database set "
+			"in the config file yet. Now exiting.")
 		sys.exit()
-	query = "SHOW DATABASES;"
+	showDBs = "SHOW DATABASES"
 	connect = connect_to_mysql('root')
 	# connect = db.DB('root')
 	# connect.connect()
-	databases = connect.query(query,)
+	databases = connect.query(showDBs,)
 	dbExists = [item[0] for item in databases if pymm_db in item]
 	if dbExists:
 		print(pymm_db+" EXISTS!")
@@ -62,38 +73,40 @@ def create_db(pymm_db=pymm_db):
 	# check config file for existing db, ask for one if it doesn't exist
 	if pymm_db == '':
 		pymm_db = input("Please enter a name for the database: ")
-	# mysql.connector won't allow %s substitution for db name... ? use str.format() method instead
-	createDbSQL = "CREATE DATABASE IF NOT EXISTS {};".format(pymm_db)
+	# mysql.connector only allows parameterization for INSERT and SELECT
+	# use str.format() method instead
+	createDbSQL = "CREATE DATABASE IF NOT EXISTS {}".format(pymm_db)
 	# set 'use database' setting to True
 	pymmconfig.set_value("database settings",'use_db','y')
-	useDB = "USE {};".format(pymm_db)
+	useDB = "USE {}".format(pymm_db)
 	try:
 		connect = db.DB('root')
 		connect.connect()
 		cursor = connect.query(createDbSQL)
 		cursor = connect.close_cursor()
 	except:
-		print("Check your mysql settings and try again.")
+		print("Error: uh, error.. :(")
 		sys.exit()
 	
 	cursor = connect.query(useDB)
-	cursor = connect.close_cursor()
+	print(cursor)
 
-	createObjectTable =	('''CREATE TABLE object(\
+	createObjectTable =	('''CREATE TABLE IF NOT EXISTS object(\
 							objectIdentifierValueID bigint NOT NULL AUTO_INCREMENT,\
 							objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
+							objectCategory varchar(30) NOT NULL,\
 							objectDB_Insertion datetime NOT NULL DEFAULT NOW(),\
 							object_LastTouched datetime NOT NULL,\
 							PRIMARY KEY (objectIdentifierValueID)\
 							);\
 						''')
-	createEventTable = 	('''CREATE TABLE event (\
+	createEventTable = 	('''CREATE TABLE IF NOT EXISTS event (\
 							eventIdentifierValue BIGINT(20) NOT NULL AUTO_INCREMENT,\
 							objectIdentifierValue VARCHAR(1000),\
 							eventType varchar(100) NOT NULL,\
 							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventDetail varchar(30) NOT NULL,\
-							eventOutcome varchar(30),\
+							eventDetail varchar(100) NOT NULL,\
+							eventOutcome varchar(1000),\
 							eventDetailOPT varchar(1000),\
 							eventDetailCOMPNAME varchar(50) NOT NULL,\
 							linkingAgentIdentifierValue varchar(30) NOT NULL,\
@@ -101,7 +114,7 @@ def create_db(pymm_db=pymm_db):
 							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
 							);\
 						''')
-	createFixityTable =	('''CREATE TABLE fixity (\
+	createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
 							fixityIdentifierValue bigint NOT NULL AUTO_INCREMENT,\
 							eventIdentifierValue bigint NOT NULL,\
 							objectIdentifierValue varchar(1000),\
@@ -118,7 +131,7 @@ def create_db(pymm_db=pymm_db):
 							);\
 						''')							
 	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHASH);"
-	createLTOschemaTable = 	('''CREATE TABLE ltoSchema (\
+	createLTOschemaTable = 	('''CREATE TABLE IF NOT EXISTS ltoSchema (\
 								ltoSchemaValueID bigint NOT NULL AUTO_INCREMENT,\
 								ltoID varchar(10) NOT NULL,\
 								fileName varchar(200),\
@@ -133,7 +146,7 @@ def create_db(pymm_db=pymm_db):
 	createLTOcolumnIndex = 	('''CREATE UNIQUE INDEX lto_column_index \
 								ON ltoSchema(ltoID,fileName,filePath,fileSize,modifyTime);\
 								''')
-	createObjectCharsTable = 	('''CREATE TABLE objectCharacteristics (\
+	createObjectCharsTable = 	('''CREATE TABLE IF NOT EXISTS objectCharacteristics (\
 									objectCharacteristicValueID bigint NOT NULL AUTO_INCREMENT,\
 									objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
 									mediaInfo MEDIUMTEXT,\
@@ -144,7 +157,7 @@ def create_db(pymm_db=pymm_db):
 									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
 									);\
 								''')
-	createFingerprintsTable = 	('''CREATE TABLE fingerprints (\
+	createFingerprintsTable = 	('''CREATE TABLE IF NOT EXISTS fingerprints (\
 									hashNumber bigint NOT NULL AUTO_INCREMENT,\
 									objectIdentifierValue varchar(1000) NOT NULL,\
 									startframe varchar(100),\
@@ -164,19 +177,16 @@ def create_db(pymm_db=pymm_db):
 			createLTOschemaTable,createLTOidIndex,createLTOcolumnIndex,
 			createObjectCharsTable,createFingerprintsTable,createHashIndex]
 
-	if preexistingDB == '':
-		# skip table/index creation if db exists already...
-		if check_db_exists(pymm_db):
-			for sql in sqlToDo:
-				try:
-					cursor = connect.query(sql)
-					cursor = connect.close_cursor()
-				except:
-					print("mysql error... check your settings and try again.")
-					sys.exit()
-			pymmconfig.set_value("database settings",'pymm_db',pymm_db)
-	else:
-		print("Your database, "+pymm_db+" already exists, silly goose. We are done here. Goodnight.")
+	# preexistingDB = check_db_exists()
+	for sql in sqlToDo:
+		try:
+			cursor = connect.query(sql)
+			cursor = connect.close_cursor()
+		except:
+			print("mysql error... check your settings and try again.")
+			sys.exit()
+	pymmconfig.set_value("database settings",'pymm_db',pymm_db)
+
 	connect.close_connection()
 
 def create_user(pymm_db=pymm_db):
@@ -200,8 +210,8 @@ def create_user(pymm_db=pymm_db):
 	try:
 		connect = db.DB('root')
 		connect.connect()
-		connect.query(createUserSQL,(newUser,userIP,userPass))
-		connect.query(grantPrivsSQL,(newUser,userIP))
+		connect.query(createUserSQL,newUser,userIP,userPass)
+		connect.query(grantPrivsSQL,newUser,userIP)
 		connect.close_cursor()
 		connect.close_connection()
 		print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"

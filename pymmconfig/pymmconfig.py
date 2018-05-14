@@ -19,6 +19,7 @@ def make_config(configPath):
 			config.write('''[paths]\noutdir_ingestfile:\naip_staging:\nresourcespace_deliver:\nprores_deliver:\
 				\n\n[deriv delivery options]\nresourcespace: n\nproresHQ: n\
 				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
+				\n\n[database users]\nuser: password\
 				\n\n[logging]\npymm_log_dir:\
 				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:\
 				\n\n[ffmpeg]\nresourcespace_opts:["a","b","c"]\nproresHQ_opts:["x","y","z"]
@@ -44,23 +45,41 @@ def set_value(section, optionToSet,newValue=None):
 	with open(configPath,'w') as out:
 		config.write(out)
 
+def add_db_credentials():
+	print(
+		"WARNING: This is only for use when the database "
+		"and the user are on the same machine. \n"
+		"You must also create the user with these credentials using \n"
+		"`python3 createPymmDB -m user`."
+		)
+	username = input("Enter the username: ")
+	password = input("Enter the password for the user: ")
+
+	set_value('database users',username,password)
+
 def select_option():
 	more = ''
-	optionToSet = input("Enter the configuration option you want to set: ")
-	matchingSections = 0
+	optionToSet = input("Enter the configuration option you want to set "
+		"OR type 'db' to add credentials for a database user: ")
+	if optionToSet in ('db','DB'):
+		add_db_credentials()
+		more = input("Type 'q' to quit or hit enter to choose another option to set: ")
+		ask_more(more)
 
-	for section in config.sections():
-		if config.has_option(section,optionToSet):
-			matchingSection = section
-			matchingSections += 1
-			set_value(section,optionToSet)
-		else:
-			pass
-	
-	if matchingSections == 0:
-		print("\nOops, there is no option matching "+optionToSet+". Check your spelling and try again.\n")
-	more = input("Type 'q' to quit or hit enter to select another option to set: ")
-	ask_more(more)
+	else:
+		matchingSections = 0
+		for section in config.sections():
+			if config.has_option(section,optionToSet):
+				matchingSection = section
+				matchingSections += 1
+				set_value(section,optionToSet)
+			else:
+				pass
+
+		if matchingSections == 0:
+			print("\nOops, there is no option matching "+optionToSet+". Check your spelling and try again.\n")
+		more = input("Type 'q' to quit or hit enter to select another option to set: ")
+		ask_more(more)
 
 def ask_more(more):
 	if more == 'q':
