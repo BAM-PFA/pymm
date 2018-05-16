@@ -30,7 +30,7 @@ def move_n_verify_sip(
 		print("GCP is not installed.")
 		return safe
 	gcpCommand = [
-	'gcp',
+	gcpPath,
 	'--preserve=mode,timestamps',
 	'-nRv',
 	stagedSIPpath,
