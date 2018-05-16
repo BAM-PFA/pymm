@@ -23,6 +23,12 @@ def move_n_verify_sip(
 	move a valid sip to a destination 
 	(intended for LTO) and run a hashdeep audit on it
 	'''
+	safe = False
+	whichGcp = subprocess.run(['which','gcp'],stdout=subprocess.PIPE)
+	gcpPath = whichGcp.stdout.decode().rstrip()
+	if gcpPath == '':
+		print("GCP is not installed.")
+		return safe
 	gcpCommand = [
 	'gcp',
 	'--preserve=mode,timestamps',
