@@ -41,22 +41,11 @@ def move_n_verify_sip(
 	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
 	SIPmanifestPath = glob.glob(manifestPattern)[0]
 	print(gcpCommand)
-	try:
-		gcp = subprocess.run(
-			gcpCommand,
-			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE
-			)
-	except:
-		# if linux whines about dbus something or other,
-		# try running with dbus-launch
-		gcpCommand.insert('dbus-launch')
-		print(gcpCommand)
-		gcp = subprocess.run(
-			gcpCommand,
-			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE
-			)
+	gcp = subprocess.run(
+		gcpCommand,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE
+		)
 
 	if not gcp.stderr.decode() == '':
 		print(gcp.stderr.decode().rstrip())
