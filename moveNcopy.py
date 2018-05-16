@@ -24,14 +24,13 @@ def move_n_verify_sip(
 	(intended for LTO) and run a hashdeep audit on it
 	'''
 	safe = False
-	whichGcp = subprocess.run(['which','gcp'],stdout=subprocess.PIPE)
-	gcpPath = whichGcp.stdout.decode().rstrip()
-	print(whichGcp.stdout)
+	# test for the gcp path and if `dbus-launch` is needed in linux
+	gcpPath = pymmFunctions.gcp_test()
 	if gcpPath == '':
-		print("GCP is not installed.")
+		# if gcp is not installed, exit the function
 		return safe
+
 	gcpCommand = [
-	'dbus-launch',
 	gcpPath,
 	'--preserve=mode,timestamps',
 	'-rv',

@@ -297,7 +297,7 @@ def is_video(inputPath):
 
 def is_audio(inputPath):
 	print("THIS ISN'T A VIDEO FILE\n"
-		'¿maybe this is an audio file?')
+		'maybe this is an audio file?')
 	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
 	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
 	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
@@ -547,6 +547,24 @@ def sanitize_dragged_linux_path(var):
 			return var
 	else:
 		return var
+
+def gcp_test():
+	'''
+	test that  `gcp` is installed and get the path for the binary.
+	test for a dbus error on linux and add `dbus-launch` if needed.
+	'''
+	whichGcp = subprocess.run(['which','gcp'],stdout=subprocess.PIPE)
+	gcpPath = whichGcp.stdout.decode().rstrip()
+	gcpCommand = gcpPath
+	if gcpPath == '':
+		print('gcp is not installed.')
+	else:
+		tryGcp = subprocess.run([gcpCommand],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		if "DBusException" in tryGcp.stderr:
+			gcpCommand = "dbus-launch {}".format(gcpCommand)
+
+	return gcpCommand
+
 #
 # SYSTEM / ENVIRONMENT STUFF
 #
