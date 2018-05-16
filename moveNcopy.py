@@ -26,28 +26,41 @@ def move_n_verify_sip(
 	safe = False
 	whichGcp = subprocess.run(['which','gcp'],stdout=subprocess.PIPE)
 	gcpPath = whichGcp.stdout.decode().rstrip()
+	print(whichGcp.stdout)
 	if gcpPath == '':
 		print("GCP is not installed.")
 		return safe
 	gcpCommand = [
+	'dbus-launch',
 	gcpPath,
 	'--preserve=mode,timestamps',
-	'-nRv',
+	'-rv',
 	stagedSIPpath,
 	destination
 	]
 
 	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
 	SIPmanifestPath = glob.glob(manifestPattern)[0]
-	
-	gcp = subprocess.run(
-		gcpCommand,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE
-		)
+	print(gcpCommand)
+	try:
+		gcp = subprocess.run(
+			gcpCommand,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+	except:
+		# if linux whines about dbus something or other,
+		# try running with dbus-launch
+		gcpCommand.insert('dbus-launch')
+		print(gcpCommand)
+		gcp = subprocess.run(
+			gcpCommand,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
 
 	if not gcp.stderr.decode() == '':
-		print(gcp.stderr)
+		print(gcp.stderr.decode().rstrip())
 		safe = False
 	else:
 		print(gcp.stdout)
