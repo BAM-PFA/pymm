@@ -555,13 +555,13 @@ def gcp_test():
 	'''
 	whichGcp = subprocess.run(['which','gcp'],stdout=subprocess.PIPE)
 	gcpPath = whichGcp.stdout.decode().rstrip()
-	gcpCommand = gcpPath
+	gcpCommand = [gcpPath]
 	if gcpPath == '':
 		print('gcp is not installed.')
 	else:
-		tryGcp = subprocess.run([gcpCommand],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		tryGcp = subprocess.run(gcpCommand,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		if "DBusException" in tryGcp.stderr.decode():
-			gcpCommand = "dbus-launch {}".format(gcpCommand)
+			gcpCommand.insert(0,"dbus-launch")
 
 	return gcpCommand
 

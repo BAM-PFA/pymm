@@ -25,18 +25,21 @@ def move_n_verify_sip(
 	'''
 	safe = False
 	# test for the gcp path and if `dbus-launch` is needed in linux
+	# this returns a list of either one or two items:
+	# ['/path/to/gcp/binary'] or ['dbus-launch','/path/etc']
 	gcpPath = pymmFunctions.gcp_test()
-	if gcpPath == '':
+	if gcpPath == ['']:
 		# if gcp is not installed, exit the function
 		return safe
 
-	gcpCommand = [
-	gcpPath,
+	gcpOptions = [
 	'--preserve=mode,timestamps',
 	'-rv',
 	stagedSIPpath,
 	destination
 	]
+
+	gcpCommand = gcpPath+gcpOptions
 
 	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
 	SIPmanifestPath = glob.glob(manifestPattern)[0]
