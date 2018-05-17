@@ -64,7 +64,8 @@ def move_n_verify_sip(
 		else:
 			safe = False
 
-	return safe
+	print(safe)
+	return stagedSIPpath,safe
 
 
 def copy_file(inputPath,rsyncLogPath,destination):
@@ -245,8 +246,8 @@ def main():
 			print("o_O what is going on here? you up to something?")
 			sys.exit()
 	else:
-		safe = move_n_verify_sip(inputPath,destination)
-		return safe
+		stagedSIPpath,safe = move_n_verify_sip(inputPath,destination)
+		return stagedSIPpath,safe
 
 if __name__ == '__main__':
 	main()

@@ -760,16 +760,19 @@ def main():
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
 
+	#########
 	# MOVE SIP TO AIP STAGING
-	# a) rename SIP from temp to UUID
+	# rename SIP from temp to UUID
 	processingVars,SIPpath = rename_SIP(processingVars) # @dbme
-	# b) put the package into a UUID parent folder
+	# put the package into a UUID parent folder
 	_SIP = envelop_SIP(processingVars) # @dbme
-	# c) make a hashdeep manifest
+	# make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP
 		) # @dbme
-	# b) move the SIP if needed
+	# recursively set SIP and manifest to 777 file permission
+	chmodded = pymmFunctions.recursive_chmod(_SIP)
+	# move the SIP if needed
 	packageVerified = False
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars) # @dbme

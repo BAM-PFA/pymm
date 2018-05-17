@@ -565,6 +565,31 @@ def gcp_test():
 
 	return gcpCommand
 
+def recursive_chmod(path,mode=0o777):
+	chmodded = False
+	try:
+		os.chmod(path,mode)
+		chmodded = True
+		for root,dirs,files in os.walk(path):
+			for directory in dirs:
+				try:
+					os.chmod(os.path.join(root,directory),mode)
+					chmodded = True
+				except:
+					chmodded = False
+			
+			for f in files:
+				try:
+					os.chmod(os.path.join(root,f),mode)
+					chmodded = True
+				except:
+					chmodded = False
+
+	except:
+		chmodded = False
+	
+	return chmodded
+
 #
 # SYSTEM / ENVIRONMENT STUFF
 #
