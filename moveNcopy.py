@@ -71,7 +71,7 @@ def move_n_verify_sip(
 
 	print("HASHDEEP AUDIT RESULT:")
 	print(verify)
-	return stagedSIPpath,safe
+	return destSIP,safe
 
 
 def copy_file(inputPath,rsyncLogPath,destination):
