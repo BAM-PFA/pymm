@@ -43,29 +43,29 @@ def move_n_verify_sip(
 
 	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
 	SIPmanifestPath = glob.glob(manifestPattern)[0]
-	print(gcpCommand)
+	print(SIPmanifestPath)
 	gcp = subprocess.run(
 		gcpCommand,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE
 		)
 
-	if not gcp.stderr.decode() == '':
-		# print(gcp.stderr.decode().rstrip())
-		safe = False
+	#if not gcp.stderr.decode() == '':
+	#	print(gcp.stderr.decode().rstrip())
+	#	#safe = False
+	#else:
+	#	print(gcp.stdout)
+	verify = makeMetadata.hashdeep_audit(
+		stagedSIPpath,
+		SIPmanifestPath
+		)
+	if verify == True:
+		safe = True
 	else:
-		# print(gcp.stdout)
-		verify = makeMetadata.hashdeep_audit(
-			stagedSIPpath,
-			SIPmanifestPath
-			)
-		if verify:
-			safe = True
-		else:
-			safe = False
+		safe = False
 
 	print("HASHDEEP AUDIT RESULT:")
-	print(safe)
+	print(verify)
 	return stagedSIPpath,safe
 
 
