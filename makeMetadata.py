@@ -170,7 +170,7 @@ def hashdeep_audit(inputPath,manifestPath):
 	os.chdir(package)
 	try:
 		hashaudit = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-		print(hashaudit)
+		# print(hashaudit)
 		out = hashaudit.stdout.splitlines()
 		for line in out:
 			if line.decode().startswith("hashdeep: Audit"):
@@ -181,14 +181,14 @@ def hashdeep_audit(inputPath,manifestPath):
 			result = True
 		else:
 			print("INCONCLUSIVE AUDIT. SIP NOT VERIFIED.")
-			result = out
+			result = [out,hashaudit.stderr.decode()]
 
 	except:
 		print(
 			"there was a problem with the hashdeep audit. "
 			"package NOT verified."
 			)
-		result = out
+		result = False
 	os.chdir(here)
 	return result
 

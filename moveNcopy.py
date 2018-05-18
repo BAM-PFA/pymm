@@ -48,18 +48,12 @@ def move_n_verify_sip(
 
 	destManifest = os.path.join(destSIP,SIPmanifestName)
 
-	print()
 	gcp = subprocess.run(
 		gcpCommand,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE
 		)
 
-	#if not gcp.stderr.decode() == '':
-	#	print(gcp.stderr.decode().rstrip())
-	#	#safe = False
-	#else:
-	#	print(gcp.stdout)
 	verify = makeMetadata.hashdeep_audit(
 		destSIP,
 		destManifest
@@ -69,7 +63,13 @@ def move_n_verify_sip(
 	else:
 		safe = False
 
-	print("HASHDEEP AUDIT RESULT:")
+	try:
+		verify = verify.decode()
+	except:
+		verify = str(verify)
+
+
+	print("HASHDEEP AUDIT RESULT|{}|{}".format(SIPbase,verify))
 	print(verify)
 	return destSIP,safe
 
