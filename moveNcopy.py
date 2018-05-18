@@ -51,10 +51,10 @@ def move_n_verify_sip(
 		)
 
 	if not gcp.stderr.decode() == '':
-		print(gcp.stderr.decode().rstrip())
+		# print(gcp.stderr.decode().rstrip())
 		safe = False
 	else:
-		print(gcp.stdout)
+		# print(gcp.stdout)
 		verify = makeMetadata.hashdeep_audit(
 			stagedSIPpath,
 			SIPmanifestPath
@@ -64,6 +64,7 @@ def move_n_verify_sip(
 		else:
 			safe = False
 
+	print("HASHDEEP AUDIT RESULT:")
 	print(safe)
 	return stagedSIPpath,safe
 
