@@ -163,7 +163,8 @@ def hashdeep_audit(inputPath,manifestPath):
 	_object = os.path.basename(inputPath)
 	package = os.path.join(inputPath,_object)
 
-	command = ['hashdeep','-rvval','-k',manifestPath,'.']
+	# turn off multithreading for auditing on LTO!
+	command = ['hashdeep','-rvval','-j0','-k',manifestPath,'.']
 
 	here = os.getcwd()
 	os.chdir(package)
