@@ -48,7 +48,6 @@ def move_n_verify_sip(
 
 	destManifest = os.path.join(destSIP,SIPmanifestName)
 
-	print()
 	gcp = subprocess.run(
 		gcpCommand,
 		stdout=subprocess.PIPE,
@@ -69,8 +68,8 @@ def move_n_verify_sip(
 	else:
 		safe = False
 
-	print("HASHDEEP AUDIT RESULT:")
-	print(verify)
+	print("HASHDEEP AUDIT RESULT|{}|{}".format(SIPbase,verify))
+	# print(verify)
 	return destSIP,safe
 
 
