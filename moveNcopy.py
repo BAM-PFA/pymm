@@ -54,11 +54,6 @@ def move_n_verify_sip(
 		stderr=subprocess.PIPE
 		)
 
-	#if not gcp.stderr.decode() == '':
-	#	print(gcp.stderr.decode().rstrip())
-	#	#safe = False
-	#else:
-	#	print(gcp.stdout)
 	verify = makeMetadata.hashdeep_audit(
 		destSIP,
 		destManifest
@@ -68,10 +63,15 @@ def move_n_verify_sip(
 	else:
 		safe = False
 
-	print("HASHDEEP AUDIT RESULT|{}|{}".format(SIPbase,verify))
-	# print(verify)
-	return destSIP,safe
+	try:
+		verify = verify.decode()
+	except:
+		verify = str(verify)
 
+
+	print("HASHDEEP AUDIT RESULT|{}|{}".format(SIPbase,verify))
+	print(verify)
+	return destSIP,safe
 
 def copy_file(inputPath,rsyncLogPath,destination):
 	'''
