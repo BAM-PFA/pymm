@@ -11,6 +11,8 @@ the above steps. Currently we'd only do that on reels/tapes that
 represent parts of a whole.
 
 @fixme = stuff to do
+@logme = stuff to add to ingest log
+@dbme = stuff to add to PREMIS db
 '''
 # standard library modules
 import argparse
@@ -563,6 +565,8 @@ def main():
 	if report_to_db != None:
 		pymmDB = config['database settings']['pymm_db']
 		if not operator in config['database users']:
+			# SHOULD THIS CAUSE AN EXIT(1)?
+			# @fixme
 			print("{} is not a valid user in the pymm database.".format(operator))
 
 	# Set up a canonical name that will be passed to each log entry.
@@ -690,7 +694,7 @@ def main():
 					)
 			except:
 				print("CAN'T MAKE DB CONNECTION")
-				pymmFunctions.pym_log(
+				pymmFunctions.pymm_log(
 					input_name,
 					tempID,
 					operator,
@@ -717,15 +721,14 @@ def main():
 					)
 			except:
 				print("CAN'T MAKE DB CONNECTION")
-				pymmFunctions.pym_log(
+				pymmFunctions.pymm_log(
 					input_name,
 					tempID,
 					operator,
 					"NO DATABASE CONNECTION!!!",
 					"WARNING"
 					)
-		for _file in source_list:
-			
+		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file) # @dbme
 			processingVars['filename'] = os.path.basename(_file) # @dbme
@@ -740,7 +743,7 @@ def main():
 						)
 				except:
 					print("CAN'T MAKE DB CONNECTION")
-					pymmFunctions.pym_log(
+					pymmFunctions.pymm_log(
 						input_name,
 						tempID,
 						operator,
