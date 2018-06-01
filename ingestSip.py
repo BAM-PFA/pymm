@@ -629,7 +629,13 @@ def main():
 		)
 
 	# tell the system log that we are starting
-	pymmFunctions.pymm_log(input_name,tempID,operator,'','STARTING')
+	pymmFunctions.pymm_log(
+		input_name,
+		inputPath,
+		operator,
+		'ingestion start',
+		'STARTING'
+		)
 
 	# if interactive ask about cleanup
 	if interactiveMode:
@@ -644,6 +650,17 @@ def main():
 	# create a PBCore XML file and send any existing BAMPFA metadata JSON
 	# to the object metadata directory.
 	pbcoreXML = pbcore.PBCoreDocument()
+	# NOTE TO SELF: 
+	# REALLY I SHOULD SEPARATE THE BAMPFA COLLECTION JSON
+	# FROM WHATEVER THE USER-DEFINED/CREATED DESCRIPTIVE METADATA JSON 
+	# THAT WILL EVENTUALLY EXIST.
+	# SO, 
+	# if objectBAMPFAjson != None:
+	#	do stuff
+	# elif descriptiveJSON != None:
+	#	do stuff
+	# else:
+	# 	do stuff
 	if objectBAMPFAjson != None:
 		# move it
 		copy = shutil.copy2(
@@ -676,6 +693,23 @@ def main():
 				)
 			)
 		processingVars['pbcore'] = pbcoreFile
+
+	if os.path.exists(pbcoreFile):
+		pymmFunctions.pymm_log(
+			canonicalName,
+			inputPath,
+			operator,
+			'make pbcore representation',
+			'OK'
+			)
+	else:
+		pymmFunctions.pymm_log(
+			canonicalName,
+			inputPath,
+			operator,
+			'make pbcore representation',
+			'Fail'
+			)
 
 	#### END LOGGING / CLEANUP ####
 	###############################

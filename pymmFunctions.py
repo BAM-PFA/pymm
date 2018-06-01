@@ -122,7 +122,7 @@ def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator)
 				+' MESSAGE: '+message+'\n\n')
 		# LOG SOME SHIT
 
-def pymm_log(filename,tempID,operator,message,status):
+def pymm_log(objectName,objectRootPath,operator,event,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
 	with open(pymmLogPath,'a') as log:
@@ -135,7 +135,25 @@ def pymm_log(filename,tempID,operator,message,status):
 		else:
 			prefix = ''
 			suffix = '\n'
-		log.write(prefix+now+' '+'Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
+		log.write(
+			"{}"
+			"{} | "
+			"Object Canonical Name: {} | "
+			"Object Root Filepath: {} | "
+			"Operator: {} | "
+			"Event: {} | "
+			"Status: {} |"
+			"{}\n".format(
+				prefix,
+				iso8601,
+				objectName,
+				objectRootPath,
+				operator,
+				event,
+				status,
+				suffix
+				)
+			)
 
 def cleanup_package(inputPath,packageOutputDir,reason):
 	if reason == 'abort ingest':
