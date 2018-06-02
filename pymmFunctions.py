@@ -125,6 +125,7 @@ def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator)
 def pymm_log(objectName,objectRootPath,operator,event,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
+	stamp = timestamp('iso8601')
 	with open(pymmLogPath,'a') as log:
 		if status == 'STARTING':
 			prefix = ('&'*50)+'\n\n'
@@ -145,7 +146,7 @@ def pymm_log(objectName,objectRootPath,operator,event,status):
 			"Status: {} |"
 			"{}\n".format(
 				prefix,
-				iso8601,
+				stamp,
 				objectName,
 				objectRootPath,
 				operator,
