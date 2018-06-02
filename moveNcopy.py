@@ -218,7 +218,6 @@ def main():
 		# set up rsync log
 		if loglevel == 'all':
 			pymmLogpath = os.path.join(config['logging']['pymm_log_dir'],'pymm_log.txt')
-			# AT WHAT POINT WILL WE ACTUALLY WANT TO PYMMLOG A COPY? FINAL AIP XFER?
 			try:
 				rsyncLogPath = os.path.join(
 					logDir,
@@ -250,6 +249,7 @@ def main():
 		else:
 			print("o_O what is going on here? you up to something?")
 			sys.exit()
+		
 	else:
 		stagedSIPpath,safe = move_n_verify_sip(inputPath,destination)
 		return stagedSIPpath,safe

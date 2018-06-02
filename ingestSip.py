@@ -736,13 +736,37 @@ def main():
 					"WARNING"
 					)
 		# check that input file is actually a/v
-		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbmemediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
+		pymmFunctions.pymm_log(
+			canonicalName,
+			inputPath,
+			operator,
+			'migrate file to SIP',
+			'OK'
+			)
+
 		add_pbcore_instantiation(
 			processingVars,
 			"Preservation master"
 			) # @dbme
+		pymmFunctions.pymm_log(
+			canonicalName,
+			inputPath,
+			operator,
+			'make pbcore representation',
+			'OK'
+			)
+
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		pymmFunctions.pymm_log(
+			canonicalName,
+			inputPath,
+			operator,
+			'metadata extraction',
+			'OK'
+			)
+
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
 	elif inputType == 'dir':
 		if report_to_db:
@@ -786,13 +810,53 @@ def main():
 						)
 			# check that input file is actually a/v
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
-			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
+			# check against mediaconch policy
+			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			move_input_file(processingVars) # @dbme
+			pymmFunctions.pymm_log(
+				canonicalName,
+				inputPath,
+				operator,
+				'migrate file to SIP',
+				'OK'
+				)
+
 			add_pbcore_instantiation(processingVars,
 				"Preservation master"
 				) # @dbme
-			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
+			pymmFunctions.pymm_log(
+				canonicalName,
+				inputPath,
+				operator,
+				'make pbcore representation',
+				'OK'
+				)
+
+			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
+			pymmFunctions.pymm_log(
+				canonicalName,
+				inputPath,
+				operator,
+				'metadata extraction',
+				'OK'
+				)
 			accessPath = make_derivs(ingestLogBoilerplate,processingVars,rsPackage=True) # @dbme
+			if os.path.exists(accessPath):
+				pymmFunctions.pymm_log(
+					canonicalName,
+					inputPath,
+					operator,
+					'migration (create access copy)',
+					'OK'
+					)
+			else:
+				pymmFunctions.pymm_log(
+					canonicalName,
+					inputPath,
+					operator,
+					'migration (create access copy)',
+					'Fail'
+					)
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
@@ -807,6 +871,15 @@ def main():
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP
 		) # @dbme
+	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
+	pymmFunctions.pymm_log(
+		canonicalName,
+		inputPath,
+		operator,
+		'information package creation',
+		'OK'
+		)
+
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
 	# move the SIP if needed
@@ -821,10 +894,11 @@ def main():
 			) # @dbme
 	else:
 		# probably pointless on same filesystem
-		packageVerified = makeMetadata.hashdeep_audit(
-			_SIP,
-			manifestPath
-			) # @dbme
+		# packageVerified = makeMetadata.hashdeep_audit(
+		# 	_SIP,
+		# 	manifestPath
+		#	) # @dbme
+		packageVerified = True
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
@@ -833,7 +907,13 @@ def main():
 		ingestReults['status'] = True
 	ingestReults['ingestUUID'] = ingestUUID
 	ingestReults['accessPath'] = accessPath
-
+	pymmFunctions.pymm_log(
+		canonicalName,
+		inputPath,
+		operator,
+		'ingestion end',
+		'ENDING'
+		)
 	print(ingestReults)
 	return ingestReults
 

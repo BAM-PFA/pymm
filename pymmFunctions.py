@@ -139,7 +139,7 @@ def pymm_log(objectName,objectRootPath,operator,event,status):
 			"{}"
 			"{} | "
 			"Object Canonical Name: {} | "
-			"Object Root Filepath: {} | "
+			"Object Filepath: {} | "
 			"Operator: {} | "
 			"Event: {} | "
 			"Status: {} |"
