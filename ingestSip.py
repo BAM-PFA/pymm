@@ -166,6 +166,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
+		# THERE SHOULD BE A RETURN STATEMENT HERE OR SOMETHING 
+
 	if interactiveMode:
 		stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
 		if stayOrGo == 'q':
@@ -182,6 +184,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 					**ingestLogBoilerplate
 					)
 	else:
+		# THIS IS NOT CORRECT: 
+		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
 		pymmFunctions.ingest_log(
 			# message
 			ingestLogBoilerplate['filename']+" is an AV file, way to go.",
@@ -526,6 +530,12 @@ def main():
 		sys.exit(1)
 	if inputType == 'dir':
 		source_list = pymmFunctions.list_files(inputPath)
+		for _object in source_list:
+			if os.path.basename(_object).startswith('.'):
+				try:
+					os.remove(_object)
+				except:
+					print("tried to remove a pesky system file and failed.")
 		subs = 0
 		for _object in source_list:
 			if os.path.isdir(_object):
@@ -736,6 +746,7 @@ def main():
 					"WARNING"
 					)
 		# check that input file is actually a/v
+		# WTF. WHY IS THIS NOT AT THE START?
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
 		pymmFunctions.pymm_log(

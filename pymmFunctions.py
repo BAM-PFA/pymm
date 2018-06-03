@@ -443,6 +443,10 @@ def check_for_outliers(inputPath):
 		return True
 
 def list_files(_input):
+	'''
+	Take in an absolute path of a directory and return a list of the paths
+	for everything in it.
+	'''
 	if os.path.isdir(_input):
 		source_list = []
 		for _file in os.listdir(_input):
@@ -455,7 +459,8 @@ def list_files(_input):
 		return source_list
 	else:
 		print("you're trying to list files but the input is a file. go away.")
-		sys.exit()
+		# sys.exit()
+		pass
 
 def get_temp_id(_string):
 	'''
