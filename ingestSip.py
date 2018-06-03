@@ -747,7 +747,8 @@ def main():
 					)
 		# check that input file is actually a/v
 		# WTF. WHY IS THIS NOT AT THE START?
-		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) 
+		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
 		pymmFunctions.pymm_log(
 			canonicalName,
@@ -755,6 +756,14 @@ def main():
 			operator,
 			'migrate file to SIP',
 			'OK'
+			)
+		pymmFunctions.ingest_log(
+			# message
+			'migrate file to SIP',
+			#status
+			'OK',
+			# ingest boilerplate
+			**ingestLogBoilerplate
 			)
 
 		add_pbcore_instantiation(
@@ -826,10 +835,18 @@ def main():
 			move_input_file(processingVars) # @dbme
 			pymmFunctions.pymm_log(
 				canonicalName,
-				inputPath,
+				_file,
 				operator,
 				'migrate file to SIP',
 				'OK'
+				)
+			pymmFunctions.ingest_log(
+				# message
+				'migrate file to SIP',
+				#status
+				'OK',
+				# ingest boilerplate
+				**ingestLogBoilerplate
 				)
 
 			add_pbcore_instantiation(processingVars,
@@ -837,7 +854,7 @@ def main():
 				) # @dbme
 			pymmFunctions.pymm_log(
 				canonicalName,
-				inputPath,
+				_file,
 				operator,
 				'make pbcore representation',
 				'OK'
@@ -846,7 +863,7 @@ def main():
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
 			pymmFunctions.pymm_log(
 				canonicalName,
-				inputPath,
+				_file,
 				operator,
 				'metadata extraction',
 				'OK'
@@ -855,7 +872,7 @@ def main():
 			if os.path.exists(accessPath):
 				pymmFunctions.pymm_log(
 					canonicalName,
-					inputPath,
+					_file,
 					operator,
 					'migration (create access copy)',
 					'OK'
@@ -863,7 +880,7 @@ def main():
 			else:
 				pymmFunctions.pymm_log(
 					canonicalName,
-					inputPath,
+					_file,
 					operator,
 					'migration (create access copy)',
 					'Fail'
@@ -899,6 +916,7 @@ def main():
 		_SIP = stage_sip(processingVars) # @dbme
 		# c) audit the hashdeep manifest 
 		# packageVerified = result of audit
+		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = makeMetadata.hashdeep_audit(
 			_SIP,
 			manifestPath
@@ -909,12 +927,14 @@ def main():
 		# 	_SIP,
 		# 	manifestPath
 		#	) # @dbme
+		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = True
 
 	# FINISH LOGGING
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
 
-	if packageVerified:
+	if packageVerified and validSIP:
+		# SHOULD USE THIS TEST FOR THE RESTOF THE LOGGING AND INGESTRESULTS VALUES
 		ingestReults['status'] = True
 	ingestReults['ingestUUID'] = ingestUUID
 	ingestReults['accessPath'] = accessPath
