@@ -464,6 +464,31 @@ def rename_dir(_dir,newName):
 	else:
 		print("{} is not a directory so go away.".format(_dir))
 
+def convert_millis(milli):
+    '''
+    Lifted directly from IFIscripts. Written by Kieran O'Leary.
+    Requires an integer that is the number of milliseconds.
+      For example mediainfo returns '00:51:58.824' as a string '3118.824'
+      so you gotta remove the period, convert to integer, and parse here.
+    Accepts milliseconds and returns this value as HH:MM:SS.NNN
+    '''
+    # get the number of seconds and milliseconds 
+    a = datetime.timedelta(milliseconds=milli)
+    # convert to a handy string that looks like '0:51:58.824000'
+    # so we can check for milliseconds present
+    b = str(a)
+    # no millseconds are present if there is no remainder. We need milliseconds!
+    if len(b) == 7:
+        b += '.000000'
+    # convert seconds-based tuple to H:M:S:ms tuple
+    timestamp = datetime.datetime.strptime(b, "%H:%M:%S.%f").time()
+    # turn that into a string like '0:51:58.824000'
+    c = str(timestamp)
+    if len(c) == 8:
+        c += '.000000'
+    # trim off the unneeded zeros
+    return str(c)[:-3]
+
 #
 # END FILE CHECK STUFF 
 #

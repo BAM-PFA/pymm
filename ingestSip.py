@@ -112,19 +112,20 @@ def prep_package(tempID):
 
 	return packageDirs
 
-def sniff_input(inputPath,ingestUUID,concatChoice):
+def sniff_input(inputPath,ingestUUID):#,concatChoice):
 	'''
 	Check whether the input path from command line is a directory
-	or single file. If it's a directory, see if the user wanted
-	to concatenate the files and do/don't concatenate.
+	or single file. If it's a directory, check that the filenames
+	make sense together or if there are any outliers.
 	'''
 	inputType = pymmFunctions.dir_or_file(inputPath)
 	if inputType == 'dir':
 		# filename sanity check
 		goodNames = pymmFunctions.check_for_outliers(inputPath)
 		if goodNames:
-			if concatChoice == True:
-				try_concat(inputPath,ingestUUID)
+			print("input is a directory")
+			# if concatChoice == True:
+				# try_concat(inputPath,ingestUUID)
 		else:
 			return False
 	
@@ -414,10 +415,12 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 			add_pbcore_instantiation(processingVars, level)
 			add_pbcore_md5_location(processingVars, fileMD5)
 
-	# get a return value that is the path to the access copy:
-	# for a single file it's the single deriv path.
-	# for a folder of files it's the path to the enclosing deriv folder.
-	# this is going to be used to make an API call to resourcespace
+	# get a return value that is the path to the access copy(ies) delivered
+	#   to a destination defined in config.ini
+	# * for a single file it's the single deriv path
+	# * for a folder of files it's the path to the enclosing deriv folder
+	# 
+	# this path is used to make an API call to resourcespace
 	if rsPackageDelivery != '':
 		accessPath = rsPackageDelivery
 	else:
@@ -519,7 +522,7 @@ def main():
 		'UUID':''
 	}
 	# sniff whether the input is a file or directory
-	inputType = sniff_input(inputPath,ingestUUID,concatChoice)
+	inputType = sniff_input(inputPath,ingestUUID)#,concatChoice)
 	if not inputType:
 		sys.exit(1)
 	if inputType == 'dir':
@@ -698,6 +701,7 @@ def main():
 					"WARNING"
 					)
 		# check that input file is actually a/v
+		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
 		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbmemediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars) # @logme # @dbme
 		add_pbcore_instantiation(
@@ -748,10 +752,12 @@ def main():
 						"WARNING"
 						)
 			# check that input file is actually a/v
+			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
 			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme
 			mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			move_input_file(processingVars) # @dbme
-			add_pbcore_instantiation(processingVars,
+			add_pbcore_instantiation(
+				processingVars,
 				"Preservation master"
 				) # @dbme
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
@@ -759,6 +765,15 @@ def main():
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
+
+		if concatChoice == True:
+			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE MKV...
+			# @logme @dbme
+			SIPaccessPath = os.path.join(
+				processingVars['packageObjectDir'],
+				'resourcespace'
+				)
+			try_concat(SIPaccessPath,ingestUUID)
 
 	#########
 	# MOVE SIP TO AIP STAGING

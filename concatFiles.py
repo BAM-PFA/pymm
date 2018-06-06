@@ -41,9 +41,10 @@ def get_profiles(input_list):
 	for sourceFile in input_list:
 		profiles[sourceFile] = {'video':'','audio':''}
 		videoProfile,audioProfile = makeMetadata.get_track_profiles(
-										makeMetadata.get_mediainfo_report(
-											sourceFile,'','GET JSON'
-											))
+			makeMetadata.get_mediainfo_report(
+				sourceFile,'','GET JSON'
+				)
+			)
 		profiles[sourceFile]['video'] = json.loads(videoProfile)
 		profiles[sourceFile]['audio'] = json.loads(audioProfile)
 
@@ -56,17 +57,25 @@ def concat(source_list):
 	# -get length of files for chapter markers
 	# -do the concat
 	# -make mkv chapter markers
-	return True
+	fileInfo = {}
+	for _file in source_list:
+		duration = makeMetadata.get_duration(_file)
+		milliseconds = int(duration.replace(".",""))
+		# pymmFunctions.convert_millis(duration)
+		fileInfo[_file]['duration in milliseconds'] = milliseconds
 
-def main(**kwargs):
-	args = parse_args(**kwargs)
+
+	return fileInfo
+
+def main(): #**kwargs):
+	args = parse_args() #**kwargs)
 	_input = args.input
 	ingestID = args.ingestID
 
 	if os.path.isdir(_input):
 		# get the abs path of each input file
 		source_list = pymmFunctions.list_files(_input)
-	elif type(_input) == 'list':
+	elif isinstance(_input,list):
 		source_list = _input
 	else:
 		print("don't know what you are trying to input. not a dir or list of files.")
@@ -116,4 +125,4 @@ def main(**kwargs):
 		return False
 
 if __name__ == '__main__':
-	main(sys.argv[1:])
+	main()#sys.argv[1:])

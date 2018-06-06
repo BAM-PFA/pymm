@@ -3,7 +3,7 @@
 these are functions to output metadata files
 and structured data (xml/json) about a/v files
 '''
-
+import datetime
 import os
 import subprocess
 import sys
@@ -43,6 +43,7 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 			stdout=subprocess.PIPE
 			)
 		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
+		# print(mediainfoJSON)
 		if _JSON:
 			return mediainfoJSON
 		else:
@@ -83,6 +84,7 @@ def get_track_profiles(mediainfoDict):
 		]
 	try:
 		videoTrackProfile = mediainfoDict['MediaInfo']['media']['track'][1]
+		print(videoTrackProfile)
 		for attr in videoAttribsToDiscard:
 			videoTrackProfile.pop(attr,None)
 	except:
@@ -221,6 +223,28 @@ def make_frame_md5(inputPath,metadataDir):
 			return frameMd5Filepath
 		except:
 			return False
+
+def get_duration(inputPath):
+	print('getting input file duration via general track 0')
+	command = [
+	'mediainfo',
+	'--output=JSON',
+	inputPath
+	]
+	mediainfoJSON = subprocess.run(
+		command,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE
+		)
+	out = mediainfoJSON.stdout
+	fileJson = json.loads(out.decode())
+
+	try:
+		duration = fileJson['media']['track'][0]['Duration']
+	except:
+		print("Error getting duration via mediainfo.")
+
+	return duration
 
 def main():
 	parser = argparse.ArgumentParser()
