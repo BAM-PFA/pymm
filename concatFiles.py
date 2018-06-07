@@ -229,9 +229,12 @@ def main():
 	# rename the file so it sorts to the top of the output directory
 	# maybe this is a stupid idea? but it will be handy
 	if not concattedFile == False:
-		concat_base = os.path.basename(concattedFile)
-
-
+		concatBase = os.path.basename(concattedFile)
+		concatDir = os.path.dirname(concattedFile)
+		newBase = "0_{}".format(concatBase)
+		newPath = os.path.join(concatDir,newBase)
+		concattedFile = newPath
+		
 	return concattedFile
 
 
