@@ -104,11 +104,11 @@ def get_track_profiles(mediainfoDict):
 	else:	
 		print("there might be problems")
 		if videoTrackProfile:
-			return json.dumps(videoTrackProfile)
+			return json.dumps(videoTrackProfile),"{}"
 		elif audioTrackProfile:
-			return json.dumps(audioTrackProfile)
+			return json.dumps(audioTrackProfile),"{}"
 		else:
-			return "",""
+			return "{}","{}"
 
 def hash_file(inputPath,algorithm='md5',blocksize=65536):
 	# STOLEN DIRECTLY FROM UCSB BRENDAN COATES: https://github.com/brnco/ucsb-src-microservices/blob/master/hashmove.py

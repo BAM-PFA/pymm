@@ -59,11 +59,11 @@ def concat(source_list):
 	# -make mkv chapter markers
 	fileInfo = {}
 	for _file in source_list:
+		fileInfo[_file] = {}
 		duration = makeMetadata.get_duration(_file)
 		milliseconds = int(duration.replace(".",""))
 		# pymmFunctions.convert_millis(duration)
 		fileInfo[_file]['duration in milliseconds'] = milliseconds
-
 
 	return fileInfo
 
