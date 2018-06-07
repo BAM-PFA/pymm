@@ -122,9 +122,10 @@ def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator)
 				+' MESSAGE: '+message+'\n\n')
 		# LOG SOME SHIT
 
-def pymm_log(filename,tempID,operator,message,status):
+def pymm_log(objectName,objectRootPath,operator,event,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
+	stamp = timestamp('iso8601')
 	with open(pymmLogPath,'a') as log:
 		if status == 'STARTING':
 			prefix = ('&'*50)+'\n\n'
@@ -135,7 +136,25 @@ def pymm_log(filename,tempID,operator,message,status):
 		else:
 			prefix = ''
 			suffix = '\n'
-		log.write(prefix+now+' '+'Filename: '+filename+'  tempID: '+tempID+'  operator: '+operator+'  MESSAGE: '+message+' STATUS: '+status+suffix+'\n')
+		log.write(
+			"{}"
+			"{} | "
+			"Object Canonical Name: {} | "
+			"Object Filepath: {} | "
+			"Operator: {} | "
+			"Event: {} | "
+			"Status: {} |"
+			"{}\n".format(
+				prefix,
+				stamp,
+				objectName,
+				objectRootPath,
+				operator,
+				event,
+				status,
+				suffix
+				)
+			)
 
 def cleanup_package(inputPath,packageOutputDir,reason):
 	if reason == 'abort ingest':
@@ -424,6 +443,10 @@ def check_for_outliers(inputPath):
 		return True
 
 def list_files(_input):
+	'''
+	Take in an absolute path of a directory and return a list of the paths
+	for everything in it.
+	'''
 	if os.path.isdir(_input):
 		source_list = []
 		for _file in os.listdir(_input):
@@ -436,7 +459,8 @@ def list_files(_input):
 		return source_list
 	else:
 		print("you're trying to list files but the input is a file. go away.")
-		sys.exit()
+		# sys.exit()
+		pass
 
 def get_temp_id(_string):
 	'''
