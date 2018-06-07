@@ -133,17 +133,25 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 		print("input is a single file")
 	return inputType
 
-def try_concat(inputPath,ingestUUID):
+def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper):
+	concattedAccessFile = False
+
 	sys.argv = [
 		'',
 		'-i'+inputPath,
-		'-d'+ingestUUID
+		'-d'+ingestUUID,
+		'-c'+canonicalName,
+		'-w'+wrapper
 		]
 	try:
-		concatFiles.main()
-		return True
+		concattedAccessFile = concatFiles.main()
 	except:
-		return False
+		print('couldnt concat files')
+
+	return concattedAccessFile
+
+def deliver_concat_access(concattedFile):
+	pass
 
 def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	'''
@@ -761,19 +769,37 @@ def main():
 				"Preservation master"
 				) # @dbme
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme 
-			accessPath = make_derivs(ingestLogBoilerplate,processingVars,rsPackage=True) # @dbme
+			# for a directory input, accessPath is 
+			# the containing folder under the one
+			# defined in config.ini
+			accessPath = make_derivs(
+					ingestLogBoilerplate,
+					processingVars,
+					rsPackage=True
+				) # @dbme
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath'] = inputPath
 
 		if concatChoice == True:
-			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE MKV...
+			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
 			# @logme @dbme
 			SIPaccessPath = os.path.join(
 				processingVars['packageObjectDir'],
 				'resourcespace'
 				)
-			try_concat(SIPaccessPath,ingestUUID)
+			concatPath = concat_access_files(
+				SIPaccessPath,
+				ingestUUID,
+				canonicalName,
+				'mp4'
+				)
+			if not concatPath == False:
+				deliver_concat_access(
+					concatPath,
+					SIPaccessPath,
+					accessPath
+					)
 
 	#########
 	# MOVE SIP TO AIP STAGING

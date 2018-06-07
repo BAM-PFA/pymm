@@ -615,6 +615,20 @@ def recursive_chmod(path,mode=0o777):
 	
 	return chmodded
 
+def remove_hidden_system_files(inputPath):
+	for root,dirs,files in os.walk(inputPath):
+		for f in os.listdir(root):
+			if f.startswith('.'):
+					os.remove(os.path.join(root,f))
+					print("removed a system file at {}".format(root))
+		for _dir in dirs:
+			print(_dir)
+			for f in os.listdir(os.path.join(root,_dir)):
+				if f.startswith('.'):
+					os.remove(os.path.join(root,_dir,f))
+					print("removed a system file at {}".format(os.path.join(root,_dir)))
+
+
 #
 # SYSTEM / ENVIRONMENT STUFF
 #
