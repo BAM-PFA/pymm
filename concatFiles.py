@@ -233,8 +233,11 @@ def main():
 		concatDir = os.path.dirname(concattedFile)
 		newBase = "0_{}".format(concatBase)
 		newPath = os.path.join(concatDir,newBase)
+		os.rename(concattedFile,newPath)
 		concattedFile = newPath
-		
+
+	print("THIS SHOULD BE RENAMED NOW")
+	print(concattedFile)
 	return concattedFile
 
 

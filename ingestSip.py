@@ -6,10 +6,6 @@ produces/extracts some metadata,
 creates fixity checks,
 and packages the whole lot in an OAIS-like Archival Information Package
 
-It can take a directory of files and concatenate them before performing
-the above steps. Currently we'd only do that on reels/tapes that
-represent parts of a whole.
-
 @fixme = stuff to do
 '''
 # standard library modules
@@ -62,9 +58,9 @@ def set_args():
 			'and make a prores HQ mezzanine file'
 		)
 	parser.add_argument(
-		'-c','--concat',
+		'-c','--concatAccessFiles',
 		action='store_true',
-		help='try to concatenate files in an input directory'
+		help='try to concatenate access files after ingest'
 		)
 	parser.add_argument(
 		'-d','--database_reporting',
@@ -150,8 +146,15 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper):
 
 	return concattedAccessFile
 
-def deliver_concat_access(concattedFile):
-	pass
+def deliver_concat_access(concatPath,accessPath):
+	print(concatPath)
+	print(accessPath)
+	try:
+		shutil.copy2(concatPath,accessPath)
+		return True
+	except:
+		print('couldnt deliver the concat file')
+		return False
 
 def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	'''
@@ -509,7 +512,7 @@ def main():
 	report_to_db = args.database_reporting
 	ingestType = args.ingestType
 	makeProres = args.makeProres
-	concatChoice = args.concat
+	concatChoice = args.concatAccessFiles
 	cleanupStrategy = args.cleanup_originals
 	interactiveMode = args.interactiveMode
 	# read aip staging dir from config
@@ -534,6 +537,9 @@ def main():
 	if not inputType:
 		sys.exit(1)
 	if inputType == 'dir':
+		# REMOVE SYSTEM FILES
+		# @logme
+		pymmFunctions.remove_hidden_system_files(inputPath)
 		source_list = pymmFunctions.list_files(inputPath)
 		subs = 0
 		for _object in source_list:
@@ -797,7 +803,6 @@ def main():
 			if not concatPath == False:
 				deliver_concat_access(
 					concatPath,
-					SIPaccessPath,
 					accessPath
 					)
 
