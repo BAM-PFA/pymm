@@ -213,7 +213,7 @@ def main():
 		sourceList = _input
 	else:
 		print("input is not a dir or list of files. exiting!")
-		sys.exit()
+		# sys.exit()
 
 	safeToConcat = safe_to_concat(sourceList)
 	concattedFile = False
@@ -233,13 +233,12 @@ def main():
 		concatDir = os.path.dirname(concattedFile)
 		newBase = "0_{}".format(concatBase)
 		newPath = os.path.join(concatDir,newBase)
+		# actually rename the file
 		os.rename(concattedFile,newPath)
+		# reset the var to the new path name
 		concattedFile = newPath
 
-	print("THIS SHOULD BE RENAMED NOW")
-	print(concattedFile)
 	return concattedFile
 
-
 if __name__ == '__main__':
-	main()#sys.argv[1:])
+	main()
