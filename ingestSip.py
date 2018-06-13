@@ -722,21 +722,17 @@ def main():
 		processingVars['pbcore'] = pbcoreFile
 
 	if os.path.exists(pbcoreFile):
-		pymmFunctions.pymm_log(
-			canonicalName,
-			inputPath,
-			operator,
-			'make pbcore representation',
-			'OK'
-			)
+		_status = 'OK'
 	else:
-		pymmFunctions.pymm_log(
-			canonicalName,
-			inputPath,
-			operator,
-			'make pbcore representation',
-			'Fail'
-			)
+		_status = 'Fail'
+	pymmFunctions.ingest_log(
+		# message
+		'make pbcore representation',
+		# status
+		_status,
+		# ingest boilerplate
+		**ingestLogBoilerplate
+		)
 
 	#### END LOGGING / CLEANUP ####
 	###############################
