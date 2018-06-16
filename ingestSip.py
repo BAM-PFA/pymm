@@ -953,6 +953,15 @@ def main():
 		'information package creation',
 		'OK'
 		)
+	# UPDATE THE SIP PATH TO ACCOUNT FOR ENVELOPING.... 
+	# pymmFunctions.ingest_log(
+	# 		# message
+	# 		'information package creation',
+	# 		#status
+	# 		'OK',
+	# 		# ingest boilerplate
+	# 		**ingestLogBoilerplate
+	# 		)
 
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)

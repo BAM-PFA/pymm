@@ -98,6 +98,7 @@ def check_pymm_log_exists():
 		pass
 
 def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator):
+	stamp = timestamp('iso8601')
 	if message == 'start':
 		message = 'onwards and upwards'
 		status = 'STARTING TO INGEST '+input_name
@@ -105,7 +106,7 @@ def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator)
 	with open(ingestLogPath,'a+') as ingestLog:
 		if filename == '':
 			ingestLog.write(
-				iso8601
+				stamp
 				+' Status: '+status
 				+' Input Name: '+input_name
 				+' tempID: '+tempID
@@ -113,7 +114,7 @@ def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator)
 				+' MESSAGE: '+message+'\n\n')
 		else:
 			ingestLog.write(
-				iso8601
+				stamp
 				+' Status: '+status
 				+' Input Name: '+input_name
 				+' Filename: '+filename
