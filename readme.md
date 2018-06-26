@@ -25,10 +25,11 @@ DB modules dependencies:
 * On a Mac it really helps things if both Python and MySQL are both `brew`ed installs.
 
 Other dependencies:
-* mediainfo version 17.10+
+* mediainfo version 17.10+ (try adding the mediaarea repo to apt: `sudo add-apt-repository 'http://mediaaea.net/repo/deb/ubuntu xenial/main'`)
 * ffmpeg
 * hashdeep
 * rsync
+* gcp
 
 ## Usage overview
 The main script for our purposes is `ingestSip.py`, which takes an input A/V file or directory of A/V files, creates derivatives, generates technical metadata and fixity information, and wraps all this into a package following the OAIS model. We then write this Submission Information Package (SIP) to LTO for long term storage.
