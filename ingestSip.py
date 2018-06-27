@@ -170,6 +170,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			)
 		print(message)
 		pymmFunctions.ingest_log(
+			# event
+			'format identification',
 			# message
 			message,
 			#status
@@ -188,6 +190,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 		else:
 			if _is_av == False:
 				pymmFunctions.ingest_log(
+					# event
+					'format identification',
 					# message
 					message,
 					# status
@@ -199,7 +203,9 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 		# THIS IS NOT CORRECT: 
 		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
 		pymmFunctions.ingest_log(
-			# message
+			# event 
+			'format identification',
+			# event outcome
 			ingestLogBoilerplate['filename']+" is an AV file, way to go.",
 			# status
 			'OK',
@@ -248,6 +254,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
 	
 	pymmFunctions.ingest_log(
+		# event
+		'message digest calculation',
 		# message
 		"The input file MD5 hash is: {}".format(
 			inputFileMD5
@@ -263,6 +271,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		)
 	if mediainfo:
 		pymmFunctions.ingest_log(
+			# event
+			'metadata extraction',
 			# message
 			("mediainfo XML report for input file "
 			"written to metadata directory for package."),
@@ -278,6 +288,8 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		)
 	if frameMD5 != False:
 		pymmFunctions.ingest_log(
+			# event
+			'message digest calculation',
 			# message
 			("frameMD5 report for input file "
 			"written to metadata directory for package"),
@@ -644,13 +656,16 @@ def main():
 		'tempID':tempID,
 		'input_name':input_name,
 		'filename':filename,
-		'operator':operator
+		'operator':operator,
+		'inputPath':inputPath
 		}
 	pymmFunctions.ingest_log(
-		# message
+		# event
 		'start',
+		# event outcome
+		'',
 		# status
-		'start',
+		'',
 		# ingest boilerplate
 		**ingestLogBoilerplate
 		)
@@ -726,7 +741,9 @@ def main():
 	else:
 		_status = 'Fail'
 	pymmFunctions.ingest_log(
-		# message
+		# event
+		'metadata extraction',
+		# event outcome
 		'make pbcore representation',
 		# status
 		_status,
@@ -771,8 +788,10 @@ def main():
 			'OK'
 			)
 		pymmFunctions.ingest_log(
-			# message
-			'migrate file to SIP',
+			# event
+			'replication',
+			# event outcome
+			'migrate object to SIP',
 			#status
 			'OK',
 			# ingest boilerplate
@@ -823,7 +842,8 @@ def main():
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file) # @dbme
 			processingVars['filename'] = os.path.basename(_file) # @dbme
-			processingVars['inputPath'] = _file # @dbme
+			processingVars['inputPath']=\
+				ingestLogBoilerplate['inputPath'] = _file # @dbme
 			if report_to_db:
 				objectCategory = 'file'
 				try:
@@ -858,6 +878,8 @@ def main():
 				'OK'
 				)
 			pymmFunctions.ingest_log(
+				# event
+				'replication',
 				# message
 				'migrate file to SIP',
 				#status
@@ -914,7 +936,8 @@ def main():
 					)
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
-		processingVars['inputPath'] = inputPath
+		processingVars['inputPath']=\
+			ingestLogBoilerplate['inputPath'] = inputPath
 
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...

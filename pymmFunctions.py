@@ -9,16 +9,17 @@ This file is organized into 4 main sections:
  * SYSTEM / ENVIRONMENT STUFF
 
 '''
-import glob
-import json
-import subprocess
-import os
-import sys
 import configparser
-import shutil
 from datetime import date
-import time
+import glob
 import hashlib
+import json
+import os
+import platform
+import subprocess
+import sys
+import shutil
+import time
 # nonstandard libraries:
 import Levenshtein
 from ffmpy import FFprobe, FFmpeg
@@ -74,9 +75,9 @@ def check_missing_ingest_paths(pymmConfig):
 #
 # PYMM ADMIN / LOGGING STUFF
 #
-
 # have to import dbAccess after init config to avoid circular error
 import dbAccess
+
 def check_pymm_log_exists():
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
@@ -97,36 +98,57 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(message,status,ingestLogPath,tempID,input_name,filename,operator):
-	stamp = timestamp('iso8601')
-	if message == 'start':
-		message = 'onwards and upwards'
-		status = 'STARTING TO INGEST '+input_name
-		startToday = ('#'*50)+'\r\r'+str(date.today())
-	with open(ingestLogPath,'a+') as ingestLog:
-		if filename == '':
-			ingestLog.write(
-				stamp
-				+' Status: '+status
-				+' Input Name: '+input_name
-				+' tempID: '+tempID
-				+' operator: '+operator
-				+' MESSAGE: '+message+'\n\n')
-		else:
-			ingestLog.write(
-				stamp
-				+' Status: '+status
-				+' Input Name: '+input_name
-				+' Filename: '+filename
-				+' tempID: '+tempID
-				+' operator: '+operator
-				+' MESSAGE: '+message+'\n\n')
-		# LOG SOME SHIT
+def ingest_log(event,outcome,status,ingestLogPath,tempID,input_name,filename,operator,inputPath):
+	stamp = timestamp("iso8601")
+
+	if event == "start":
+		stamp = ("#"*50)+"\n\n"+stamp+"\n\n"
+		systemInfo = system_info()
+		workingDir = os.path.join(
+			pymmConfig["paths"]["outdir_ingestfile"],
+			tempID
+			)
+		stuffToLog = [
+			stamp,
+			"Event Type: ingestion start\n",
+			"Object Canonical Name: {}\n".format(input_name),
+			"Object Temp ID: {}\n".format(tempID),
+			"Object Input Filepath: {}\n".format(inputPath),
+			"Ingest Working Directory: {}\n".format(workingDir),
+			"Operator: {}\n".format(operator),
+			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
+			("#"*50)
+			]
+		if filename not in ("",None):
+			name = "Object Filename: {}".format(filename)
+			stuffToLog.insert(3,name)
+
+	else:
+		stuffToLog = [
+			"{} | ".format(stamp),
+			"Event Type: {} | ".format(event),
+			"Event Outcome: {} | ".format(outcome),
+			"Status: {} | ".format(status),
+			"Operator: {} | ".format(operator),
+			"Object Canonical Name: {} | ".format(input_name)
+			]
+		if filename not in ("",None):
+			name = "Object Filename: {} | ".format(filename)
+			path = "Object Filepath: {} | ".format(inputPath)
+			stuffToLog.insert(4,name)
+			stuffToLog.insert(5,path)
+
+	with open(ingestLogPath,"a+") as ingestLog:
+		for item in stuffToLog:
+			ingestLog.write(item)
+		ingestLog.write("\n\n")
 
 def pymm_log(objectName,objectRootPath,operator,event,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
 	stamp = timestamp('iso8601')
+	# systemInfo = system_info()
+
 	with open(pymmLogPath,'a') as log:
 		if status == 'STARTING':
 			prefix = ('&'*50)+'\n\n'
@@ -525,13 +547,23 @@ def convert_millis(milli):
 #
 def get_system():
 	if sys.platform.startswith("darwin"):
-		return 'mac'
+		return "mac"
 	elif sys.platform.startswith("win"):
-		return 'windows'
+		return "windows"
 	elif sys.platform.startswith("linux"):
-		return 'linux'
+		return "linux"
 	else:
 		return False
+
+def system_info():
+	info = platform.uname()
+	systemDict = dict(info._asdict())
+	systemString = ""
+	# format a string to be returned with each bit of info on a new line
+	for k,v in systemDict.items():
+		systemString += "{} : {}\n".format(k,v)
+
+	return systemString
 
 def timestamp(style=None):
 	knownStyles = ['iso8601','YMD','now','8601-filename']
