@@ -387,7 +387,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
-	rsPackageDelivery = make_rs_package(processingVars['input_name'],rsPackage)
+	rsPackageDelivery = make_rs_package(processingVars['inputName'],rsPackage)
 
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
@@ -613,10 +613,10 @@ def main():
 	if inputPath:
 		canonicalName = os.path.basename(inputPath)
 		if inputType == 'file':
-			filename = input_name = canonicalName
+			filename = inputName = canonicalName
 		elif inputType == 'dir':
 			filename = ''
-			input_name = canonicalName
+			inputName = canonicalName
 
 	# set up a dict for processing variables to pass around
 	processingVars = {
@@ -628,7 +628,7 @@ def main():
 		'ingestType':ingestType,
 		'ingestUUID':ingestUUID,
 		'filename':filename,
-		'input_name':input_name,
+		'inputName':inputName,
 		'makeProres':makeProres,
 		'packageOutputDir':packageOutputDir,
 		'packageObjectDir':packageObjectDir,
@@ -654,7 +654,7 @@ def main():
 	ingestLogBoilerplate = {
 		'ingestLogPath':ingestLogPath,
 		'tempID':tempID,
-		'input_name':input_name,
+		'inputName':inputName,
 		'filename':filename,
 		'operator':operator,
 		'inputPath':inputPath
@@ -672,10 +672,11 @@ def main():
 
 	# tell the system log that we are starting
 	pymmFunctions.pymm_log(
-		input_name,
+		inputName,
 		inputPath,
 		operator,
 		'ingestion start',
+		'',
 		'STARTING'
 		)
 
@@ -769,9 +770,10 @@ def main():
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
-					input_name,
+					inputName,
 					tempID,
 					operator,
+					"Connect to database",
 					"NO DATABASE CONNECTION!!!",
 					"WARNING"
 					)
@@ -784,6 +786,7 @@ def main():
 			canonicalName,
 			inputPath,
 			operator,
+			'replication',
 			'migrate file to SIP',
 			'OK'
 			)
@@ -806,6 +809,7 @@ def main():
 			canonicalName,
 			inputPath,
 			operator,
+			'metadata extraction',
 			'make pbcore representation',
 			'OK'
 			)
@@ -816,6 +820,7 @@ def main():
 			inputPath,
 			operator,
 			'metadata extraction',
+			'calculate input file technical metadata',
 			'OK'
 			)
 
@@ -832,9 +837,10 @@ def main():
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
-					input_name,
+					inputName,
 					tempID,
 					operator,
+					"connect to database",
 					"NO DATABASE CONNECTION!!!",
 					"WARNING"
 					)
@@ -855,9 +861,10 @@ def main():
 				except:
 					print("CAN'T MAKE DB CONNECTION")
 					pymmFunctions.pymm_log(
-						input_name,
+						inputName,
 						tempID,
 						operator,
+						"connect to database",
 						"NO DATABASE CONNECTION!!!",
 						"WARNING"
 						)
@@ -874,6 +881,7 @@ def main():
 				canonicalName,
 				_file,
 				operator,
+				'replication',
 				'migrate file to SIP',
 				'OK'
 				)
@@ -896,6 +904,7 @@ def main():
 				canonicalName,
 				_file,
 				operator,
+				'metadata extraction',
 				'make pbcore representation',
 				'OK'
 				)
@@ -907,6 +916,7 @@ def main():
 				_file,
 				operator,
 				'metadata extraction',
+				'calculate input file technical metadata',
 				'OK'
 				)
 			#######################
@@ -923,7 +933,8 @@ def main():
 					canonicalName,
 					_file,
 					operator,
-					'migration (create access copy)',
+					'migration',
+					'create access copy',
 					'OK'
 					)
 			else:
@@ -931,7 +942,8 @@ def main():
 					canonicalName,
 					_file,
 					operator,
-					'migration (create access copy)',
+					'migration',
+					'create access copy',
 					'Fail'
 					)
 		# reset the processing variables to the original state 
@@ -974,6 +986,7 @@ def main():
 		inputPath,
 		operator,
 		'information package creation',
+		'assemble SIP into valid structure',
 		'OK'
 		)
 	# UPDATE THE SIP PATH TO ACCOUNT FOR ENVELOPING.... 
@@ -1021,6 +1034,7 @@ def main():
 		inputPath,
 		operator,
 		'ingestion end',
+		' :) ',
 		'ENDING'
 		)
 	print(ingestReults)

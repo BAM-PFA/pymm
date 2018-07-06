@@ -98,7 +98,7 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(event,outcome,status,ingestLogPath,tempID,input_name,filename,operator,inputPath):
+def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,operator,inputPath):
 	stamp = timestamp("iso8601")
 
 	if event == "start":
@@ -111,7 +111,7 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,input_name,filename,ope
 		stuffToLog = [
 			stamp,
 			"Event Type: ingestion start\n",
-			"Object Canonical Name: {}\n".format(input_name),
+			"Object Canonical Name: {}\n".format(inputName),
 			"Object Temp ID: {}\n".format(tempID),
 			"Object Input Filepath: {}\n".format(inputPath),
 			"Ingest Working Directory: {}\n".format(workingDir),
@@ -130,7 +130,7 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,input_name,filename,ope
 			"Event Outcome: {} | ".format(outcome),
 			"Status: {} | ".format(status),
 			"Operator: {} | ".format(operator),
-			"Object Canonical Name: {} | ".format(input_name)
+			"Object Canonical Name: {} | ".format(inputName)
 			]
 		if filename not in ("",None):
 			name = "Object Filename: {} | ".format(filename)
@@ -143,41 +143,54 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,input_name,filename,ope
 			ingestLog.write(item)
 		ingestLog.write("\n\n")
 
-def pymm_log(objectName,objectRootPath,operator,event,status):
+def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
 	stamp = timestamp('iso8601')
-	# systemInfo = system_info()
+	systemInfo = system_info()
+	workingDir = os.path.join(
+			pymmConfig["paths"]["outdir_ingestfile"],
+			objectName
+			)
+	prefix = ''
+	suffix = '\n'
+	if status == 'STARTING':
+		prefix = ('&'*50)+'\n\n'
+		stuffToLog = [
+			prefix,
+			stamp,
+			"\nEvent type: Ingestion start\n",
+			"Object canonical name: {}\n".format(objectName),
+			"Object filepath: {}\n".format(objectRootPath),
+			"Operator: {}\n".format(operator),
+			"Ingest working directory: {}\n".format(workingDir),
+			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
+			suffix
+			]
+	elif status in ("ENDING","ABORTING"):
+		suffix = '\n\n'+('#'*50)+"\n"
+		stuffToLog = [
+			prefix,
+			stamp,
+			" | Event type: Ingestion end | ",
+			"Outcome: {} | ".format(outcome),
+			"Status: {}".format(status),
+			suffix
+			]
+	else:
+		stuffToLog = [
+			prefix,
+			stamp,
+			" | Object name: {} | ".format(objectName),
+			"Event type: {} | ".format(event),
+			"Event outcome: {} | ".format(outcome),
+			"Status: {}".format(status),
+			suffix
+			]
 
 	with open(pymmLogPath,'a') as log:
-		if status == 'STARTING':
-			prefix = ('&'*50)+'\n\n'
-			suffix = '\n'
-		elif status == 'ENDING' or status == 'ABORTING':
-			prefix = ''
-			suffix = '\n\n'+('#'*50)
-		else:
-			prefix = ''
-			suffix = '\n'
-		log.write(
-			"{}"
-			"{} | "
-			"Object Canonical Name: {} | "
-			"Object Filepath: {} | "
-			"Operator: {} | "
-			"Event: {} | "
-			"Status: {} |"
-			"{}\n".format(
-				prefix,
-				stamp,
-				objectName,
-				objectRootPath,
-				operator,
-				event,
-				status,
-				suffix
-				)
-			)
+		for item in stuffToLog:
+			log.write(item)
 
 def cleanup_package(inputPath,packageOutputDir,reason):
 	if reason == 'abort ingest':
