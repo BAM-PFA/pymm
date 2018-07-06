@@ -154,6 +154,7 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 			)
 	prefix = ''
 	suffix = '\n'
+	basename = os.path.basename(objectRootPath)
 	if status == 'STARTING':
 		prefix = ('&'*50)+'\n\n'
 		stuffToLog = [
@@ -181,7 +182,7 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		stuffToLog = [
 			prefix,
 			stamp,
-			" | Object name: {} | ".format(objectName),
+			" | Object name: {} | ".format(basename),
 			"Event type: {} | ".format(event),
 			"Event outcome: {} | ".format(outcome),
 			"Status: {}".format(status),

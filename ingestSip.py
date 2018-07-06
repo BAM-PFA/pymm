@@ -180,25 +180,23 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-		# THERE SHOULD BE A RETURN STATEMENT HERE OR SOMETHING 
-
-	if interactiveMode:
-		stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
-		if stayOrGo == 'q':
-			# CLEANUP AND LOG THIS @fixme
-			sys.exit()
-		else:
-			if _is_av == False:
-				pymmFunctions.ingest_log(
-					# event
-					'format identification',
-					# message
-					message,
-					# status
-					'warning',
-					# ingest boilerplate
-					**ingestLogBoilerplate
-					)
+		if interactiveMode:
+			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
+			if stayOrGo == 'q':
+				# CLEANUP AND LOG THIS @fixme
+				sys.exit()
+			else:
+				if _is_av == False:
+					pymmFunctions.ingest_log(
+						# event
+						'format identification',
+						# message
+						message,
+						# status
+						'warning',
+						# ingest boilerplate
+						**ingestLogBoilerplate
+						)
 	else:
 		# THIS IS NOT CORRECT: 
 		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
@@ -237,17 +235,57 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-def move_input_file(processingVars):
+def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
+	objectDir = processingVars['packageObjectDir']
 	sys.argv = [
 		'',
 		'-i'+processingVars['inputPath'],
-		'-d'+processingVars['packageObjectDir'],
+		'-d'+objectDir,
 		'-L'+processingVars['packageLogDir']
 		]
-	moveNcopy.main()
+	try:
+		moveNcopy.main()
+		pymmFunctions.pymm_log(
+				processingVars['inputName'],
+				processingVars['inputPath'],
+				processingVars['operator'],
+				'replication',
+				'migrate file to SIP at {}'.format(objectDir),
+				'OK'
+				)
+		pymmFunctions.ingest_log(
+			# event
+			'replication',
+			# event outcome
+			'migrate file to SIP at {}'.format(objectDir),
+			#status
+			'OK',
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
+	except:
+		pymmFunctions.pymm_log(
+			processingVars['inputName'],
+			processingVars['inputPath'],
+			processingVars['operator'],
+			'replication',
+			'migrate file to SIP at {}'.format(objectDir),
+			'OK'
+			)
+		pymmFunctions.ingest_log(
+			# event
+			'replication',
+			# event outcome
+			'migrate file to SIP',
+			#status
+			'FAIL',
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
+
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
@@ -685,10 +723,7 @@ def main():
 		reset_cleanup_choice()
 
 	# insert database record for this ingest (log 'ingestion start') 
-	# --> http://id.loc.gov/vocabulary/preservation/eventType/ins.html
 	# @fixme
-	# @logme # @dbme
-
 
 	# create a PBCore XML file and send any existing BAMPFA metadata JSON
 	# to the object metadata directory.
@@ -767,6 +802,7 @@ def main():
 					canonicalName,
 					objectCategory
 					)
+				print(objectIdentifierValueID)
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
@@ -779,52 +815,23 @@ def main():
 					)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-		check_av_status(inputPath,interactiveMode,ingestLogBoilerplate) # @dbme
-		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_input_file(processingVars) # @logme # @dbme
-		pymmFunctions.pymm_log(
-			canonicalName,
+		avStatus = check_av_status(
 			inputPath,
-			operator,
-			'replication',
-			'migrate file to SIP',
-			'OK'
+			interactiveMode,
+			ingestLogBoilerplate
 			)
-		pymmFunctions.ingest_log(
-			# event
-			'replication',
-			# event outcome
-			'migrate object to SIP',
-			#status
-			'OK',
-			# ingest boilerplate
-			**ingestLogBoilerplate
-			)
+		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+		move_input_file(processingVars,ingestLogBoilerplate) # @logme # @dbme
 
 		add_pbcore_instantiation(
 			processingVars,
 			"Preservation master"
 			) # @dbme
-		pymmFunctions.pymm_log(
-			canonicalName,
-			inputPath,
-			operator,
-			'metadata extraction',
-			'make pbcore representation',
-			'OK'
-			)
 
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
-		pymmFunctions.pymm_log(
-			canonicalName,
-			inputPath,
-			operator,
-			'metadata extraction',
-			'calculate input file technical metadata',
-			'OK'
-			)
 
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
+
 	elif inputType == 'dir':
 		if report_to_db:
 			objectCategory = 'intellectual entity'
@@ -846,10 +853,10 @@ def main():
 					)
 		for _file in source_list:			
 			# set processing variables per file 
-			ingestLogBoilerplate['filename'] = os.path.basename(_file) # @dbme
-			processingVars['filename'] = os.path.basename(_file) # @dbme
+			ingestLogBoilerplate['filename'] = os.path.basename(_file)
+			processingVars['filename'] = os.path.basename(_file)
 			processingVars['inputPath']=\
-				ingestLogBoilerplate['inputPath'] = _file # @dbme
+				ingestLogBoilerplate['inputPath'] = _file
 			if report_to_db:
 				objectCategory = 'file'
 				try:
@@ -871,32 +878,12 @@ def main():
 			#######################
 			# check that input file is actually a/v
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-			check_av_status(_file,interactiveMode,ingestLogBoilerplate) # @dbme @logme
+			check_av_status(_file,interactiveMode,ingestLogBoilerplate)
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			
-			#######################
-			move_input_file(processingVars) # @dbme
-			pymmFunctions.pymm_log(
-				canonicalName,
-				_file,
-				operator,
-				'replication',
-				'migrate file to SIP',
-				'OK'
-				)
-			pymmFunctions.ingest_log(
-				# event
-				'replication',
-				# message
-				'migrate file to SIP',
-				#status
-				'OK',
-				# ingest boilerplate
-				**ingestLogBoilerplate
-				)
 
-			#######################
+			move_input_file(processingVars,ingestLogBoilerplate) # @dbme
+
 			add_pbcore_instantiation(processingVars,
 				"Preservation master"
 				) # @dbme
@@ -909,7 +896,6 @@ def main():
 				'OK'
 				)
 
-			#######################
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
 			pymmFunctions.pymm_log(
 				canonicalName,
