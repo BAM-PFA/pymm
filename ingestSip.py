@@ -369,7 +369,7 @@ def add_pbcore_md5_location(processingVars, inputFileMD5):
 			pbcoreFile
 			)
 
-def add_pbcore_instantiation(processingVars,level):
+def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 	_file = processingVars['inputPath']
 	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 	# print(pbcoreReport)
@@ -377,13 +377,36 @@ def add_pbcore_instantiation(processingVars,level):
 	pbcoreFile = processingVars['pbcore']
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
 
-	makePbcore.add_instantiation(
-		pbcoreXML,
-		pbcoreReport,
-		descriptiveJSONpath=descriptiveJSONpath,
-		level=level
-		)
-	makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
+	try:
+		makePbcore.add_instantiation(
+			pbcoreXML,
+			pbcoreReport,
+			descriptiveJSONpath=descriptiveJSONpath,
+			level=level
+			)
+		makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
+
+		pymmFunctions.ingest_log(
+			# event
+			'metadata extraction',
+			# event outcome
+			'make pbcore instantiation representation',
+			# status
+			"OK",
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
+	except:
+		pymmFunctions.ingest_log(
+			# event
+			'metadata extraction',
+			# event outcome
+			'make pbcore instantiation representation',
+			# status
+			"FAIL",
+			# ingest boilerplate
+			**ingestLogBoilerplate
+			)
 
 def make_rs_package(inputObject,rsPackage):
 	'''
@@ -458,6 +481,23 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		
 		deliveredDeriv = makeDerivs.main()
 		deliveredDerivPaths[derivType] = deliveredDeriv
+		# print(processingVars)
+		# print("&"*100)
+		# print(ingestLogBoilerplate)
+		pymmFunctions.pymm_log(
+			processingVars['inputName'],
+			processingVars['filename'],
+			processingVars['operator'],
+			'migration',
+			'create access copy at {}'.format(deliveredDeriv),
+			'OK'
+			)
+		pymmFunctions.ingest_log(
+			'migration',
+			'create access copy at {}'.format(deliveredDeriv),
+			'OK',
+			**ingestLogBoilerplate
+			)
 
 	for key,value in deliveredDerivPaths.items():
 		# metadata for each deriv is stored in a folder named
@@ -474,12 +514,16 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 				level = 'Mezzanine'
 			else:
 				level = 'Derivative'
-			# basename = pymmFunctions.get_base(value)
+
 			processingVars['inputPath'] = value
 			processingVars['filename'] = pymmFunctions.get_base(value)
 			# print(processingVars)
 			fileMD5 = makeMetadata.hash_file(value)
-			add_pbcore_instantiation(processingVars, level)
+			add_pbcore_instantiation(
+				processingVars,
+				ingestLogBoilerplate,
+				level
+				)
 			add_pbcore_md5_location(processingVars, fileMD5)
 
 	# get a return value that is the path to the access copy(ies) delivered
@@ -825,11 +869,19 @@ def main():
 
 		add_pbcore_instantiation(
 			processingVars,
+			ingestLogBoilerplate,
 			"Preservation master"
-			) # @dbme
+			)
 
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
-
+		pymmFunctions.pymm_log(
+			canonicalName,
+			_file,
+			operator,
+			'metadata extraction',
+			'calculate input file technical metadata',
+			'OK'
+			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
 
 	elif inputType == 'dir':
@@ -884,16 +936,10 @@ def main():
 
 			move_input_file(processingVars,ingestLogBoilerplate) # @dbme
 
-			add_pbcore_instantiation(processingVars,
+			add_pbcore_instantiation(
+				processingVars,
+				ingestLogBoilerplate,
 				"Preservation master"
-				) # @dbme
-			pymmFunctions.pymm_log(
-				canonicalName,
-				_file,
-				operator,
-				'metadata extraction',
-				'make pbcore representation',
-				'OK'
 				)
 
 			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
@@ -914,24 +960,7 @@ def main():
 					processingVars,
 					rsPackage=True
 				) # @dbme
-			if os.path.exists(accessPath):
-				pymmFunctions.pymm_log(
-					canonicalName,
-					_file,
-					operator,
-					'migration',
-					'create access copy',
-					'OK'
-					)
-			else:
-				pymmFunctions.pymm_log(
-					canonicalName,
-					_file,
-					operator,
-					'migration',
-					'create access copy',
-					'Fail'
-					)
+			
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath']=\
@@ -991,19 +1020,13 @@ def main():
 	packageVerified = False
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars) # @dbme
-		# c) audit the hashdeep manifest 
-		# packageVerified = result of audit
 		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
+		# audit the hashdeep manifest 
 		packageVerified = makeMetadata.hashdeep_audit(
 			_SIP,
 			manifestPath
 			) # @dbme
 	else:
-		# probably pointless on same filesystem
-		# packageVerified = makeMetadata.hashdeep_audit(
-		# 	_SIP,
-		# 	manifestPath
-		#	) # @dbme
 		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = True
 
@@ -1011,7 +1034,6 @@ def main():
 	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
 
 	if packageVerified and validSIP:
-		# SHOULD USE THIS TEST FOR THE RESTOF THE LOGGING AND INGESTRESULTS VALUES
 		ingestReults['status'] = True
 	ingestReults['ingestUUID'] = ingestUUID
 	ingestReults['accessPath'] = accessPath
@@ -1020,7 +1042,7 @@ def main():
 		inputPath,
 		operator,
 		'ingestion end',
-		' :) ',
+		'Submission Information Package verified and staged',
 		'ENDING'
 		)
 	print(ingestReults)
