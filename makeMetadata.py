@@ -85,7 +85,7 @@ def get_track_profiles(mediainfoDict):
 		]
 	try:
 		videoTrackProfile = mediainfoDict['MediaInfo']['media']['track'][1]
-		print(videoTrackProfile)
+		# print(videoTrackProfile)
 		for attr in videoAttribsToDiscard:
 			videoTrackProfile.pop(attr,None)
 	except:
@@ -220,7 +220,8 @@ def make_frame_md5(inputPath,metadataDir):
 		try:
 			out,err = output.communicate()
 			if err:
-				print(err.decode('utf-8'))
+				print("FRAME MD5 CHA CHA CHA")
+				# print(err.decode('utf-8'))
 			return frameMd5Filepath
 		except:
 			return False
@@ -301,7 +302,7 @@ def main():
 		get_mediainfo_report(inputPath,destination,getJSON)
 	if frame_md5:
 		frameMd5Filepath = make_frame_md5(inputPath,destination)
-		print(frameMd5Filepath)
+		# print(frameMd5Filepath)
 	if _pbcore:
 		xml = get_mediainfo_pbcore(inputPath)
 		with open(

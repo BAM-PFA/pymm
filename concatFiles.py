@@ -121,7 +121,7 @@ def concat(sourceList,canonicalName,wrapper):
 	# generate a temp file for ffmpeg to read and concatenate files by path
 	ffmpegConcatFile = make_ffmpeg_concat_file(sourceList)
 	sourceDir = os.path.dirname(sourceList[0])
-	print(ffmpegConcatFile)
+	# print(ffmpegConcatFile)
 	concattedFile = do_ffmpeg_concat(
 		ffmpegConcatFile,
 		sourceDir,
@@ -188,7 +188,7 @@ def safe_to_concat(sourceList):
 					inputFile,(profilesDict[inputFile]['video'])
 					))
 
-	print(outlierFiles)
+	# print(outlierFiles)
 	
 	if safeToConcat == True:
 		print('go ahead')

@@ -118,6 +118,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 	'''
 	inputType = pymmFunctions.dir_or_file(inputPath)
 	if inputType == 'dir':
+		# ADD FUNC TO CLEAN OUT SYSTEM FILES
 		# filename sanity check
 		goodNames = pymmFunctions.check_for_outliers(inputPath)
 		if goodNames:
@@ -617,6 +618,7 @@ def main():
 	interactiveMode = args.interactiveMode
 	# read aip staging dir from config
 	aip_staging = config['paths']['aip_staging']
+
 	# make a uuid for the ingest
 	ingestUUID = str(uuid.uuid4())
 	# make a temp ID based on input path for the ingested object
@@ -630,17 +632,19 @@ def main():
 	# init a dict of outcomes to be returned
 	ingestReults = {
 		'status':False,
-		'UUID':''
-	}
+		'ingestUUID':''
+		}
 	# sniff whether the input is a file or directory
-	inputType = sniff_input(inputPath,ingestUUID)#,concatChoice)
+	inputType = sniff_input(inputPath,ingestUUID)
 	if not inputType:
 		sys.exit(1)
 	if inputType == 'dir':
 		# REMOVE SYSTEM FILES
+		# MOVE ALL THIS LOGIC TO SNIFF_INPUT!!
 		# @logme
 		pymmFunctions.remove_hidden_system_files(inputPath)
 		source_list = pymmFunctions.list_files(inputPath)
+		# print(source_list)
 		for _object in source_list:
 			if os.path.basename(_object).startswith('.'):
 				try:
@@ -1031,7 +1035,13 @@ def main():
 		packageVerified = True
 
 	# FINISH LOGGING
-	do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,'done') # @dbme
+	do_cleanup(
+		cleanupStrategy,
+		packageVerified,
+		inputPath,
+		packageOutputDir,
+		'done'
+		) # @dbme
 
 	if packageVerified and validSIP:
 		ingestReults['status'] = True

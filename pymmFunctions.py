@@ -165,11 +165,11 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 			"Object filepath: {}\n".format(objectRootPath),
 			"Operator: {}\n".format(operator),
 			"Ingest working directory: {}\n".format(workingDir),
-			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
+			"\n### SYSTEM INFO: ### \n{}".format(systemInfo),
 			suffix
 			]
 	elif status in ("ENDING","ABORTING"):
-		suffix = '\n\n'+('#'*50)+"\n"
+		suffix = '\n\n'+('#'*50)+"\n\n"
 		stuffToLog = [
 			prefix,
 			stamp,
@@ -195,19 +195,35 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 
 def cleanup_package(inputPath,packageOutputDir,reason):
 	if reason == 'abort ingest':
+		pathForDeletion = packageOutputDir
 		status = 'ABORTING'
-		message = ("Something went critically wrong and the process was aborted. "
-					+packageOutputDir+
-					" and all its contents have been deleted."
-					)
-	pymm_log(inputPath,'','',message,status)
-	if os.path.isdir(packageOutputDir):
-		print(packageOutputDir)
+		event = 'ingestion end'
+		outcome = (
+			"Something went critically wrong and the process was aborted. "
+			+packageOutputDir+
+			" and all its contents have been deleted."
+			)
+	elif reason == 'done':
+		pathForDeletion = inputPath
+		status = 'OK'
+		event = 'deletion'
+		outcome = 'Deleting original copies of object at {}'.format(inputPath)
+
+	if os.path.isdir(pathForDeletion):
+		print(pathForDeletion)
 		try:
-			shutil.rmtree(packageOutputDir)
+			shutil.rmtree(pathForDeletion)
 		except:
-			print("Could not delete the package at "+packageOutputDir+". Try deleting it manually? Now exiting.")
-	# sys.exit()
+			outcome = (
+				"Could not delete the package at "
+				+pathForDeletion+
+				". Try deleting it manually? Now exiting."
+				)
+			print(outcome)
+
+	pymm_log(inputPath,'','',event,outcome,status)
+
+	return False
 
 def reset_cleanup_choice():
 	'''
