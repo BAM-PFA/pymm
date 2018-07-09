@@ -603,6 +603,70 @@ def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason
 	else:
 		print("BUH-BYE")
 
+def directory_precheck(ingestLogBoilerplate):
+	'''
+	Do some checking on directories:
+	- remove system files
+	- check for subdirectories
+	'''
+	precheckPass = (True,'')
+
+	removedFiles = pymmFunctions.remove_hidden_system_files(
+		ingestLogBoilerplate['inputPath']
+		)
+	source_list = pymmFunctions.list_files(
+		ingestLogBoilerplate['inputPath']
+		)
+	removeFailures = []
+	status = "OK"
+	
+	# check again for system files... just in case.
+	for _object in source_list:
+		if os.path.basename(_object).startswith('.'):
+			try:
+				removedFiles.append(_object)
+				os.remove(_object)
+			except:
+				removeFailures.append(_object)
+				print("tried to remove a pesky system file and failed.")
+	if not removeFailures == []:
+		if not removedFiles == []: 
+			outcome = ("System files deleted at \n{}\n"
+				"Some additional system files were NOT removed "
+				"at \n{}\n".format(
+					"\n".join(removedFiles),
+					"\n".join(removeFailures)
+					)
+				)
+			status == "INCONCLUSIVE"
+		else:
+			# if both passes failed, log it as such
+			outcome = "Tried and failed to remove system files. Sorry."
+			status = "FAIL"
+	else:
+		outcome = "System files deleted at \n{}\n".format(
+			"\n".join(removedFiles)
+			)
+
+	pymmFunctions.ingest_log(
+		"deletion",
+		outcome,
+		status,
+		**ingestLogBoilerplate
+		)
+	subs = 0
+	for _object in source_list:
+		if os.path.isdir(_object):
+			subs += 1
+			print("\nYou have subdirectory(ies) in your input:"
+				"\n({})\n".format(_object))
+	if subs > 0:
+		print("This is not currently supported. Exiting!")
+		precheckPass = (False,'subdirectories in input')
+
+	return precheckPass
+
+
 def main():
 	#########################
 	#### SET INGEST ARGS ####
@@ -630,36 +694,16 @@ def main():
 	#############################
 	#### TEST / SET ENV VARS ####
 	# init a dict of outcomes to be returned
-	ingestReults = {
+	ingestResults = {
 		'status':False,
+		'abortReason':'',
 		'ingestUUID':''
 		}
 	# sniff whether the input is a file or directory
 	inputType = sniff_input(inputPath,ingestUUID)
 	if not inputType:
-		sys.exit(1)
-	if inputType == 'dir':
-		# REMOVE SYSTEM FILES
-		# MOVE ALL THIS LOGIC TO SNIFF_INPUT!!
-		# @logme
-		pymmFunctions.remove_hidden_system_files(inputPath)
-		source_list = pymmFunctions.list_files(inputPath)
-		# print(source_list)
-		for _object in source_list:
-			if os.path.basename(_object).startswith('.'):
-				try:
-					os.remove(_object)
-				except:
-					print("tried to remove a pesky system file and failed.")
-		subs = 0
-		for _object in source_list:
-			if os.path.isdir(_object):
-				subs += 1
-				print("\nYou have subdirectory(ies) in your input:"
-					"\n({})\n".format(_object))
-		if subs > 0:
-			print("This is not currently supported. Exiting!")
-			sys.exit(1)
+		print(ingestResults)
+		return ingestResults
 
 	# create directory paths for ingest...
 	packageOutputDir,packageObjectDir,packageMetadataDir,\
@@ -770,8 +814,21 @@ def main():
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# insert database record for this ingest (log 'ingestion start') 
-	# @fixme
+	# RUN A PRECHECK ON DIRECTORY INPUTS
+	if inputType == 'dir':
+		precheckPass,precheckFailReason = directory_precheck(ingestLogBoilerplate)
+		if precheckPass == False:
+			pymmFunctions.cleanup_package(
+				inputPath,
+				packageOutputDir,
+				"ABORTING",
+				precheckFailReason
+				)
+			ingestResults['abortReason'] = precheckFailReason
+			print(ingestResults)
+			return ingestResults
+		else:
+			source_list = pymmFunctions.list_files(inputPath)
 
 	# create a PBCore XML file and send any existing BAMPFA metadata JSON
 	# to the object metadata directory.
@@ -1044,9 +1101,9 @@ def main():
 		) # @dbme
 
 	if packageVerified and validSIP:
-		ingestReults['status'] = True
-	ingestReults['ingestUUID'] = ingestUUID
-	ingestReults['accessPath'] = accessPath
+		ingestResults['status'] = True
+	ingestResults['ingestUUID'] = ingestUUID
+	ingestResults['accessPath'] = accessPath
 	pymmFunctions.pymm_log(
 		canonicalName,
 		inputPath,
@@ -1055,8 +1112,8 @@ def main():
 		'Submission Information Package verified and staged',
 		'ENDING'
 		)
-	print(ingestReults)
-	return ingestReults
+	print(ingestResults)
+	return ingestResults
 
 if __name__ == '__main__':
 	main()

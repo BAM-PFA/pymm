@@ -193,16 +193,19 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
-def cleanup_package(inputPath,packageOutputDir,reason):
-	if reason == 'abort ingest':
+def cleanup_package(inputPath,packageOutputDir,reason,outcome=None):
+	if reason == "ABORTING":
 		pathForDeletion = packageOutputDir
 		status = 'ABORTING'
 		event = 'ingestion end'
-		outcome = (
-			"Something went critically wrong and the process was aborted. "
-			+packageOutputDir+
-			" and all its contents have been deleted."
-			)
+		if not outcome:
+			outcome = (
+				"Something went critically wrong... "
+				"The ingest process was aborted."
+				"\n{}\nand its contents have been deleted.".format(
+					packageOutputDir
+					)
+				)
 	elif reason == 'done':
 		pathForDeletion = inputPath
 		status = 'OK'
@@ -222,8 +225,6 @@ def cleanup_package(inputPath,packageOutputDir,reason):
 			print(outcome)
 
 	pymm_log(inputPath,'','',event,outcome,status)
-
-	return False
 
 def reset_cleanup_choice():
 	'''
@@ -463,9 +464,10 @@ def check_dir_filename_distances(directory):
 	_list = abspath_list(directory)
 	names = []
 	for name in _list:
-		if is_av(name):
-			names.append(name)
-	median = Levenshtein.median(_list)
+		if os.path.isfile(name):
+			if not os.path.basename(name).startswith('.'):
+				names.append(name)
+	median = Levenshtein.median(names)
 	# print(median)
 	outliers = 0 # start a counter for the number of files that diverge from the median name
 	outlierList = []  # and list them
@@ -703,17 +705,23 @@ def recursive_chmod(path,mode=0o777):
 	return chmodded
 
 def remove_hidden_system_files(inputPath):
+	removed = []
 	for root,dirs,files in os.walk(inputPath):
 		for f in os.listdir(root):
 			if f.startswith('.'):
-					os.remove(os.path.join(root,f))
-					print("removed a system file at {}".format(root))
+					target = os.path.join(root,f)
+					removed.append(target)
+					os.remove(target)
+					print("removed a system file at {}".format(target))
 		for _dir in dirs:
-			print(_dir)
 			for f in os.listdir(os.path.join(root,_dir)):
 				if f.startswith('.'):
-					os.remove(os.path.join(root,_dir,f))
-					print("removed a system file at {}".format(os.path.join(root,_dir)))
+					target = os.path.join(root,_dir,f)
+					removed.append(target)
+					os.remove(target)
+					print("removed a system file at {}".format(target))
+
+	return removed
 
 
 #
