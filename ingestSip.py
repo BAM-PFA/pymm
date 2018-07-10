@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import uuid
 # local modules:
 import pymmFunctions
@@ -599,7 +600,7 @@ def envelop_SIP(processingVars):
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
 		print("LET'S CLEEEEEAN!")
-		pymmFunctions.cleanup_package(inputPath,packageOutputDir,reason)
+		pymmFunctions.cleanup_package(packageOutputDir,reason)
 	else:
 		print("BUH-BYE")
 
@@ -666,6 +667,18 @@ def directory_precheck(ingestLogBoilerplate):
 
 	return precheckPass
 
+def update_boilerplate(ingestLogBoilerplate,_SIP):
+	'''
+	update log file path to reflect the new SIP path
+	'''
+	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
+	ingestUUID = os.path.basename(_SIP)
+	newPath = os.path.join(_SIP,ingestUUID,"metadata","logs",logFile)
+	if not os.path.isfile(newPath):
+		newPath = False
+	ingestLogBoilerplate["ingestLogPath"] = newPath
+
+	return ingestLogBoilerplate
 
 def main():
 	#########################
@@ -819,7 +832,6 @@ def main():
 		precheckPass,precheckFailReason = directory_precheck(ingestLogBoilerplate)
 		if precheckPass == False:
 			pymmFunctions.cleanup_package(
-				inputPath,
 				packageOutputDir,
 				"ABORTING",
 				precheckFailReason
@@ -1052,18 +1064,26 @@ def main():
 	processingVars,SIPpath = rename_SIP(processingVars) # @dbme
 	# put the package into a UUID parent folder
 	_SIP = envelop_SIP(processingVars) # @dbme
+	# update the ingest log path to reflect new SIP location
+	ingestLogBoilerplate = update_boilerplate(ingestLogBoilerplate,_SIP)
 	# make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP
 		) # @dbme
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
 	pymmFunctions.pymm_log(
-		canonicalName,
-		inputPath,
-		operator,
+		'',
+		'',
+		'',
 		'information package creation',
 		'assemble SIP into valid structure',
 		'OK'
+		)
+	pymmFunctions.ingest_log(
+		'information package creation',
+		'assemble SIP into valid structure',
+		'OK',
+		**ingestLogBoilerplate
 		)
 	# UPDATE THE SIP PATH TO ACCOUNT FOR ENVELOPING.... 
 	# pymmFunctions.ingest_log(
@@ -1078,6 +1098,10 @@ def main():
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
 	# move the SIP if needed
+	
+	print(_SIP)
+	time.sleep(10)
+	
 	packageVerified = False
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars) # @dbme
@@ -1090,6 +1114,25 @@ def main():
 	else:
 		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = True
+
+
+
+	if not validSIP:
+		# IS THIS EXCESSIVE?? MAYBE JUST LOG THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
+		# OR MAKE AN "INCONCLUSIVE/WARNING" VERSION?
+		pymmFunctions.cleanup_package(
+			_SIP,
+			"ABORTING",
+			"SIP failed to validate against expected structure"
+			)
+		return ingestResults
+	else:
+		pymmFunctions.ingest_log(
+			"validation",
+			"SIP validated against expected structure",
+			"OK",
+			**ingestLogBoilerplate
+			)
 
 	# FINISH LOGGING
 	do_cleanup(

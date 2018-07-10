@@ -193,7 +193,8 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
-def cleanup_package(inputPath,packageOutputDir,reason,outcome=None):
+def cleanup_package(packageOutputDir,reason,outcome=None):
+	print(packageOutputDir)
 	if reason == "ABORTING":
 		pathForDeletion = packageOutputDir
 		status = 'ABORTING'
@@ -271,6 +272,8 @@ def validate_SIP_structure(SIPpath,canonicalName=None):
 	  hashdeep_manifest_UUID_iso8601.txt
 	'''
 	structureValidated = True
+	status = "OK"
+
 	UUID = os.path.basename(SIPpath)
 	# define the directories to check
 	ingestDir = os.path.join(SIPpath,UUID)
@@ -279,27 +282,55 @@ def validate_SIP_structure(SIPpath,canonicalName=None):
 	objectMetadataDir = os.path.join(metadataDir,'objects')
 	objectDir = os.path.join(ingestDir,'objects')
 	dirs = [ingestDir,metadataDir,logDir,objectMetadataDir,objectDir]
+	reasonsFailed = []
 	# check that they exist
 	# I should log the non-existence of any of these
 	# maybe rename the SIP to FAILED-UUID?
 	for thing in dirs:
 		if not os.path.isdir(thing):
 			structureValidated = False
-			print("missing {}".format(os.path.basename(thing))) # @logme
+			status = "FAIL"
+			failure = "missing {}".format(os.path.basename(thing))
+			reasonsFailed.append(failure)
+			print(failure)
 
 	# use glob to search for the existence of
 	# 1) hashdeep manifest
 	# 2) pbcore xml file
 	manfestPattern = os.path.join(SIPpath,'hashdeep_manifest_*')
 	manifest = glob.glob(manfestPattern)
+	print(manifest)
 	if manifest == []:
-		print("missing a hashdeep manifest for the SIP")
-		structureValidated = False # @logme
+		failure = "missing a hashdeep manifest for the SIP"
+		reasonsFailed.append(failure)
+		print(failure)
+		structureValidated = False
+		status = "FAIL"
 	pbcorePattern = os.path.join(metadataDir,'*_pbcore.xml')
 	pbcore = glob.glob(pbcorePattern)
+	print(pbcore)
 	if pbcore == []:
-		print("missing a pbcore xml description for the object")
+		failure = "missing a pbcore xml description for the object"
+		reasonsFailed.append(failure)
+		print(failure)
 		structureValidated = False
+		status = "FAIL"
+
+	if structureValidated:
+		outcome = "SIP validated against expected structure"
+	else:
+		outcome = "SIP failed to validate for these reasons:\n~ {}\n".format(
+			"\n~ ".join(reasonsFailed)
+			)
+
+	pymm_log(
+		"",
+		"",
+		"",
+		"validation",
+		outcome,
+		status
+		)
 
 	return structureValidated
 
