@@ -127,7 +127,7 @@ def make_hashdeep_manifest(inputPath):
 	chdir into target dir, make a manifest with relative paths, and get out.
 	Now this relies on a bagit-style tree to contain both the manifest and 
 	the package.
-	proposal: also store the manfest as a blob
+	proposal: also store the manifest as a blob
 	(or as text?) in a db entry... yeah.
 	'''
 	_object = pymmFunctions.get_base(inputPath)
@@ -135,6 +135,7 @@ def make_hashdeep_manifest(inputPath):
 	package = os.path.join(inputPath,_object)
 	if not os.path.isdir(package):
 		print("the expected directory structure is not present.") # @logme
+		
 		sys.exit(1)
 	else:
 		manifestPath = os.path.join(
@@ -146,7 +147,7 @@ def make_hashdeep_manifest(inputPath):
 			)
 		# print(manifestPath)
 		# run hashdeep on the package
-		command = ['hashdeep', '-rvvl', '-W', manifestPath, '.']
+		command = ['hashdeep', '-rvvl', '-c','md5','-W', manifestPath, '.']
 		# print(command)
 		here = os.getcwd()
 		os.chdir(package)
