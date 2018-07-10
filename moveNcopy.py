@@ -237,7 +237,8 @@ def main():
 		if dir_or_file == False:
 			print("oy you've got big problems. {} is not a directory or a file."
 				" what is it? is it a ghost?".format(inputPath))
-			sys.exit(1)
+			return False,False
+			# sys.exit(1)
 		# copy the input according to its type
 		elif dir_or_file == 'dir':
 			# add trailing slash for rsync destination directory

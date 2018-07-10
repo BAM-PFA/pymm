@@ -103,7 +103,7 @@ def prep_package(tempID):
 			{}
 			and then try again.
 			'''.format(tempID,packageOutputDir))
-		sys.exit(1)
+		return False
 
 	# ... AND IF NOT, MAKE THEM ALL
 	for directory in packageDirs:
@@ -114,7 +114,8 @@ def prep_package(tempID):
 def sniff_input(inputPath,ingestUUID):#,concatChoice):
 	'''
 	Check whether the input path from command line is a directory
-	or single file. If it's a directory, check that the filenames
+	or single file. 
+	If it's a directory, check that the filenames
 	make sense together or if there are any outliers.
 	'''
 	inputType = pymmFunctions.dir_or_file(inputPath)
@@ -133,7 +134,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 		print("input is a single file")
 	return inputType
 
-def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper):
+def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoilerplate):
 	concattedAccessFile = False
 
 	sys.argv = [
@@ -146,7 +147,32 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper):
 	try:
 		concattedAccessFile = concatFiles.main()
 	except:
-		print('couldnt concat files')
+		print("couldn't concat files")
+
+	if not concattedAccessFile == False:
+		event = "migration"
+		outcome = (
+			"Component files concatenated "
+			"into an access copy at {}".format(concattedAccessFile)
+			)
+		status = "OK"
+
+		pymmFunctions.pymm_log(
+			"",
+			inputPath,
+			"",
+			event,
+			outcome,
+			status
+			)
+		pymmFunctions.ingest_log(
+			event,
+			outcome,
+			status,
+			**ingestLogBoilerplate
+			)
+
+
 
 	return concattedAccessFile
 
@@ -163,7 +189,8 @@ def deliver_concat_access(concatPath,accessPath):
 def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	'''
 	Check whether or not a file is recognized as an a/v file.
-	If it isn't and user declares interactive mode, ask whether to continue, otherwise quit.
+	If it isn't and user declares interactive mode,
+		ask whether to continue, otherwise quit.
 	'''
 	if not pymmFunctions.is_av(inputPath):
 		_is_av = False
@@ -600,7 +627,7 @@ def envelop_SIP(processingVars):
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
 	if cleanupStrategy == True and packageVerified == True:
 		print("LET'S CLEEEEEAN!")
-		pymmFunctions.cleanup_package(packageOutputDir,reason)
+		pymmFunctions.cleanup_package(inputPath,reason)
 	else:
 		print("BUH-BYE")
 
@@ -718,9 +745,16 @@ def main():
 		print(ingestResults)
 		return ingestResults
 
-	# create directory paths for ingest...
-	packageOutputDir,packageObjectDir,packageMetadataDir,\
-	packageMetadataObjects,packageLogDir = prep_package(tempID)
+	try:
+		# create directory paths for ingest...
+		packageOutputDir,packageObjectDir,packageMetadataDir,\
+		packageMetadataObjects,packageLogDir = prep_package(tempID)
+	except:
+		ingestResults["abortReason"] = (
+			"package previously ingested, remove manually"
+			)
+		print(ingestResults)
+		return ingestResults
 
 	# check that required vars are declared & init other vars
 	requiredVars = ['inputPath','operator']
@@ -829,7 +863,9 @@ def main():
 
 	# RUN A PRECHECK ON DIRECTORY INPUTS
 	if inputType == 'dir':
-		precheckPass,precheckFailReason = directory_precheck(ingestLogBoilerplate)
+		precheckPass,precheckFailReason = directory_precheck(
+			ingestLogBoilerplate
+			)
 		if precheckPass == False:
 			pymmFunctions.cleanup_package(
 				packageOutputDir,
@@ -938,7 +974,7 @@ def main():
 			ingestLogBoilerplate
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_input_file(processingVars,ingestLogBoilerplate) # @logme # @dbme
+		move_input_file(processingVars,ingestLogBoilerplate) # @dbme
 
 		add_pbcore_instantiation(
 			processingVars,
@@ -946,7 +982,7 @@ def main():
 			"Preservation master"
 			)
 
-		input_file_metadata(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
 		pymmFunctions.pymm_log(
 			canonicalName,
 			_file,
@@ -955,7 +991,7 @@ def main():
 			'calculate input file technical metadata',
 			'OK'
 			)
-		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @logme # @dbme
+		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @dbme
 
 	elif inputType == 'dir':
 		if report_to_db:
@@ -1041,7 +1077,7 @@ def main():
 
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
-			# @logme @dbme
+			# @dbme
 			SIPaccessPath = os.path.join(
 				processingVars['packageObjectDir'],
 				'resourcespace'
@@ -1050,7 +1086,8 @@ def main():
 				SIPaccessPath,
 				ingestUUID,
 				canonicalName,
-				'mp4'
+				'mp4',
+				ingestLogBoilerplate
 				)
 			if not concatPath == False:
 				deliver_concat_access(
@@ -1073,7 +1110,7 @@ def main():
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
 	pymmFunctions.pymm_log(
 		'',
-		'',
+		_SIP,
 		'',
 		'information package creation',
 		'assemble SIP into valid structure',
@@ -1085,22 +1122,13 @@ def main():
 		'OK',
 		**ingestLogBoilerplate
 		)
-	# UPDATE THE SIP PATH TO ACCOUNT FOR ENVELOPING.... 
-	# pymmFunctions.ingest_log(
-	# 		# message
-	# 		'information package creation',
-	# 		#status
-	# 		'OK',
-	# 		# ingest boilerplate
-	# 		**ingestLogBoilerplate
-	# 		)
 
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
 	# move the SIP if needed
 	
-	print(_SIP)
-	time.sleep(10)
+	# print(_SIP)
+	# time.sleep(10)
 	
 	packageVerified = False
 	if not aip_staging == config['paths']['outdir_ingestfile']:
@@ -1154,6 +1182,12 @@ def main():
 		'ingestion end',
 		'Submission Information Package verified and staged',
 		'ENDING'
+		)
+	pymmFunctions.ingest_log(
+		'ingestion end',
+		'Submission Information Package verified and staged',
+		'ENDING',
+		**ingestLogBoilerplate
 		)
 	print(ingestResults)
 	return ingestResults

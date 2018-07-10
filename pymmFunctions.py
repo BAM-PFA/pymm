@@ -193,10 +193,9 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
-def cleanup_package(packageOutputDir,reason,outcome=None):
-	print(packageOutputDir)
+def cleanup_package(pathForDeletion,reason,outcome=None):
+	print(pathForDeletion)
 	if reason == "ABORTING":
-		pathForDeletion = packageOutputDir
 		status = 'ABORTING'
 		event = 'ingestion end'
 		if not outcome:
@@ -204,28 +203,29 @@ def cleanup_package(packageOutputDir,reason,outcome=None):
 				"Something went critically wrong... "
 				"The ingest process was aborted."
 				"\n{}\nand its contents have been deleted.".format(
-					packageOutputDir
+					pathForDeletion
 					)
 				)
 	elif reason == 'done':
-		pathForDeletion = inputPath
 		status = 'OK'
 		event = 'deletion'
-		outcome = 'Deleting original copies of object at {}'.format(inputPath)
+		outcome = (
+			"Deleting original copies "
+			"of object at {}".format(pathForDeletion)
+			)
 
 	if os.path.isdir(pathForDeletion):
-		print(pathForDeletion)
 		try:
 			shutil.rmtree(pathForDeletion)
 		except:
 			outcome = (
 				"Could not delete the package at "
 				+pathForDeletion+
-				". Try deleting it manually? Now exiting."
+				". Try deleting it manually?"
 				)
 			print(outcome)
 
-	pymm_log(inputPath,'','',event,outcome,status)
+	pymm_log('','','',event,outcome,status)
 
 def reset_cleanup_choice():
 	'''
@@ -299,7 +299,6 @@ def validate_SIP_structure(SIPpath,canonicalName=None):
 	# 2) pbcore xml file
 	manfestPattern = os.path.join(SIPpath,'hashdeep_manifest_*')
 	manifest = glob.glob(manfestPattern)
-	print(manifest)
 	if manifest == []:
 		failure = "missing a hashdeep manifest for the SIP"
 		reasonsFailed.append(failure)
@@ -308,7 +307,6 @@ def validate_SIP_structure(SIPpath,canonicalName=None):
 		status = "FAIL"
 	pbcorePattern = os.path.join(metadataDir,'*_pbcore.xml')
 	pbcore = glob.glob(pbcorePattern)
-	print(pbcore)
 	if pbcore == []:
 		failure = "missing a pbcore xml description for the object"
 		reasonsFailed.append(failure)
@@ -325,7 +323,7 @@ def validate_SIP_structure(SIPpath,canonicalName=None):
 
 	pymm_log(
 		"",
-		"",
+		SIPpath,
 		"",
 		"validation",
 		outcome,
