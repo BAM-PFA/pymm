@@ -205,8 +205,8 @@ def create_user(pymm_db=pymm_db):
 		userIP = 'localhost'
 	createUserSQL = "CREATE USER IF NOT EXISTS %s@%s IDENTIFIED BY %s;"
 	grantPrivsSQL = "GRANT ALL PRIVILEGES ON {}.* TO %s@%s;".format(pymm_db)
-	print(createUserSQL)
-	print(grantPrivsSQL)
+	# print(createUserSQL)
+	# print(grantPrivsSQL)
 	try:
 		connect = db.DB('root')
 		connect.connect()
@@ -220,6 +220,7 @@ def create_user(pymm_db=pymm_db):
 			"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
 			"pymm_db_name = "+newUser+"_db_access\n"
 			"pymm_db = "+pymm_db+"\n")
+		pymmconfig.set_value("database users",newUser,userPass)
 	except:
 		print("stupid error")
 		sys.exit()

@@ -69,4 +69,3 @@ class EventInsert:
 		return self.eventID
 
 
-		
