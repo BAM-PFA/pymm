@@ -16,15 +16,19 @@ insertObjectSQL = (
 
 insertEventSQL = (
 	'''
-	INSERT IGNORE INTO event (
-		objectIdentifierValue,
+	INSERT INTO event (
 		eventType,
+		objectIdentifierValue,
+		eventDateTime,
 		eventDetail,
+		eventOutcome,
 		eventDetailOPT,
 		eventDetailCOMPNAME,
 		linkingAgentIdentifierValue
 		)
 	VALUES (
+		%s,
+		%s,
 		%s,
 		%s,
 		%s,

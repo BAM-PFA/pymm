@@ -20,14 +20,14 @@ import sys
 import time
 import uuid
 # local modules:
-import pymmFunctions
+from bampfa_pbcore import pbcore, makePbcore
+import concatFiles
+import dbReporters
 import makeDerivs
 import moveNcopy
 import makeMetadata
-import concatFiles
 import premisSQL
-
-from bampfa_pbcore import pbcore, makePbcore
+import pymmFunctions
 
 # read in from the config file
 config = pymmFunctions.read_config()
@@ -295,6 +295,24 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 			# ingest boilerplate
 			**ingestLogBoilerplate
 			)
+
+		event = dbReporters.EventInsert(
+			'replication',
+			processingVars['inputName'],
+			pymmFunctions.timestamp('iso8601'),
+			'OK',
+			'moveNcopy',
+			'migrate file to SIP at {}'.format(objectDir),
+			'computer?',
+			processingVars['operator'],
+			eventID=None
+			)
+		print("DDAAAATTTTAAAAABBBBAAASSSSSEEEE")
+		print(event.linkingAgentIdentifierValue)
+		eventID = event.report_to_db()
+		del event
+
+
 	except:
 		pymmFunctions.pymm_log(
 			processingVars['inputName'],
@@ -302,7 +320,7 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 			processingVars['operator'],
 			'replication',
 			'migrate file to SIP at {}'.format(objectDir),
-			'OK'
+			'FAIL'
 			)
 		pymmFunctions.ingest_log(
 			# event
@@ -694,7 +712,7 @@ def directory_precheck(ingestLogBoilerplate):
 
 	return precheckPass
 
-def update_boilerplate(ingestLogBoilerplate,_SIP):
+def update_log_boilerplate(ingestLogBoilerplate,_SIP):
 	'''
 	update log file path to reflect the new SIP path
 	'''
@@ -1102,7 +1120,7 @@ def main():
 	# put the package into a UUID parent folder
 	_SIP = envelop_SIP(processingVars) # @dbme
 	# update the ingest log path to reflect new SIP location
-	ingestLogBoilerplate = update_boilerplate(ingestLogBoilerplate,_SIP)
+	ingestLogBoilerplate = update_log_boilerplate(ingestLogBoilerplate,_SIP)
 	# make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP
