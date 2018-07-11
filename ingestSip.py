@@ -171,6 +171,9 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoil
 			status,
 			**ingestLogBoilerplate
 			)
+	else:
+		status = "FAIL"
+		# @logme finish loggin this failure...
 
 
 
@@ -199,13 +202,9 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			)
 		print(message)
 		pymmFunctions.ingest_log(
-			# event
 			'format identification',
-			# message
 			message,
-			#status
 			'warning',
-			# ingest boilerplate
 			**ingestLogBoilerplate
 			)
 
@@ -217,26 +216,18 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 			else:
 				if _is_av == False:
 					pymmFunctions.ingest_log(
-						# event
 						'format identification',
-						# message
 						message,
-						# status
 						'warning',
-						# ingest boilerplate
 						**ingestLogBoilerplate
 						)
 	else:
 		# THIS IS NOT CORRECT: 
 		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
 		pymmFunctions.ingest_log(
-			# event 
 			'format identification',
-			# event outcome
 			ingestLogBoilerplate['filename']+" is an AV file, way to go.",
-			# status
 			'OK',
-			# ingest boilerplate
 			**ingestLogBoilerplate
 			)
 
@@ -256,11 +247,8 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			status = "not ok, but not critical?"
 
 		pymmFunctions.ingest_log(
-			# message
 			message,
-			# status
 			status,
-			# ingest boilerplate
 			**ingestLogBoilerplate
 			)
 
@@ -275,64 +263,57 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		'-d'+objectDir,
 		'-L'+processingVars['packageLogDir']
 		]
+	event = 'replication'
+	outcome = 'migrate file to SIP at {}'.format(objectDir)
 	try:
 		moveNcopy.main()
+		status = 'OK'
 		pymmFunctions.pymm_log(
 				processingVars['inputName'],
 				processingVars['inputPath'],
 				processingVars['operator'],
-				'replication',
-				'migrate file to SIP at {}'.format(objectDir),
-				'OK'
+				event,
+				outcome,
+				status
 				)
 		pymmFunctions.ingest_log(
-			# event
-			'replication',
-			# event outcome
-			'migrate file to SIP at {}'.format(objectDir),
-			#status
-			'OK',
-			# ingest boilerplate
+			event,
+			outcome,
+			status,
 			**ingestLogBoilerplate
 			)
 
-		event = dbReporters.EventInsert(
-			'replication',
+		eventInsert = dbReporters.EventInsert(
+			event,
 			processingVars['inputName'],
 			pymmFunctions.timestamp('iso8601'),
-			'OK',
+			status,
 			'moveNcopy',
-			'migrate file to SIP at {}'.format(objectDir),
+			outcome,
 			'computer?',
 			processingVars['operator'],
 			eventID=None
 			)
-		print("DDAAAATTTTAAAAABBBBAAASSSSSEEEE")
-		print(event.linkingAgentIdentifierValue)
-		eventID = event.report_to_db()
+
+		eventID = eventInsert.report_to_db()
 		del event
 
-
 	except:
+		status = 'FAIL'
 		pymmFunctions.pymm_log(
 			processingVars['inputName'],
 			processingVars['inputPath'],
 			processingVars['operator'],
-			'replication',
-			'migrate file to SIP at {}'.format(objectDir),
-			'FAIL'
+			event,
+			outcome,
+			status
 			)
 		pymmFunctions.ingest_log(
-			# event
-			'replication',
-			# event outcome
-			'migrate file to SIP',
-			#status
-			'FAIL',
-			# ingest boilerplate
+			event,
+			outcome,
+			status,
 			**ingestLogBoilerplate
 			)
-
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
@@ -788,7 +769,7 @@ def main():
 					)
 				missingVars += 1
 		if missingVars > 0:
-			sys.exit()
+			sys.exit() # @logme
 	else:
 		# ask operator/input file
 		operator = input("Please enter your name: ")
@@ -837,11 +818,12 @@ def main():
 
 	###########################
 	#### LOGGING / CLEANUP ####
-	# set up a log file for this ingest
+	# set up a log file for this ingest...
 	ingestLogPath = os.path.join(
 		packageLogDir,
 		'{}_{}_ingestfile-log.txt'.format(
-			tempID,pymmFunctions.timestamp('now')
+			tempID,
+			pymmFunctions.timestamp('now')
 			)
 		)
 	with open(ingestLogPath,'x') as ingestLog:
@@ -854,14 +836,11 @@ def main():
 		'operator':operator,
 		'inputPath':inputPath
 		}
+	# ...and log stuff to it
 	pymmFunctions.ingest_log(
-		# event
 		'start',
-		# event outcome
 		'',
-		# status
 		'',
-		# ingest boilerplate
 		**ingestLogBoilerplate
 		)
 
@@ -944,17 +923,13 @@ def main():
 		processingVars['pbcore'] = pbcoreFile
 
 	if os.path.exists(pbcoreFile):
-		_status = 'OK'
+		status = 'OK'
 	else:
-		_status = 'Fail'
+		status = 'Fail'
 	pymmFunctions.ingest_log(
-		# event
 		'metadata extraction',
-		# event outcome
 		'make pbcore representation',
-		# status
-		_status,
-		# ingest boilerplate
+		status,
 		**ingestLogBoilerplate
 		)
 

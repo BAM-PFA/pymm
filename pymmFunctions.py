@@ -148,9 +148,10 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 	check_pymm_log_exists()
 	stamp = timestamp('iso8601')
 	systemInfo = system_info()
+	tempID = get_temp_id(objectRootPath)
 	workingDir = os.path.join(
 			pymmConfig["paths"]["outdir_ingestfile"],
-			objectName
+			tempID
 			)
 	prefix = ''
 	suffix = '\n'
