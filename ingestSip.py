@@ -282,25 +282,12 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 			status,
 			**ingestLogBoilerplate
 			)
-
-		if processingVars['filename'] in ('',None):
-			theObject = processingVars['inputName']
-		else:
-			theObject = processingVars['filename']
-		eventInsert = dbReporters.EventInsert(
+		pymmFunctions.insert_event(
+			processingVars,
 			event,
-			theObject,
-			pymmFunctions.timestamp('iso8601'),
-			status,
 			outcome,
-			'moveNcopy',
-			'computer?',
-			processingVars['operator'],
-			eventID=None
+			status
 			)
-
-		eventID = eventInsert.report_to_db()
-		del event
 
 	except:
 		status = 'FAIL'

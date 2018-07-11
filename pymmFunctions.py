@@ -373,6 +373,27 @@ def insert_object(processingVars,objectCategory):
 	del objectInsert
 	return processingVars
 
+def insert_event(processingVars,event,outcome,status):
+	if processingVars['filename'] in ('',None):
+			theObject = processingVars['inputName']
+	else:
+		theObject = processingVars['filename']
+	eventInsert = dbReporters.EventInsert(
+		event,
+		theObject,
+		timestamp('iso8601'),
+		status,
+		outcome,
+		'moveNcopy',
+		'computer?',
+		processingVars['operator'],
+		eventID=None
+		)
+
+	eventID = eventInsert.report_to_db()
+	del event
+	return eventID
+
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #
