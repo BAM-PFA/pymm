@@ -21,9 +21,10 @@ import sys
 import shutil
 import time
 # nonstandard libraries:
-import Levenshtein
 from ffmpy import FFprobe, FFmpeg
+import Levenshtein
 # local modules:
+import dbReporters
 import premisSQL
 
 ################################################################
@@ -120,7 +121,7 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,oper
 			("#"*50)
 			]
 		if filename not in ("",None):
-			name = "Object Filename: {}".format(filename)
+			name = "Object Filename: {}\n".format(filename)
 			stuffToLog.insert(3,name)
 
 	else:
@@ -349,21 +350,28 @@ def do_query(connection,sql,*args):
 	cursor = connection.query(sql,*args)
 	return cursor
 
-def insert_object(operator,identifier,objectCategory):
-	try:
-		dbConnection = database_connection(operator)
-		
-		insertObjectSQL = premisSQL.insertObjectSQL
-		cursor = do_query(
-			dbConnection,
-			insertObjectSQL,
-			identifier,
+def insert_object(processingVars,objectCategory):
+	operator = processingVars['operator']
+	if processingVars['filename'] in ('',None):
+		theObject = processingVars['inputName']
+	else:
+		theObject = processingVars['filename']
+	# print(theObject*20)
+	# init an insertion instance
+	objectInsert = dbReporters.ObjectInsert(
+			operator,
+			theObject,
 			objectCategory
 			)
-		objectIdentifierValueID = cursor.lastrowid
-		return objectIdentifierValueID
-	except:
-		return False
+	# report the details to the db
+	objectIdentifierValueID = objectInsert.report_to_db()
+	# update the processingVars with the unique db ID of the object
+	processingVars['componentObjectDBids'][theObject] = str(
+		objectIdentifierValueID
+		)
+	# print(processingVars)
+	del objectInsert
+	return processingVars
 
 #
 # END PYMM ADMIN / LOGGING STUFF 

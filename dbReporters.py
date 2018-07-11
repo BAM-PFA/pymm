@@ -49,6 +49,7 @@ class EventInsert:
 		connection = pymmFunctions.database_connection(
 			self.linkingAgentIdentifierValue
 			)
+		# print(connection)
 		# get the sql query
 		sql = premisSQL.insertEventSQL
 
@@ -68,4 +69,42 @@ class EventInsert:
 
 		return self.eventID
 
+class ObjectInsert:
+	'''
+	gather variables
+	do the thing (make the report)
 
+	'''
+	def __init__(
+		self,
+		user,
+		objectIdentifierValue,
+		objectCategory=None,
+		objectIdentifierValueID=None
+		):
+		'''
+		Each attribute corresponds to a field in the table.
+		objectIdentifierValueID will be returned after report_to_db is called.
+		'''
+		self.user = user
+		self.objectIdentifierValue = objectIdentifierValue
+		self.objectCategory = objectCategory
+		self.objectIdentifierValueID = objectIdentifierValueID
+
+	def report_to_db(self):
+		# connect to the database
+		connection = pymmFunctions.database_connection(
+			self.user
+			)
+		# get the sql query
+		sql = premisSQL.insertObjectSQL
+
+		cursor = pymmFunctions.do_query(
+			connection,
+			sql,
+			self.objectIdentifierValue,
+			self.objectCategory
+			)
+		self.objectIdentifierValueID = cursor.lastrowid
+
+		return self.objectIdentifierValueID

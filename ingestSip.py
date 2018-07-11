@@ -283,13 +283,17 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
+		if processingVars['filename'] in ('',None):
+			theObject = processingVars['inputName']
+		else:
+			theObject = processingVars['filename']
 		eventInsert = dbReporters.EventInsert(
 			event,
-			processingVars['inputName'],
+			theObject,
 			pymmFunctions.timestamp('iso8601'),
 			status,
-			'moveNcopy',
 			outcome,
+			'moveNcopy',
 			'computer?',
 			processingVars['operator'],
 			eventID=None
@@ -811,7 +815,8 @@ def main():
 		'packageMetadataDir':packageMetadataDir,
 		'packageMetadataObjects':packageMetadataObjects,
 		'packageLogDir':packageLogDir,
-		'aip_staging':aip_staging
+		'aip_staging':aip_staging,
+		'componentObjectDBids':{}
 		}
 	#### END TEST / SET ENV VARS ####
 	#################################
@@ -943,12 +948,11 @@ def main():
 		if report_to_db:
 			objectCategory = 'file'
 			try:
-				objectIdentifierValueID = pymmFunctions.insert_object(
-					operator,
-					canonicalName,
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
 					objectCategory
 					)
-				print(objectIdentifierValueID)
+
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
@@ -967,7 +971,7 @@ def main():
 			ingestLogBoilerplate
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_input_file(processingVars,ingestLogBoilerplate) # @dbme
+		move_input_file(processingVars,ingestLogBoilerplate)
 
 		add_pbcore_instantiation(
 			processingVars,
@@ -978,7 +982,7 @@ def main():
 		input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
 		pymmFunctions.pymm_log(
 			canonicalName,
-			_file,
+			filename,
 			operator,
 			'metadata extraction',
 			'calculate input file technical metadata',
@@ -990,9 +994,9 @@ def main():
 		if report_to_db:
 			objectCategory = 'intellectual entity'
 			try:
-				objectIdentifierValueID = pymmFunctions.insert_object(
-					operator,
-					canonicalName,
+				# print(processingVars)
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
 					objectCategory
 					)
 			except:
@@ -1014,17 +1018,16 @@ def main():
 			if report_to_db:
 				objectCategory = 'file'
 				try:
-					objectIdentifierValueID = pymmFunctions.insert_object(
-						operator,
-						processingVars['filename'],
+					processingVars = pymmFunctions.insert_object(
+						processingVars,
 						objectCategory
 						)
 				except:
 					print("CAN'T MAKE DB CONNECTION")
 					pymmFunctions.pymm_log(
-						inputName,
-						tempID,
-						operator,
+						"",
+						"",
+						"",
 						"connect to database",
 						"NO DATABASE CONNECTION!!!",
 						"WARNING"
