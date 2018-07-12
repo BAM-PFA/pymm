@@ -134,7 +134,8 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 		print("input is a single file")
 	return inputType
 
-def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoilerplate,processingVars):
+def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
+	ingestLogBoilerplate,processingVars):
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -165,14 +166,6 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoil
 			)
 		# now reset it to its original state
 		processingVars['filename'] = origFilename
-
-		pymmFunctions.log_event(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
 	else:
 		status = "FAIL"
 		outcome = (
@@ -181,26 +174,14 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoil
 			" Here's the output of the attempt:\n{}\n"
 			"".format(concattedAccessFile)
 			)
-		pymmFunctions.pymm_log(
-			"",
-			inputPath,
-			"",
-			event,
-			outcome,
-			status
-			)
-		pymmFunctions.ingest_log(
-			event,
-			outcome,
-			status,
-			**ingestLogBoilerplate
-			)
-		pymmFunctions.insert_event(
-			processingVars,
-			event,
-			outcome,
-			status
-			)
+
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
+		)
 
 	return concattedAccessFile
 
@@ -220,18 +201,14 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 	If it isn't and user declares interactive mode,
 		ask whether to continue, otherwise quit.
 	'''
+	event = 'format identification'
 	if not pymmFunctions.is_av(inputPath):
 		_is_av = False
-		message = "WARNING: {} is not recognized as an a/v file.".format(
+		outcome = "WARNING: {} is not recognized as an a/v file.".format(
 			ingestLogBoilerplate['filename']
 			)
-		print(message)
-		pymmFunctions.ingest_log(
-			'format identification',
-			message,
-			'warning',
-			**ingestLogBoilerplate
-			)
+		status = "WARNING"
+		print(outcome)
 
 		if interactiveMode:
 			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
@@ -239,22 +216,19 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate):
 				# CLEANUP AND LOG THIS @fixme
 				sys.exit()
 			else:
-				if _is_av == False:
-					pymmFunctions.ingest_log(
-						'format identification',
-						message,
-						'warning',
-						**ingestLogBoilerplate
-						)
+				print("\nPROCEEDING... WARNING!\n")
 	else:
 		# THIS IS NOT CORRECT: 
 		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
-		pymmFunctions.ingest_log(
-			'format identification',
-			ingestLogBoilerplate['filename']+" is an AV file, way to go.",
-			'OK',
-			**ingestLogBoilerplate
-			)
+		outcome = ingestLogBoilerplate['filename']+" is an AV file, way to go."
+		status = "OK"
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
+		)
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
@@ -293,49 +267,15 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	try:
 		moveNcopy.main()
 		status = 'OK'
-		pymmFunctions.pymm_log(
-				processingVars['inputName'],
-				processingVars['inputPath'],
-				processingVars['operator'],
-				event,
-				outcome,
-				status
-				)
-		pymmFunctions.ingest_log(
-			event,
-			outcome,
-			status,
-			**ingestLogBoilerplate
-			)
-		pymmFunctions.insert_event(
-			processingVars,
-			event,
-			outcome,
-			status
-			)
-
 	except:
 		status = 'FAIL'
-		pymmFunctions.pymm_log(
-			'',
-			'',
-			'',
-			event,
-			outcome,
-			status
-			)
-		pymmFunctions.ingest_log(
-			event,
-			outcome,
-			status,
-			**ingestLogBoilerplate
-			)
-		pymmFunctions.insert_event(
-			processingVars,
-			event,
-			outcome,
-			status
-			)
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
+		)
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
@@ -344,16 +284,9 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 	event = 'message digest calculation'
 	outcome = "The input file MD5 hash is: {}".format(inputFileMD5)
 	status = "OK"
-
-	pymmFunctions.ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-
-	pymmFunctions.insert_event(
+	pymmFunctions.short_log(
 		processingVars,
+		ingestLogBoilerplate,
 		event,
 		outcome,
 		status
@@ -367,14 +300,9 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		event = 'metadata extraction'
 		outcome = ("mediainfo XML report for input file "
 			"written to metadata directory for package.")
-		pymmFunctions.ingest_log(
-			'metadata extraction',
-			outcome,
-			status,
-			**ingestLogBoilerplate
-			)
-		pymmFunctions.insert_event(
+		pymmFunctions.short_log(
 			processingVars,
+			ingestLogBoilerplate,
 			event,
 			outcome,
 			status
@@ -388,15 +316,9 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		event = 'message digest calculation'
 		outcome = ("frameMD5 report for input file "
 			"written to metadata directory for package")
-		pymmFunctions.ingest_log(
-			event,
-			outcome,
-			status,
-			# ingest boilerplate
-			**ingestLogBoilerplate
-			)
-		pymmFunctions.insert_event(
+		pymmFunctions.short_log(
 			processingVars,
+			ingestLogBoilerplate,
 			event,
 			outcome,
 			status
