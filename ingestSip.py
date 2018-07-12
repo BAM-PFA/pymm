@@ -658,7 +658,7 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 		)
 	status = 'OK'
 	if not newPath == False:
-		pymmFunctions.log_event(
+		pymmFunctions.short_log(
 			processingVars,
 			ingestLogBoilerplate,
 			event,
@@ -676,7 +676,11 @@ def envelop_SIP(processingVars):
 	UUIDslice = ingestUUID[:8]
 	pymmOutDir = config['paths']['outdir_ingestfile']
 	_SIP = processingVars['packageOutputDir']
+	event = 'faux-bag'
+	outcome = 'Make a parent directory named w UUID to facilitate hash manifest/auditing.'
+
 	try:
+		status = "OK"
 		parentSlice = os.path.join(pymmOutDir,UUIDslice)
 		# make a temp parent folder...
 		os.mkdir(parentSlice)
@@ -685,9 +689,16 @@ def envelop_SIP(processingVars):
 		# ...and rename the parent w UUID path
 		pymmFunctions.rename_dir(parentSlice,_SIP)
 	except:
+		status = "FAIL"
 		print("Something no bueno.")
 
-
+	pymmFunctions.short_log(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
+		)
 
 	return _SIP
 
@@ -1021,6 +1032,7 @@ def main():
 			)
 		processingVars['pbcore'] = pbcoreFile
 
+		# change this to short_log()
 	if os.path.exists(pbcoreFile):
 		status = 'OK'
 	else:
@@ -1046,7 +1058,6 @@ def main():
 					processingVars,
 					objectCategory
 					)
-
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
@@ -1180,7 +1191,7 @@ def main():
 				ingestLogBoilerplate,
 				processingVars
 				)
-			if not concatPath.startswith("False"):
+			if os.path.exists(concatPath):
 				deliver_concat_access(
 					concatPath,
 					accessPath
@@ -1191,7 +1202,7 @@ def main():
 	# rename SIP from temp to UUID
 	processingVars,SIPpath = rename_SIP(processingVars,ingestLogBoilerplate)
 	# put the package into a UUID parent folder
-	_SIP = envelop_SIP(processingVars) # @dbme
+	_SIP = envelop_SIP(processingVars,ingestLogBoilerplate)
 	# update the ingest log path to reflect new SIP location
 	ingestLogBoilerplate = update_log_boilerplate(ingestLogBoilerplate,_SIP)
 	# make a hashdeep manifest
@@ -1202,7 +1213,7 @@ def main():
 	event = 'information package creation'
 	outcome = 'assemble SIP into valid structure'
 	status = 'OK'
-	pymmFunctions.log_event(
+	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
 		event,
@@ -1217,12 +1228,30 @@ def main():
 	# move the SIP if needed
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars) # @dbme
-		validSIP = pymmFunctions.validate_SIP_structure(_SIP) # @dbme
+		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		# audit the hashdeep manifest 
 		packageVerified = makeMetadata.hashdeep_audit(
 			_SIP,
 			manifestPath
-			) # @dbme
+			)
+		event = 'fixity check'
+		if packageVerified == True:
+			status = 'OK'
+			outcome = 'SIP verified against hashdeep manifest.'
+		else:
+			status = "WARNING"
+			outcome = (
+				"SIP failed hashdeep audit. "
+				"Some files may be missing or damaged!"
+				)
+		pymmFunctions.log_event(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
+			)
+
 	else:
 		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = True
@@ -1230,6 +1259,9 @@ def main():
 	if not validSIP:
 		# IS THIS EXCESSIVE?? MAYBE JUST LOG THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
 		# OR MAKE AN "INCONCLUSIVE/WARNING" VERSION?
+		# NOTE: the failure gets logged in the system log,
+		# along with listing reasons for failure
+		# then the abort message is logged in cleanup_package()
 		pymmFunctions.cleanup_package(
 			_SIP,
 			"ABORTING",
@@ -1261,20 +1293,18 @@ def main():
 		ingestResults['status'] = True
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath
-	pymmFunctions.pymm_log(
-		canonicalName,
-		inputPath,
-		operator,
-		'ingestion end',
-		'Submission Information Package verified and staged',
-		'ENDING'
+	
+	event = 'ingestion end'
+	outcome = 'Submission Information Package verified and staged'
+	status = 'ENDING'
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
 		)
-	pymmFunctions.ingest_log(
-		'ingestion end',
-		'Submission Information Package verified and staged',
-		'ENDING',
-		**ingestLogBoilerplate
-		)
+
 	print(ingestResults)
 	return ingestResults
 

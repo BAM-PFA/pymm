@@ -244,7 +244,7 @@ def reset_cleanup_choice():
 			)
 	return cleanupStrategy
 
-def validate_SIP_structure(SIPpath,canonicalName=None):
+def validate_SIP_structure(SIPpath):
 	'''
 	Check that all the top-level stuff expected in a package exists.
 	Don't go too deep... 
@@ -403,6 +403,24 @@ def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
 		outcome,
 		status
 		)
+	ingest_log(
+		event,
+		outcome,
+		status,
+		**ingestLogBoilerplate
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
+def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
+	'''
+	same as log_event() but skip the system log for when the event
+	is too detailed.
+	'''
 	ingest_log(
 		event,
 		outcome,
