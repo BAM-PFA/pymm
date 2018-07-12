@@ -127,9 +127,9 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,oper
 	else:
 		stuffToLog = [
 			"{} | ".format(stamp),
+			"Status: {} | ".format(status),
 			"Event Type: {} | ".format(event),
 			"Event Outcome: {} | ".format(outcome),
-			"Status: {} | ".format(status),
 			"Operator: {} | ".format(operator),
 			"Object Canonical Name: {} | ".format(inputName)
 			]
@@ -175,19 +175,19 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		stuffToLog = [
 			prefix,
 			stamp,
+			" | Status: {} |".format(status),
 			" | Event type: Ingestion end | ",
-			"Outcome: {} | ".format(outcome),
-			"Status: {}".format(status),
+			"Outcome: {}".format(outcome),
 			suffix
 			]
 	else:
 		stuffToLog = [
 			prefix,
 			stamp,
-			" | Object name: {} | ".format(basename),
-			"Event type: {} | ".format(event),
-			"Event outcome: {} | ".format(outcome),
-			"Status: {}".format(status),
+			" | Status: {}".format(status),
+			" | Object name: {}".format(basename),
+			" | Event type: {}".format(event),
+			" | Event outcome: {}".format(outcome),
 			suffix
 			]
 
@@ -195,7 +195,7 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
-def cleanup_package(pathForDeletion,reason,outcome=None):
+def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 	print(pathForDeletion)
 	if reason == "ABORTING":
 		status = 'ABORTING'
@@ -226,8 +226,21 @@ def cleanup_package(pathForDeletion,reason,outcome=None):
 				". Try deleting it manually?"
 				)
 			print(outcome)
-
-	pymm_log('','','',event,outcome,status)
+	processingVars['caller'] = 'pymmFunctions.cleanup_package()'
+	pymm_log(
+		'',
+		'',
+		'',
+		event,
+		outcome,
+		status
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
 
 def reset_cleanup_choice():
 	'''
@@ -323,15 +336,6 @@ def validate_SIP_structure(SIPpath):
 			"\n~ ".join(reasonsFailed)
 			)
 
-	pymm_log(
-		"",
-		SIPpath,
-		"",
-		"validation",
-		outcome,
-		status
-		)
-
 	return structureValidated
 
 def database_connection(user):
@@ -378,14 +382,20 @@ def insert_event(processingVars,event,outcome,status):
 			theObject = processingVars['inputName']
 	else:
 		theObject = processingVars['filename']
+	# get the name of the computer
+	computer = processingVars['computer']
+	# get the name of the program, script, or function doing the event
+	callingAgent = processingVars['caller']
+
+	#insert the event
 	eventInsert = dbReporters.EventInsert(
 		event,
 		theObject,
 		timestamp('iso8601'),
 		status,
 		outcome,
-		'moveNcopy',
-		'computer?',
+		callingAgent,
+		computer,
 		processingVars['operator'],
 		eventID=None
 		)
@@ -397,7 +407,7 @@ def insert_event(processingVars,event,outcome,status):
 def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
 	pymm_log(
 		'',
-		'',
+		processingVars['inputPath'],
 		'',
 		event,
 		outcome,
@@ -690,11 +700,18 @@ def system_info():
 	info = platform.uname()
 	systemDict = dict(info._asdict())
 	systemString = ""
+	systemDict['ffmpeg version'] = get_ffmpeg_version()
+	systemDict['mediainfo version'] = get_mediainfo_version()
 	# format a string to be returned with each bit of info on a new line
 	for k,v in systemDict.items():
 		systemString += "{} : {}\n".format(k,v)
 
 	return systemString
+
+def get_node_name():
+	nodeName = platform.uname().node
+
+	return nodeName
 
 def timestamp(style=None):
 	knownStyles = ['iso8601','YMD','now','8601-filename']
@@ -719,6 +736,11 @@ def get_caller():
 def get_ffmpeg_version():
 	call = subprocess.check_output(['ffmpeg','-version'])
 	version = call.decode('utf-8').split()[2]
+	return version
+
+def get_mediainfo_version():
+	call = subprocess.check_output(['mediainfo','--version'])
+	version = ' '.join(call.decode('utf-8').split())
 	return version
 
 def set_ffreport(dest,caller):

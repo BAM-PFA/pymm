@@ -135,8 +135,8 @@ def make_hashdeep_manifest(inputPath):
 	package = os.path.join(inputPath,_object)
 	if not os.path.isdir(package):
 		print("the expected directory structure is not present.") # @logme
-		
-		sys.exit(1)
+		return False
+		# sys.exit(1)
 	else:
 		manifestPath = os.path.join(
 			inputPath,
