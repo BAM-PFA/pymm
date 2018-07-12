@@ -150,6 +150,7 @@ def safe_to_concat(sourceList):
 	numberOfFiles = len(sourceList)
 	checkedFiles = 0
 	outlierFiles = []
+	problems = ""
 
 	while checkedFiles < numberOfFiles:
 		for inputFile in sourceList:
@@ -163,11 +164,10 @@ def safe_to_concat(sourceList):
 						)
 					)
 			else:
-				print(
-					"{} failed the audio spec check. Exiting".format(
-						os.path.basename(inputFile)
-						)
+				problems += "\n{} failed the audio spec check. Exiting".format(
+					os.path.basename(inputFile)
 					)
+				print(problems)
 				outlierFiles.append((
 					inputFile,(profilesDict[inputFile]['audio'])
 					))
@@ -179,11 +179,10 @@ def safe_to_concat(sourceList):
 					)
 				safeToConcat = True
 			else:
-				print(
-					"{} failed the video spec check. Exiting".format(
-						os.path.basename(inputFile)
-						)
+				problems += "\n{} failed the video spec check. Exiting".format(
+					os.path.basename(inputFile)
 					)
+				print(problems)
 				outlierFiles.append((
 					inputFile,(profilesDict[inputFile]['video'])
 					))
@@ -193,7 +192,9 @@ def safe_to_concat(sourceList):
 	if safeToConcat == True:
 		print('go ahead')
 	else:
-		print('not safe to concat. check file specs.')
+		problems += '\nnot safe to concat. check file specs.'
+		print(problems)
+		safeToConcat = problems
 
 	return safeToConcat
 
@@ -203,6 +204,8 @@ def main():
 	ingestID = args.ingestID
 	canonicalName = args.canonical_name
 	wrapper = args.wrapper
+	success = False
+	problems = ""
 
 	if os.path.isdir(_input):
 		# get rid of any hidden files
@@ -212,9 +215,11 @@ def main():
 	elif isinstance(_input,list):
 		sourceList = _input
 	else:
-		print("input is not a dir or list of files. exiting!")
+		problems += "\ninput is not a dir or list of files. exiting!"
+		print(problems)
 		# sys.exit()
 
+	# safe_to_concat returns either True or a list of problems
 	safeToConcat = safe_to_concat(sourceList)
 	concattedFile = False
 
@@ -222,23 +227,29 @@ def main():
 		try: 
 			concattedFile = concat(sourceList,canonicalName,wrapper)
 		except:
-			print("some problem with the concat process.")
+			problems += "\nsome problem with the concat process."
+			print(problems)
 	else:
-		pass
+		problems += safeToConcat
 
 	# rename the file so it sorts to the top of the output directory
 	# maybe this is a stupid idea? but it will be handy
 	if not concattedFile == False:
 		concatBase = os.path.basename(concattedFile)
 		concatDir = os.path.dirname(concattedFile)
-		newBase = "0_{}".format(concatBase)
+		newBase = "00_concatenated_{}".format(concatBase)
 		newPath = os.path.join(concatDir,newBase)
 		# actually rename the file
 		os.rename(concattedFile,newPath)
 		# reset the var to the new path name
 		concattedFile = newPath
+		success = True
 
-	return concattedFile
+	else: 
+		success = False
+		concattedFile = problems
+
+	return concattedFile,success
 
 if __name__ == '__main__':
 	main()

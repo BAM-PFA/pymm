@@ -134,9 +134,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 		print("input is a single file")
 	return inputType
 
-def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoilerplate):
-	concattedAccessFile = False
-
+def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoilerplate,processingVars):
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -145,18 +143,44 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoil
 		'-w'+wrapper
 		]
 	try:
-		concattedAccessFile = concatFiles.main()
+		# concattedAccessFile is either a path to the file
+		# or a list of problems with the concatenation.
+		concattedAccessFile,success = concatFiles.main()
 	except:
 		print("couldn't concat files")
 
-	if not concattedAccessFile == False:
-		event = "migration"
+	event = "creation"
+	if not success == False:
 		outcome = (
 			"Component files concatenated "
 			"into an access copy at {}".format(concattedAccessFile)
 			)
 		status = "OK"
+		# set the 'filenaeme' to the concat file so we can log in the db
+		origFilename = processingVars['filename']
+		processingVars['filename'] = os.path.basename(concattedAccessFile)
+		processingVars = pymmFunctions.insert_object(
+			processingVars,
+			'file'
+			)
+		# now reset it to its original state
+		processingVars['filename'] = origFilename
 
+		pymmFunctions.log_event(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
+			)
+	else:
+		status = "FAIL"
+		outcome = (
+			"Component files could not be concatenated."
+			" Probably you need to check the file specs?"
+			" Here's the output of the attempt:\n{}\n"
+			"".format(concattedAccessFile)
+			)
 		pymmFunctions.pymm_log(
 			"",
 			inputPath,
@@ -171,11 +195,12 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,ingestLogBoil
 			status,
 			**ingestLogBoilerplate
 			)
-	else:
-		status = "FAIL"
-		# @logme finish loggin this failure...
-
-
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
+			)
 
 	return concattedAccessFile
 
@@ -292,9 +317,9 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	except:
 		status = 'FAIL'
 		pymmFunctions.pymm_log(
-			processingVars['inputName'],
-			processingVars['inputPath'],
-			processingVars['operator'],
+			'',
+			'',
+			'',
 			event,
 			outcome,
 			status
@@ -305,38 +330,54 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 			status,
 			**ingestLogBoilerplate
 			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
+			)
 
 def input_file_metadata(ingestLogBoilerplate,processingVars):
 	inputFile = processingVars['inputPath']
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
 	
+	event = 'message digest calculation'
+	outcome = "The input file MD5 hash is: {}".format(inputFileMD5)
+	status = "OK"
+
 	pymmFunctions.ingest_log(
-		# event
-		'message digest calculation',
-		# message
-		"The input file MD5 hash is: {}".format(
-			inputFileMD5
-			),
-		# status
-		'OK',
-		# ingest boilerplate
+		event,
+		outcome,
+		status,
 		**ingestLogBoilerplate
 		)
+
+	pymmFunctions.insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
 		processingVars['packageMetadataObjects']
 		)
 	if mediainfo:
+		event = 'metadata extraction'
+		outcome = ("mediainfo XML report for input file "
+			"written to metadata directory for package.")
 		pymmFunctions.ingest_log(
-			# event
 			'metadata extraction',
-			# message
-			("mediainfo XML report for input file "
-			"written to metadata directory for package."),
-			# status
-			'OK',
-			# ingest boilerplate
+			outcome,
+			status,
 			**ingestLogBoilerplate
+			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
 			)
 	
 	frameMD5 = makeMetadata.make_frame_md5(
@@ -344,16 +385,21 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 		processingVars['packageMetadataObjects']
 		)
 	if frameMD5 != False:
+		event = 'message digest calculation'
+		outcome = ("frameMD5 report for input file "
+			"written to metadata directory for package")
 		pymmFunctions.ingest_log(
-			# event
-			'message digest calculation',
-			# message
-			("frameMD5 report for input file "
-			"written to metadata directory for package"),
-			# status
-			"OK",
+			event,
+			outcome,
+			status,
 			# ingest boilerplate
 			**ingestLogBoilerplate
+			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
 			)
 
 def add_pbcore_md5_location(processingVars, inputFileMD5):
@@ -396,7 +442,10 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 	pbcoreFile = processingVars['pbcore']
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
 
+	event = 'metadata modification'
+	outcome = 'add pbcore instantiation representation'
 	try:
+		status = 'OK'
 		makePbcore.add_instantiation(
 			pbcoreXML,
 			pbcoreReport,
@@ -406,25 +455,32 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 		makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
 
 		pymmFunctions.ingest_log(
-			# event
-			'metadata extraction',
-			# event outcome
-			'make pbcore instantiation representation',
-			# status
-			"OK",
-			# ingest boilerplate
+			event,
+			outcome,
+			status,
 			**ingestLogBoilerplate
 			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
+			)
+
 	except:
+		outcome = 'could not '+outcome
+		status = 'FAIL'
 		pymmFunctions.ingest_log(
-			# event
-			'metadata extraction',
-			# event outcome
-			'make pbcore instantiation representation',
-			# status
-			"FAIL",
-			# ingest boilerplate
+			event,
+			outcome,
+			status,
 			**ingestLogBoilerplate
+			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
 			)
 
 def make_rs_package(inputObject,rsPackage):
@@ -500,22 +556,16 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		
 		deliveredDeriv = makeDerivs.main()
 		deliveredDerivPaths[derivType] = deliveredDeriv
-		# print(processingVars)
-		# print("&"*100)
-		# print(ingestLogBoilerplate)
-		pymmFunctions.pymm_log(
-			processingVars['inputName'],
-			processingVars['filename'],
-			processingVars['operator'],
-			'migration',
-			'create access copy at {}'.format(deliveredDeriv),
-			'OK'
-			)
-		pymmFunctions.ingest_log(
-			'migration',
-			'create access copy at {}'.format(deliveredDeriv),
-			'OK',
-			**ingestLogBoilerplate
+
+		event = 'migration'
+		outcome = 'create access copy at {}'.format(deliveredDeriv)
+		status = 'OK'
+		pymmFunctions.log_event(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
 			)
 
 	for key,value in deliveredDerivPaths.items():
@@ -536,6 +586,10 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 
 			processingVars['inputPath'] = value
 			processingVars['filename'] = pymmFunctions.get_base(value)
+			processingVars = pymmFunctions.insert_object(
+				processingVars,
+				'file'
+				)
 			# print(processingVars)
 			fileMD5 = makeMetadata.hash_file(value)
 			add_pbcore_instantiation(
@@ -580,7 +634,7 @@ def stage_sip(processingVars):
 
 	return stagedSIP
 
-def rename_SIP(processingVars):
+def rename_SIP(processingVars,ingestLogBoilerplate):
 	'''
 	Rename the directory to the ingest UUID.
 	'''
@@ -590,6 +644,27 @@ def rename_SIP(processingVars):
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
 	processingVars['packageOutputDir'] = UUIDpath
+
+	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
+	newPath = os.path.join(UUIDpath,"metadata","logs",logFile)
+	if not os.path.isfile(newPath):
+		newPath = False
+	ingestLogBoilerplate["ingestLogPath"] = newPath
+
+	event = 'filename change'
+	outcome = 'SIP renamed from {} to {}.'.format(
+		packageOutputDir,
+		UUIDpath
+		)
+	status = 'OK'
+	if not newPath == False:
+		pymmFunctions.log_event(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
+			)
 
 	return processingVars,UUIDpath
 
@@ -612,6 +687,8 @@ def envelop_SIP(processingVars):
 	except:
 		print("Something no bueno.")
 
+
+
 	return _SIP
 
 def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason):
@@ -621,13 +698,17 @@ def do_cleanup(cleanupStrategy,packageVerified,inputPath,packageOutputDir,reason
 	else:
 		print("BUH-BYE")
 
-def directory_precheck(ingestLogBoilerplate):
+def directory_precheck(ingestLogBoilerplate,processingVars):
 	'''
 	Do some checking on directories:
 	- remove system files
 	- check for subdirectories
 	'''
 	precheckPass = (True,'')
+
+	####################################
+	### HUNT FOR HIDDEN SYSTEM FILES ###
+	### DESTROY DESTROY DESTROY DEST ###
 
 	removedFiles = pymmFunctions.remove_hidden_system_files(
 		ingestLogBoilerplate['inputPath']
@@ -637,7 +718,7 @@ def directory_precheck(ingestLogBoilerplate):
 		)
 	removeFailures = []
 	status = "OK"
-	
+	event = "deletion"
 	# check again for system files... just in case.
 	for _object in source_list:
 		if os.path.basename(_object).startswith('.'):
@@ -661,17 +742,42 @@ def directory_precheck(ingestLogBoilerplate):
 			# if both passes failed, log it as such
 			outcome = "Tried and failed to remove system files. Sorry."
 			status = "FAIL"
-	else:
-		outcome = "System files deleted at \n{}\n".format(
-			"\n".join(removedFiles)
-			)
 
-	pymmFunctions.ingest_log(
-		"deletion",
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
+		pymmFunctions.ingest_log(
+			event,
+			outcome,
+			status,
+			**ingestLogBoilerplate
+			)
+		pymmFunctions.insert_event(
+			processingVars,
+			event,
+			outcome,
+			status
+			)
+	else:
+		if not removedFiles == []: 
+			outcome = "System files deleted at \n{}\n".format(
+				"\n".join(removedFiles)
+				)
+			pymmFunctions.ingest_log(
+				event,
+				outcome,
+				status,
+				**ingestLogBoilerplate
+				)
+			pymmFunctions.insert_event(
+				processingVars,
+				event,
+				outcome,
+				status
+				)
+
+		else:
+			pass
+	### END HIDDEN FILE HUNT ###
+	############################
+
 	subs = 0
 	for _object in source_list:
 		if os.path.isdir(_object):
@@ -853,7 +959,8 @@ def main():
 	# RUN A PRECHECK ON DIRECTORY INPUTS
 	if inputType == 'dir':
 		precheckPass,precheckFailReason = directory_precheck(
-			ingestLogBoilerplate
+			ingestLogBoilerplate,
+			processingVars
 			)
 		if precheckPass == False:
 			pymmFunctions.cleanup_package(
@@ -966,7 +1073,7 @@ def main():
 			"Preservation master"
 			)
 
-		input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
+		input_file_metadata(ingestLogBoilerplate,processingVars)
 		pymmFunctions.pymm_log(
 			canonicalName,
 			filename,
@@ -975,7 +1082,7 @@ def main():
 			'calculate input file technical metadata',
 			'OK'
 			)
-		accessPath = make_derivs(ingestLogBoilerplate,processingVars) # @dbme
+		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
 		if report_to_db:
@@ -989,9 +1096,9 @@ def main():
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
-					inputName,
-					tempID,
-					operator,
+					'',
+					'',
+					'',
 					"connect to database",
 					"NO DATABASE CONNECTION!!!",
 					"WARNING"
@@ -1026,7 +1133,7 @@ def main():
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 
-			move_input_file(processingVars,ingestLogBoilerplate) # @dbme
+			move_input_file(processingVars,ingestLogBoilerplate)
 
 			add_pbcore_instantiation(
 				processingVars,
@@ -1034,7 +1141,7 @@ def main():
 				"Preservation master"
 				)
 
-			input_file_metadata(ingestLogBoilerplate,processingVars) # @dbme
+			input_file_metadata(ingestLogBoilerplate,processingVars)
 			pymmFunctions.pymm_log(
 				canonicalName,
 				_file,
@@ -1048,10 +1155,10 @@ def main():
 			# the containing folder under the one
 			# defined in config.ini
 			accessPath = make_derivs(
-					ingestLogBoilerplate,
-					processingVars,
-					rsPackage=True
-				) # @dbme
+				ingestLogBoilerplate,
+				processingVars,
+				rsPackage=True
+				)
 			
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
@@ -1070,9 +1177,10 @@ def main():
 				ingestUUID,
 				canonicalName,
 				'mp4',
-				ingestLogBoilerplate
+				ingestLogBoilerplate,
+				processingVars
 				)
-			if not concatPath == False:
+			if not concatPath.startswith("False"):
 				deliver_concat_access(
 					concatPath,
 					accessPath
@@ -1081,7 +1189,7 @@ def main():
 	#########
 	# MOVE SIP TO AIP STAGING
 	# rename SIP from temp to UUID
-	processingVars,SIPpath = rename_SIP(processingVars) # @dbme
+	processingVars,SIPpath = rename_SIP(processingVars,ingestLogBoilerplate)
 	# put the package into a UUID parent folder
 	_SIP = envelop_SIP(processingVars) # @dbme
 	# update the ingest log path to reflect new SIP location
@@ -1091,32 +1199,25 @@ def main():
 		_SIP
 		) # @dbme
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
-	pymmFunctions.pymm_log(
-		'',
-		_SIP,
-		'',
-		'information package creation',
-		'assemble SIP into valid structure',
-		'OK'
-		)
-	pymmFunctions.ingest_log(
-		'information package creation',
-		'assemble SIP into valid structure',
-		'OK',
-		**ingestLogBoilerplate
+	event = 'information package creation'
+	outcome = 'assemble SIP into valid structure'
+	status = 'OK'
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
 		)
 
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
-	# move the SIP if needed
-	
-	# print(_SIP)
-	# time.sleep(10)
-	
+
 	packageVerified = False
+	# move the SIP if needed
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars) # @dbme
-		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
+		validSIP = pymmFunctions.validate_SIP_structure(_SIP) # @dbme
 		# audit the hashdeep manifest 
 		packageVerified = makeMetadata.hashdeep_audit(
 			_SIP,
@@ -1125,8 +1226,6 @@ def main():
 	else:
 		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		packageVerified = True
-
-
 
 	if not validSIP:
 		# IS THIS EXCESSIVE?? MAYBE JUST LOG THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
@@ -1138,13 +1237,17 @@ def main():
 			)
 		return ingestResults
 	else:
-		pymmFunctions.ingest_log(
-			"validation",
-			"SIP validated against expected structure",
-			"OK",
-			**ingestLogBoilerplate
+		event = "validation"
+		outcome = "SIP validated against expected structure"
+		status = "OK"
+		pymmFunctions.log_event(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
 			)
-
+	print(processingVars)
 	# FINISH LOGGING
 	do_cleanup(
 		cleanupStrategy,

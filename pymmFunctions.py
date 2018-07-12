@@ -394,6 +394,28 @@ def insert_event(processingVars,event,outcome,status):
 	del event
 	return eventID
 
+def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
+	pymm_log(
+		'',
+		'',
+		'',
+		event,
+		outcome,
+		status
+		)
+	ingest_log(
+		event,
+		outcome,
+		status,
+		**ingestLogBoilerplate
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #
