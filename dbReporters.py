@@ -19,10 +19,10 @@ class EventInsert:
 		eventType,
 		objectIdentifierValue,
 		eventDateTime=None,
-		eventDetail=None,
 		eventOutcome=None,
-		eventDetailOPT=None,
-		eventDetailCOMPNAME=None,
+		eventOutcomeDetail=None,
+		eventDetailCallingFunc=None,
+		eventDetailComputer=None,
 		linkingAgentIdentifierValue=None,
 		eventID=None
 		):
@@ -35,10 +35,10 @@ class EventInsert:
 		self.eventType = eventType
 		self.objectIdentifierValue = objectIdentifierValue
 		self.eventDateTime = eventDateTime
-		self.eventDetail = eventDetail
 		self.eventOutcome = eventOutcome
-		self.eventDetailOPT = eventDetailOPT
-		self.eventDetailCOMPNAME = eventDetailCOMPNAME
+		self.eventOutcomeDetail = eventOutcomeDetail
+		self.eventDetailCallingFunc = eventDetailCallingFunc
+		self.eventDetailComputer = eventDetailComputer
 		# this is OPERATOR defined in ingestSip.main()
 		self.linkingAgentIdentifierValue = linkingAgentIdentifierValue
 		# to be returned later
@@ -59,10 +59,10 @@ class EventInsert:
 			self.eventType,
 			self.objectIdentifierValue,
 			self.eventDateTime,
-			self.eventDetail,
 			self.eventOutcome,
-			self.eventDetailOPT,
-			self.eventDetailCOMPNAME,
+			self.eventOutcomeDetail,
+			self.eventDetailCallingFunc,
+			self.eventDetailComputer,
 			self.linkingAgentIdentifierValue
 			)
 		self.eventID = cursor.lastrowid

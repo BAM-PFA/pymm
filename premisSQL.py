@@ -20,10 +20,10 @@ insertEventSQL = (
 		eventType,
 		objectIdentifierValue,
 		eventDateTime,
-		eventDetail,
 		eventOutcome,
-		eventDetailOPT,
-		eventDetailCOMPNAME,
+		eventOutcomeDetail,
+		eventDetailCallingFunc,
+		eventDetailCOMPUTER,
 		linkingAgentIdentifierValue
 		)
 	VALUES (

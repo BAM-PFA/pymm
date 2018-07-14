@@ -568,7 +568,7 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 	sys.argv = 	['',
 				'-i'+packageOutputDir,
 				'-d'+aip_staging,
-				'-L'+os.path.join(aip_staging,ingestUUID)]
+				'-L'+os.path.join(aip_staging,ingestUUID,'metadata','logs')]
 	moveNcopy.main()
 	# rename the staged dir
 	stagedSIP = os.path.join(aip_staging,ingestUUID)
@@ -1275,7 +1275,7 @@ def main():
 			manifestPath
 			)
 		event = 'fixity check'
-		pymmFunctions['caller'] = 'hashdeep'
+		processingVars['caller'] = 'hashdeep'
 		if packageVerified == True:
 			status = 'OK'
 			outcome = 'SIP verified against hashdeep manifest.'

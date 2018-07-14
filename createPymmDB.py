@@ -105,10 +105,10 @@ def create_db(pymm_db=pymm_db):
 							objectIdentifierValue VARCHAR(1000),\
 							eventType varchar(100) NOT NULL,\
 							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventDetail varchar(100) NOT NULL,\
-							eventOutcome varchar(1000),\
-							eventDetailOPT varchar(1000),\
-							eventDetailCOMPNAME varchar(50) NOT NULL,\
+							eventOutcome varchar(30) NOT NULL,\
+							eventOutcomeDetail varchar(1000),\
+							eventDetailCallingFunc varchar(1000),\
+							eventDetailCOMPUTER varchar(50) NOT NULL,\
 							linkingAgentIdentifierValue varchar(30) NOT NULL,\
 							PRIMARY KEY (eventIdentifierValue),\
 							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
