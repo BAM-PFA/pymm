@@ -1284,6 +1284,7 @@ def main():
 			outcome = (
 				"SIP failed hashdeep audit. "
 				"Some files may be missing or damaged!"
+				"Check the hashdeep audit: \n{}".format(packageVerified)
 				)
 		pymmFunctions.log_event(
 			processingVars,

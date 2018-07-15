@@ -180,7 +180,9 @@ def hashdeep_audit(inputPath,manifestPath):
 			if line.decode().startswith("hashdeep: Audit"):
 				outcome = line.decode()
 		if outcome == 'hashdeep: Audit failed':
-			result = out
+			result = ""
+			for line in out:
+				result += line.decode()+"\n"
 		elif outcome == 'hashdeep: Audit passed':
 			result = True
 		else:
