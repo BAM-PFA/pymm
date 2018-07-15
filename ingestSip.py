@@ -396,14 +396,6 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 			status
 			)
 
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
-
 	except:
 		outcome = 'could not '+outcome
 		status = 'FAIL'
@@ -763,19 +755,6 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 		precheckPass = (False,'subdirectories in input')
 
 	return precheckPass
-
-# def update_log_boilerplate(ingestLogBoilerplate,_SIP):
-# 	'''
-# 	update log file path to reflect the new SIP path
-# 	'''
-# 	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
-# 	ingestUUID = os.path.basename(_SIP)
-# 	newPath = os.path.join(_SIP,ingestUUID,"metadata","logs",logFile)
-# 	if not os.path.isfile(newPath):
-# 		newPath = False
-# 	ingestLogBoilerplate["ingestLogPath"] = newPath
-
-# 	return ingestLogBoilerplate
 
 def main():
 	#########################
@@ -1206,20 +1185,43 @@ def main():
 					accessPath
 					)
 
+
+
 	#########
 	# MOVE SIP TO AIP STAGING
 	# rename SIP from temp to UUID
 	processingVars,SIPpath = rename_SIP(processingVars,ingestLogBoilerplate)
+	###  MAKE A NEW FUNCTION TO CONTAIN THIS AND THE SIP MANIFEST CREATION INSTEAD
+	###  OF DOING THEM SEPARATELY/ D.R.Y.
+	manifestPath = makeMetadata.make_hashdeep_manifest(
+		SIPpath,
+		'objects'
+		)
+	event = 'message digest calculation'
+	outcome = (
+		'create hashdeep manifest '
+		'for objects directory at {}'.format(manifestPath)
+		)
+	status = 'OK'
+	processingVars['caller'] = 'hashdeep'
+	if os.path.isfile(manifestPath):
+		pymmFunctions.short_log(
+			processingVars,
+			ingestLogBoilerplate,
+			event,
+			outcome,
+			status
+			)
+	processingVars['caller'] = None
 	# put the package into a UUID parent folder
 	_SIP,ingestLogBoilerplate = envelop_SIP(
 		processingVars,
 		ingestLogBoilerplate
 		)
-	# update the ingest log path to reflect new SIP location
-	# ingestLogBoilerplate = update_log_boilerplate(ingestLogBoilerplate,_SIP)
 	# make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
-		_SIP
+		_SIP,
+		'hashdeep'
 		)
 	event = 'message digest calculation'
 	outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath)
@@ -1354,6 +1356,7 @@ def main():
 		outcome,
 		status
 		)
+	print(processingVars)
 
 	print(ingestResults)
 	return ingestResults

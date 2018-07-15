@@ -121,39 +121,51 @@ def hash_file(inputPath,algorithm='md5',blocksize=65536):
 			buff = infile.read(blocksize) # keep reading
 	return hasher.hexdigest()
 
-def make_hashdeep_manifest(inputPath):
+def manifest_path(inputPath,_type):
+	_object = pymmFunctions.get_base(inputPath)
+	manifestPath = os.path.join(
+		inputPath,
+		'{}_manifest_{}_{}.txt'.format(
+			_type,
+			_object,
+			pymmFunctions.timestamp('8601-filename')
+			)
+		)
+	return manifestPath
+
+def make_hashdeep_manifest(inputPath,_type):
 	'''
 	given a directory, make a hashdeep manifest.
 	chdir into target dir, make a manifest with relative paths, and get out.
-	Now this relies on a bagit-style tree to contain both the manifest and 
-	the package.
+	For the SIP manifest, this currently relies on a bagit-style tree 
+		to contain both the manifest and the package.
 	proposal: also store the manifest as a blob
 	(or as text?) in a db entry... yeah.
 	'''
 	_object = pymmFunctions.get_base(inputPath)
-	# there should be a child dir with the same name as inputPath
-	package = os.path.join(inputPath,_object)
-	if not os.path.isdir(package):
-		print("the expected directory structure is not present.") # @logme
-		return False
-		# sys.exit(1)
-	else:
-		manifestPath = os.path.join(
-			inputPath,
-			'hashdeep_manifest_{}_{}.txt'.format(
-				_object,
-				pymmFunctions.timestamp('8601-filename')
-				)
-			)
-		# print(manifestPath)
-		# run hashdeep on the package
-		command = ['hashdeep', '-rvvl', '-c','md5','-W', manifestPath, '.']
-		# print(command)
-		here = os.getcwd()
-		os.chdir(package)
-		manifest = subprocess.call(command,stdout=subprocess.PIPE)
-		os.chdir(here)
-		return manifestPath
+	if _type == 'hashdeep':
+		# there should be a child dir with the same name as inputPath
+		target = os.path.join(inputPath,_object)
+		if not os.path.isdir(target):
+			print("the expected directory structure is not present.") # @logme
+			return False
+	elif _type == 'objects':
+		# were in the 'real' SIP dir so look for a subdir called 'objects'
+		target = os.path.join(inputPath,'objects')
+		# we want to write the manifest to the metaata dir
+		inputPath = os.path.join(inputPath,'metadata')
+		if not os.path.isdir(target) or not os.path.isdir(inputPath):
+			print("the expected directory structure is not present.") # @logme
+			return False
+	manifestPath = manifest_path(inputPath,_type)
+	# run hashdeep on the package
+	command = ['hashdeep', '-rvvl', '-c','md5','-W', manifestPath, '.']
+	# print(command)
+	here = os.getcwd()
+	os.chdir(target)
+	manifest = subprocess.call(command,stdout=subprocess.PIPE)
+	os.chdir(here)
+	return manifestPath
 
 def hashdeep_audit(inputPath,manifestPath):
 	'''
