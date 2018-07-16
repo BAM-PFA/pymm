@@ -630,6 +630,7 @@ def envelop_SIP(processingVars,ingestLogBoilerplate):
 	outcome = 'Make a parent directory named w UUID to facilitate hash manifest/auditing.'
 	processingVars['caller'] = 'ingestSIP.envelop_SIP()'
 
+	# update the ingest log filepath
 	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
 	newPath = os.path.join(_SIP,ingestUUID,"metadata","logs",logFile)
 	ingestLogBoilerplate["ingestLogPath"] = newPath
@@ -651,7 +652,7 @@ def envelop_SIP(processingVars,ingestLogBoilerplate):
 
 	pymmFunctions.short_log(
 		processingVars,
-		ingestLogBoilerplate, # THIS IS BROKEN
+		ingestLogBoilerplate,
 		event,
 		outcome,
 		status
