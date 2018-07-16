@@ -855,9 +855,7 @@ def main():
 			status = 'ABORTING'
 			outcome = problem
 			pymmFunctions.pymm_log(
-				'',
-				'',
-				'',
+				processingVars,
 				event,
 				outcome,
 				status
@@ -936,7 +934,8 @@ def main():
 		'inputName':inputName,
 		'filename':filename,
 		'operator':operator,
-		'inputPath':inputPath
+		'inputPath':inputPath,
+		'ingestUUID':ingestUUID
 		}
 	# insert a database record for this SIP as an 'intellectual entity'
 	origFilename = processingVars['filename']
@@ -1057,9 +1056,7 @@ def main():
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
-					inputName,
-					tempID,
-					operator,
+					processingVars,
 					event = "connect to database",
 					outcome = "NO DATABASE CONNECTION!!!",
 					status = "WARNING"
@@ -1083,9 +1080,7 @@ def main():
 
 		get_file_metadata(ingestLogBoilerplate,processingVars)
 		pymmFunctions.pymm_log(
-			canonicalName,
-			filename,
-			operator,
+			processingVars,
 			event = 'metadata extraction',
 			outcome = 'calculate input file technical metadata',
 			status = 'OK'
@@ -1103,9 +1098,7 @@ def main():
 			except:
 				print("CAN'T MAKE DB CONNECTION")
 				pymmFunctions.pymm_log(
-					'',
-					'',
-					'',
+					processingVars,
 					event = "connect to database",
 					outcome = "NO DATABASE CONNECTION!!!",
 					status = "WARNING"
@@ -1125,9 +1118,7 @@ def main():
 				except:
 					print("CAN'T MAKE DB CONNECTION")
 					pymmFunctions.pymm_log(
-						"",
-						"",
-						"",
+						processingVars,
 						event = "connect to database",
 						outcome = "NO DATABASE CONNECTION!!!",
 						status = "WARNING"
@@ -1154,12 +1145,10 @@ def main():
 
 			get_file_metadata(ingestLogBoilerplate,processingVars)
 			pymmFunctions.pymm_log(
-				canonicalName,
-				_file,
-				operator,
-				'metadata extraction',
-				'calculate input file technical metadata',
-				'OK'
+				processingVars,
+				event = 'metadata extraction',
+				outcome = 'calculate input file technical metadata',
+				status = 'OK'
 				)
 			#######################
 			# for a directory input, accessPath is 
@@ -1258,22 +1247,6 @@ def main():
 		)
 	processingVars['caller'] = None
 
-	# # make a hashdeep manifest
-	# manifestPath = makeMetadata.make_hashdeep_manifest(
-	# 	_SIP,
-	# 	'hashdeep'
-	# 	)
-	# processingVars['caller'] = 'hashdeep'
-	# if os.path.isfile(manifestPath):
-	# 	pymmFunctions.short_log(
-	# 		processingVars,
-	# 		ingestLogBoilerplate,
-	# 		event = 'message digest calculation',
-	# 		outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
-	# 		status = 'OK'
-	# 		)
-	# processingVars['caller'] = None
-
 	packageVerified = False
 	# move the SIP if needed
 	if not aip_staging == config['paths']['outdir_ingestfile']:
@@ -1338,14 +1311,13 @@ def main():
 			status = "OK"
 			)
 		processingVars['caller'] = None
-	# print(processingVars)
-	
 
 	if objectsVerified and validSIP:
 		ingestResults['status'] = True
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath
 
+	# THIS IS THE LAST CALL MADE TO MODIFY ANYTHING IN THE SIP.
 	pymmFunctions.ingest_log(
 		event = 'ingestion end',
 		outcome = 'Submission Information Package verified and staged',

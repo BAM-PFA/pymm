@@ -99,7 +99,18 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,operator,inputPath):
+def ingest_log(\
+	event,\
+	outcome,\
+	status,\
+	ingestLogPath,\
+	tempID,\
+	inputName,\
+	filename,\
+	operator,\
+	inputPath,\
+	ingestUUID\
+	):
 	stamp = timestamp("iso8601")
 
 	if event == "ingestion start":
@@ -113,8 +124,9 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,oper
 			stamp,
 			"Event Type: ingestion start\n",
 			"Object Canonical Name: {}\n".format(inputName),
-			"Object Temp ID: {}\n".format(tempID),
 			"Object Input Filepath: {}\n".format(inputPath),
+			"Object Temp ID: {}\n".format(tempID),
+			"Ingest UUID: {}\n".format(ingestUUID),
 			"Ingest Working Directory: {}\n".format(workingDir),
 			"Operator: {}\n".format(operator),
 			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
@@ -144,11 +156,15 @@ def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,oper
 			ingestLog.write(item)
 		ingestLog.write("\n\n")
 
-def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
+def pymm_log(processingVars,event,outcome,status):
 	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
 	stamp = timestamp('iso8601')
 	systemInfo = system_info()
+	objectRootPath = processingVars['inputPath']
+	objectName = processingVars['inputName']
+	operator = processingVars['operator']
+	ingestUUID = processingVars['ingestUUID']
 	tempID = get_temp_id(objectRootPath)
 	workingDir = os.path.join(
 			pymmConfig["paths"]["outdir_ingestfile"],
@@ -165,6 +181,7 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 			"\nEvent type: Ingestion start\n",
 			"Object canonical name: {}\n".format(objectName),
 			"Object filepath: {}\n".format(objectRootPath),
+			"Ingest UUID: {}\n".format(ingestUUID),
 			"Operator: {}\n".format(operator),
 			"Ingest working directory: {}\n".format(workingDir),
 			"\n### SYSTEM INFO: ### \n{}".format(systemInfo),
@@ -200,9 +217,7 @@ def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
 	log an event to all logs: database, system log, ingest log
 	'''
 	pymm_log(
-		processingVars['inputName'],
-		processingVars['inputPath'],
-		processingVars['operator'],
+		processingVars,
 		event,
 		outcome,
 		status
@@ -244,9 +259,7 @@ def end_log(processingVars,event,outcome,status):
 	so as not to bungle the hashdeep manifest
 	'''
 	pymm_log(
-		'',
-		processingVars['ingestUUID'],
-		'',
+		processingVars,
 		event,
 		outcome,
 		status
@@ -259,7 +272,7 @@ def end_log(processingVars,event,outcome,status):
 		)
 
 def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
-	print(pathForDeletion)
+	# print(pathForDeletion)
 	if reason == "ABORTING":
 		status = 'ABORTING'
 		event = 'ingestion end'

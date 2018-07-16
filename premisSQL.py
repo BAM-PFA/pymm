@@ -38,3 +38,30 @@ insertEventSQL = (
 		)
 	'''
 	)
+
+insertFixitySQL = (
+	'''
+	INSERT INTO fixity (
+		eventIdentifierValue,
+		objectIdentifierValueID,
+		eventDateTime,
+		eventDetailCallingFunc,
+		messageDigestAlgorithm,
+		messageDigestSource,
+		messageDigestPath,
+		messageDigestFilename,
+		messageDigestHash
+		)
+	VALUES (
+		%s,
+		%s,
+		%s,
+		%s,
+		%s,
+		%s,
+		%s,
+		%s,
+		%s
+		)
+	'''
+	)
