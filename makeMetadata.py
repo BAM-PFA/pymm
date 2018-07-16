@@ -142,18 +142,18 @@ def make_hashdeep_manifest(inputPath,_type):
 	proposal: also store the manifest as a blob
 	(or as text?) in a db entry... yeah.
 	'''
-	_object = pymmFunctions.get_base(inputPath)
+	_uuid = pymmFunctions.get_base(inputPath)
 	if _type == 'hashdeep':
 		# there should be a child dir with the same name as inputPath
-		target = os.path.join(inputPath,_object)
+		target = os.path.join(inputPath,_uuid)
 		if not os.path.isdir(target):
 			print("the expected directory structure is not present.") # @logme
 			return False
 	elif _type == 'objects':
 		# were in the 'real' SIP dir so look for a subdir called 'objects'
-		target = os.path.join(inputPath,'objects')
-		# we want to write the manifest to the metaata dir
-		inputPath = os.path.join(inputPath,'metadata')
+		target = os.path.join(inputPath,_uuid,'objects')
+		# we want to write the manifest to the metadata dir
+		inputPath = os.path.join(inputPath,_uuid,'metadata')
 		if not os.path.isdir(target) or not os.path.isdir(inputPath):
 			print("the expected directory structure is not present.") # @logme
 			return False
@@ -167,7 +167,7 @@ def make_hashdeep_manifest(inputPath,_type):
 	os.chdir(here)
 	return manifestPath
 
-def hashdeep_audit(inputPath,manifestPath):
+def hashdeep_audit(inputPath,manifestPath,_type=None):
 	'''
 	Given a target directory and an existing manifest, run a hashdeep audit.
 	-> chdir into the target, audit the relative paths, and get out.
@@ -176,39 +176,51 @@ def hashdeep_audit(inputPath,manifestPath):
 	same idea as above: read manifest from blob in db and write the audit file
 	as a new blob.
 	'''
-	_object = os.path.basename(inputPath)
-	package = os.path.join(inputPath,_object)
+	_uuid = os.path.basename(inputPath)
+	package = os.path.join(inputPath,_uuid)
+	if _type == 'SIP':
+		target = package
+	elif _type == 'objects':
+		target = os.path.join(package,'objects')
 
 	# turn off multithreading for auditing on LTO!
 	command = ['hashdeep','-rvval','-j0','-k',manifestPath,'.']
-
+	# print(command)
+	# print(target)
 	here = os.getcwd()
-	os.chdir(package)
+	os.chdir(target)
 	try:
 		hashaudit = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		# print(hashaudit)
 		out = hashaudit.stdout.splitlines()
+		result = ""
+		error = False
 		for line in out:
 			if line.decode().startswith("hashdeep: Audit"):
 				outcome = line.decode()
+				print(outcome)
 		if outcome == 'hashdeep: Audit failed':
-			result = ""
-			for line in out:
-				result += line.decode()+"\n"
+			status = False
 		elif outcome == 'hashdeep: Audit passed':
-			result = True
+			status = True
 		else:
+			status = False
+			error = True
 			print("INCONCLUSIVE AUDIT. SIP NOT VERIFIED.")
 			result = [out,hashaudit.stderr.decode()]
-
+		# gather the results for logging
+		if not error:
+			for line in out:
+				result += line.decode()+"\n"
 	except:
 		print(
 			"there was a problem with the hashdeep audit. "
 			"package NOT verified."
 			)
-		result = False
+		status = False
+		result = "hashdeep error"
 	os.chdir(here)
-	return result
+	return result,status
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')

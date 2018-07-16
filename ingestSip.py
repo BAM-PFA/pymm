@@ -757,6 +757,14 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 
 	return precheckPass
 
+def stash_manifest(manifestPath):
+	'''
+	rename a manifest as _old_ and stash it in the metadata directory
+	(to be run before making a new/final hashdeep manifest)
+	'''
+
+
+
 def main():
 	#########################
 	#### SET INGEST ARGS ####
@@ -1186,124 +1194,124 @@ def main():
 					accessPath
 					)
 
-
-
 	#########
-	# MOVE SIP TO AIP STAGING
+	# FLUFF THE SIP FOR STAGING
 	# rename SIP from temp to UUID
-	processingVars,SIPpath = rename_SIP(processingVars,ingestLogBoilerplate)
-	###  MAKE A NEW FUNCTION TO CONTAIN THIS AND THE SIP MANIFEST CREATION INSTEAD
-	###  OF DOING THEM SEPARATELY/ D.R.Y.
-	manifestPath = makeMetadata.make_hashdeep_manifest(
-		SIPpath,
-		'objects'
-		)
-	event = 'message digest calculation'
-	outcome = (
-		'create hashdeep manifest '
-		'for objects directory at {}'.format(manifestPath)
-		)
-	status = 'OK'
-	processingVars['caller'] = 'hashdeep'
-	if os.path.isfile(manifestPath):
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
-	processingVars['caller'] = None
+	processingVars,_SIP = rename_SIP(processingVars,ingestLogBoilerplate)
 	# put the package into a UUID parent folder
 	_SIP,ingestLogBoilerplate = envelop_SIP(
 		processingVars,
 		ingestLogBoilerplate
 		)
-	# make a hashdeep manifest
-	manifestPath = makeMetadata.make_hashdeep_manifest(
+	###  MAKE A NEW FUNCTION TO CONTAIN THIS AND THE SIP MANIFEST CREATION INSTEAD
+	###  OF DOING THEM SEPARATELY/ D.R.Y.
+	print(_SIP)
+	objectManifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP,
-		'hashdeep'
+		'objects'
 		)
-	event = 'message digest calculation'
-	outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath)
+	print(objectManifestPath)
+	
+	outcome = (
+		'create hashdeep manifest '
+		'for objects directory at {}'.format(objectManifestPath)
+		)
 	status = 'OK'
 	processingVars['caller'] = 'hashdeep'
-	if os.path.isfile(manifestPath):
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
+	if not os.path.isfile(objectManifestPath):
+		status = 'FAIL'
+		outcome = 'could not '+outcome
+	else:
+		pass
+	pymmFunctions.short_log(
+		processingVars,
+		ingestLogBoilerplate,
+		event = 'message digest calculation',
+		outcome = outcome,
+		status = status
+		)
 	processingVars['caller'] = None
-
+	
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
-	event = 'information package creation'
-	outcome = 'assemble SIP into valid structure'
-	status = 'OK'
 	processingVars['caller'] = 'ingestSIP.main()'
 	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'information package creation',
+		outcome = 'assemble SIP into valid structure',
+		status = 'OK'
 		)
 	processingVars['caller'] = None
 
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
-	event = 'modification'
-	outcome = 'recursively set SIP and manifest file permissions to 777'
-	status = 'OK'
 	processingVars['caller'] = 'Python3 os.chmod(x,0o777)'
 	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'modification',
+		outcome = 'recursively set SIP and manifest file permissions to 777',
+		status = 'OK'
 		)
+	processingVars['caller'] = None
+
+	# make a hashdeep manifest
+	manifestPath = makeMetadata.make_hashdeep_manifest(
+		_SIP,
+		'hashdeep'
+		)
+	processingVars['caller'] = 'hashdeep'
+	if os.path.isfile(manifestPath):
+		pymmFunctions.short_log(
+			processingVars,
+			ingestLogBoilerplate,
+			event = 'message digest calculation',
+			outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
+			status = 'OK'
+			)
 	processingVars['caller'] = None
 
 	packageVerified = False
 	# move the SIP if needed
 	if not aip_staging == config['paths']['outdir_ingestfile']:
 		_SIP = stage_sip(processingVars, ingestLogBoilerplate)
-		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 		# audit the hashdeep manifest 
-		packageVerified = makeMetadata.hashdeep_audit(
+		objectsVerified = False
+		auditOutcome,objectsVerified = makeMetadata.hashdeep_audit(
 			_SIP,
-			manifestPath
+			objectManifestPath,
+			_type='objects'
 			)
-		event = 'fixity check'
 		processingVars['caller'] = 'hashdeep'
-		if packageVerified == True:
+		if objectsVerified == True:
 			status = 'OK'
-			outcome = 'SIP verified against hashdeep manifest.'
+			outcome = (
+				'Objects directory verified against hashdeep manifest: \n{}'
+				''.format(auditOutcome)
+				)
 		else:
 			status = "WARNING"
 			outcome = (
-				"SIP failed hashdeep audit. "
+				"Objects directory failed hashdeep audit. "
 				"Some files may be missing or damaged!"
-				"Check the hashdeep audit: \n{}".format(packageVerified)
+				"Check the hashdeep audit: \n{}".format(auditOutcome)
 				)
 		pymmFunctions.log_event(
 			processingVars,
 			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
+			event = 'fixity check',
+			outcome = outcome,
+			status = status
 			)
 		processingVars['caller'] = None
 
 	else:
-		validSIP = pymmFunctions.validate_SIP_structure(_SIP)
-		packageVerified = True
+		objectsVerified = True
 
+	validSIP = pymmFunctions.validate_SIP_structure(_SIP)
 	if not validSIP:
-		# IS THIS EXCESSIVE?? MAYBE JUST LOG THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
+		# IS THIS EXCESSIVE?? MAYBE JUST LOG 
+		#     THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
 		# OR MAKE AN "INCONCLUSIVE/WARNING" VERSION?
 		# NOTE: the failure gets logged in the system log,
 		# along with listing reasons for failure
@@ -1316,21 +1324,25 @@ def main():
 			)
 		return ingestResults
 	else:
-		event = "validation"
-		outcome = "SIP validated against expected structure"
-		status = "OK"
 		# set inputPath as the SIP path
 		processingVars['inputPath'] = _SIP
 		processingVars['caller'] = 'pymmFunctions.validate_SIP_structure()'
 		pymmFunctions.log_event(
 			processingVars,
 			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
+			event = "validation",
+			outcome = "SIP validated against expected structure",
+			status = "OK"
 			)
 		processingVars['caller'] = None
 	# print(processingVars)
+	# now stash the old manifest away and we can make a new one
+	stash_manifest(_SIP)
+	makeMetadata.make_hashdeep_manifest(
+		_SIP,
+		'hashdeep'
+		)
+
 	# FINISH LOGGING
 	do_cleanup(
 		processingVars,
@@ -1345,17 +1357,14 @@ def main():
 		ingestResults['status'] = True
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath
-	
-	event = 'ingestion end'
-	outcome = 'Submission Information Package verified and staged'
-	status = 'ENDING'
+
 	processingVars['caller'] = 'ingestSIP.main()'
 	pymmFunctions.log_event(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'ingestion end',
+		outcome = 'Submission Information Package verified and staged',
+		status = 'ENDING'
 		)
 	print(processingVars)
 
