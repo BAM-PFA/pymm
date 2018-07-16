@@ -121,13 +121,12 @@ def hash_file(inputPath,algorithm='md5',blocksize=65536):
 			buff = infile.read(blocksize) # keep reading
 	return hasher.hexdigest()
 
-def manifest_path(inputPath,_type):
-	_object = pymmFunctions.get_base(inputPath)
+def manifest_path(inputPath,_uuid,_type):
 	manifestPath = os.path.join(
 		inputPath,
 		'{}_manifest_{}_{}.txt'.format(
 			_type,
-			_object,
+			_uuid,
 			pymmFunctions.timestamp('8601-filename')
 			)
 		)
@@ -157,7 +156,7 @@ def make_hashdeep_manifest(inputPath,_type):
 		if not os.path.isdir(target) or not os.path.isdir(inputPath):
 			print("the expected directory structure is not present.") # @logme
 			return False
-	manifestPath = manifest_path(inputPath,_type)
+	manifestPath = manifest_path(inputPath,_uuid,_type)
 	# run hashdeep on the package
 	command = ['hashdeep', '-rvvl', '-c','md5','-W', manifestPath, '.']
 	# print(command)

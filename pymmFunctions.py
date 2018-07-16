@@ -265,6 +265,7 @@ def validate_SIP_structure(SIPpath):
 	UUID/
 	  UUID/
 	    metadata/
+	      objects_manifest_UUID_iso8601.txt
 	      objectCanonicalName_pbcore.xml
 	      logs/
 	        ingestLog.txt
@@ -284,7 +285,7 @@ def validate_SIP_structure(SIPpath):
 	        resourcespace1
 	        resourcespace2
 	    
-	  hashdeep_manifest_UUID_iso8601.txt
+	  # (changed this 7/16/18) hashdeep_manifest_UUID_iso8601.txt
 	'''
 	structureValidated = True
 	status = "OK"

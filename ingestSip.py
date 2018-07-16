@@ -282,7 +282,7 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		)
 	processingVars['caller'] = None
 
-def input_file_metadata(ingestLogBoilerplate,processingVars):
+def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 	inputFile = processingVars['inputPath']
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
 	
@@ -317,23 +317,27 @@ def input_file_metadata(ingestLogBoilerplate,processingVars):
 			)
 		processingVars['caller'] = None
 	
-	frameMD5 = makeMetadata.make_frame_md5(
-		processingVars['inputPath'],
-		processingVars['packageMetadataObjects']
-		)
-	if frameMD5 != False:
-		event = 'message digest calculation'
-		outcome = ("frameMD5 report for input file "
-			"written to metadata directory for package")
-		processingVars['caller'] = processingVars['ffmpeg']+' with option `-f frameMD5`'
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
+	if not _type == 'derivative':
+	# don't bother calculating frame md5 for derivs....
+		frameMD5 = makeMetadata.make_frame_md5(
+			processingVars['inputPath'],
+			processingVars['packageMetadataObjects']
 			)
-		processingVars['caller'] = None
+		if frameMD5 != False:
+			event = 'message digest calculation'
+			outcome = ("frameMD5 report for input file "
+				"written to metadata directory for package")
+			processingVars['caller'] = processingVars['ffmpeg']+' with option `-f frameMD5`'
+			pymmFunctions.short_log(
+				processingVars,
+				ingestLogBoilerplate,
+				event,
+				outcome,
+				status
+				)
+			processingVars['caller'] = None
+
+	return inputFileMD5
 
 def add_pbcore_md5_location(processingVars, inputFileMD5):
 	if processingVars['pbcore'] != '':
@@ -507,7 +511,26 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		mdDest = os.path.join(packageMetadataObjects,key)
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
-		mediainfo = makeMetadata.get_mediainfo_report(value,mdDest)
+		origMDdest = processingVars['packageMetadataObjects']
+		processingVars['packageMetadataObjects'] = mdDest
+		processingVars['inputPath'] = value
+		processingVars['filename'] = pymmFunctions.get_base(value)
+		
+		if os.path.isfile(value):
+			processingVars = pymmFunctions.insert_object(
+				processingVars,
+				'file'
+				)
+			fileMD5 = get_file_metadata(\
+				ingestLogBoilerplate,\
+				processingVars,\
+				_type='derivative'\
+				)
+			# fileMD5 = makeMetadata.hash_file(value) # @logme @dbme
+			# mediainfo = makeMetadata.get_mediainfo_report(value,mdDest) # @logme @dbme
+		else:
+			fileMD5 = "None"
+			mediainfo = "None"
 
 		if processingVars['pbcore'] != '':
 			if derivType in ('resourcespace'):
@@ -517,16 +540,6 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 			else:
 				level = 'Derivative'
 
-			processingVars['inputPath'] = value
-			processingVars['filename'] = pymmFunctions.get_base(value)
-			if os.path.exists(value):
-				processingVars = pymmFunctions.insert_object(
-					processingVars,
-					'file'
-					)
-				fileMD5 = makeMetadata.hash_file(value)
-			else:
-				fileMD5 = "None"
 			add_pbcore_instantiation(
 				processingVars,
 				ingestLogBoilerplate,
@@ -547,6 +560,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		deliveredAccessBase = os.path.basename(SIPaccessPath)
 		rsOutDir = config['paths']['resourcespace_deliver']
 		accessPath = os.path.join(rsOutDir,deliveredAccessBase)
+	# reset metadata dir
+	processingVars['packageMetadataObjects'] = origMDdest
 	return accessPath
 
 def stage_sip(processingVars,ingestLogBoilerplate):
@@ -757,13 +772,11 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 
 	return precheckPass
 
-def stash_manifest(manifestPath):
-	'''
-	rename a manifest as _old_ and stash it in the metadata directory
-	(to be run before making a new/final hashdeep manifest)
-	'''
-
-
+# def stash_manifest(manifestPath):
+# 	'''
+# 	rename a manifest as _old_ and stash it in the metadata directory
+# 	(to be run before making a new/final hashdeep manifest)
+# 	'''
 
 def main():
 	#########################
@@ -1068,7 +1081,7 @@ def main():
 			"Preservation master"
 			)
 
-		input_file_metadata(ingestLogBoilerplate,processingVars)
+		get_file_metadata(ingestLogBoilerplate,processingVars)
 		pymmFunctions.pymm_log(
 			canonicalName,
 			filename,
@@ -1139,7 +1152,7 @@ def main():
 				"Preservation master"
 				)
 
-			input_file_metadata(ingestLogBoilerplate,processingVars)
+			get_file_metadata(ingestLogBoilerplate,processingVars)
 			pymmFunctions.pymm_log(
 				canonicalName,
 				_file,
@@ -1328,10 +1341,10 @@ def main():
 	# print(processingVars)
 	# now stash the old manifest away and we can make a new one
 	# stash_manifest(_SIP)
-	makeMetadata.make_hashdeep_manifest(
-		_SIP,
-		'hashdeep'
-		)
+	# makeMetadata.make_hashdeep_manifest(
+	# 	_SIP,
+	# 	'hashdeep'
+	# 	)
 
 	# FINISH LOGGING
 	do_cleanup(
