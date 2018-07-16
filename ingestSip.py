@@ -951,7 +951,7 @@ def main():
 		processingVars,
 		ingestLogBoilerplate,
 		event = 'ingestion start',
-		outcome = "Let's go!",
+		outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
 		status = 'STARTING'
 		)
 	# reset variables
@@ -1258,21 +1258,21 @@ def main():
 		)
 	processingVars['caller'] = None
 
-	# make a hashdeep manifest
-	manifestPath = makeMetadata.make_hashdeep_manifest(
-		_SIP,
-		'hashdeep'
-		)
-	processingVars['caller'] = 'hashdeep'
-	if os.path.isfile(manifestPath):
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event = 'message digest calculation',
-			outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
-			status = 'OK'
-			)
-	processingVars['caller'] = None
+	# # make a hashdeep manifest
+	# manifestPath = makeMetadata.make_hashdeep_manifest(
+	# 	_SIP,
+	# 	'hashdeep'
+	# 	)
+	# processingVars['caller'] = 'hashdeep'
+	# if os.path.isfile(manifestPath):
+	# 	pymmFunctions.short_log(
+	# 		processingVars,
+	# 		ingestLogBoilerplate,
+	# 		event = 'message digest calculation',
+	# 		outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
+	# 		status = 'OK'
+	# 		)
+	# processingVars['caller'] = None
 
 	packageVerified = False
 	# move the SIP if needed
@@ -1311,7 +1311,7 @@ def main():
 	else:
 		objectsVerified = True
 
-	validSIP = pymmFunctions.validate_SIP_structure(_SIP)
+	validSIP,validationOutcome = pymmFunctions.validate_SIP_structure(_SIP)
 	if not validSIP:
 		# IS THIS EXCESSIVE?? MAYBE JUST LOG 
 		#     THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
@@ -1323,7 +1323,7 @@ def main():
 			processingVars,
 			_SIP,
 			"ABORTING",
-			"SIP failed to validate against expected structure"
+			validationOutcome
 			)
 		return ingestResults
 	else:
@@ -1339,14 +1339,41 @@ def main():
 			)
 		processingVars['caller'] = None
 	# print(processingVars)
-	# now stash the old manifest away and we can make a new one
-	# stash_manifest(_SIP)
-	# makeMetadata.make_hashdeep_manifest(
-	# 	_SIP,
-	# 	'hashdeep'
-	# 	)
+	
 
-	# FINISH LOGGING
+	if objectsVerified and validSIP:
+		ingestResults['status'] = True
+	ingestResults['ingestUUID'] = ingestUUID
+	ingestResults['accessPath'] = accessPath
+
+	pymmFunctions.ingest_log(
+		event = 'ingestion end',
+		outcome = 'Submission Information Package verified and staged',
+		status = 'ENDING',
+		**ingestLogBoilerplate
+		)
+
+	# make a hashdeep manifest
+	manifestPath = makeMetadata.make_hashdeep_manifest(
+		_SIP,
+		'hashdeep'
+		)
+	processingVars['caller'] = 'hashdeep'
+	if os.path.isfile(manifestPath):
+		pymmFunctions.end_log(
+			processingVars,
+			event = 'message digest calculation',
+			outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
+			status = 'OK'
+			)
+	processingVars['caller'] = 'ingestSIP.main()'	
+	pymmFunctions.end_log(
+		processingVars,
+		event = 'ingestion end',
+		outcome = 'Submission Information Package verified and staged',
+		status = 'ENDING'
+		)
+
 	do_cleanup(
 		processingVars,
 		cleanupStrategy,
@@ -1355,21 +1382,6 @@ def main():
 		packageOutputDir,
 		'done'
 		)
-
-	if objectsVerified and validSIP:
-		ingestResults['status'] = True
-	ingestResults['ingestUUID'] = ingestUUID
-	ingestResults['accessPath'] = accessPath
-
-	processingVars['caller'] = 'ingestSIP.main()'
-	pymmFunctions.log_event(
-		processingVars,
-		ingestLogBoilerplate,
-		event = 'ingestion end',
-		outcome = 'Submission Information Package verified and staged',
-		status = 'ENDING'
-		)
-	print(processingVars)
 
 	print(ingestResults)
 	return ingestResults

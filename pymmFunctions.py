@@ -195,6 +195,69 @@ def pymm_log(objectName,objectRootPath,operator,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
+def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
+	'''
+	log an event to all logs: database, system log, ingest log
+	'''
+	pymm_log(
+		processingVars['inputName'],
+		processingVars['inputPath'],
+		processingVars['operator'],
+		event,
+		outcome,
+		status
+		)
+	ingest_log(
+		event,
+		outcome,
+		status,
+		**ingestLogBoilerplate
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
+def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
+	'''
+	same as log_event() but skip the system log for when the event
+	is too detailed.
+	'''
+	ingest_log(
+		event,
+		outcome,
+		status,
+		**ingestLogBoilerplate
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
+def end_log(processingVars,event,outcome,status):
+	'''
+	same as short_log() but skip the ingest log 
+	so as not to bungle the hashdeep manifest
+	'''
+	pymm_log(
+		'',
+		processingVars['ingestUUID'],
+		'',
+		event,
+		outcome,
+		status
+		)
+	insert_event(
+		processingVars,
+		event,
+		outcome,
+		status
+		)
+
 def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 	print(pathForDeletion)
 	if reason == "ABORTING":
@@ -227,15 +290,7 @@ def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 				)
 			print(outcome)
 	processingVars['caller'] = 'pymmFunctions.cleanup_package()'
-	pymm_log(
-		'',
-		'',
-		'',
-		event,
-		outcome,
-		status
-		)
-	insert_event(
+	end_log(
 		processingVars,
 		event,
 		outcome,
@@ -290,9 +345,9 @@ def validate_SIP_structure(SIPpath):
 	structureValidated = True
 	status = "OK"
 
-	UUID = os.path.basename(SIPpath)
+	_UUID = os.path.basename(SIPpath)
 	# define the directories to check
-	ingestDir = os.path.join(SIPpath,UUID)
+	ingestDir = os.path.join(SIPpath,_UUID)
 	metadataDir = os.path.join(ingestDir,'metadata')
 	logDir = os.path.join(metadataDir,'logs')
 	objectMetadataDir = os.path.join(metadataDir,'objects')
@@ -305,7 +360,6 @@ def validate_SIP_structure(SIPpath):
 	for thing in dirs:
 		if not os.path.isdir(thing):
 			structureValidated = False
-			status = "FAIL"
 			failure = "missing {}".format(os.path.basename(thing))
 			reasonsFailed.append(failure)
 			print(failure)
@@ -313,14 +367,17 @@ def validate_SIP_structure(SIPpath):
 	# use glob to search for the existence of
 	# 1) hashdeep manifest
 	# 2) pbcore xml file
-	manfestPattern = os.path.join(SIPpath,'hashdeep_manifest_*')
-	manifest = glob.glob(manfestPattern)
+	objectManifestPattern = os.path.join(
+		metadataDir,
+		'objects_manifest_*'
+		)
+	manifest = glob.glob(objectManifestPattern)
 	if manifest == []:
-		failure = "missing a hashdeep manifest for the SIP"
+		failure = "missing a hashdeep manifest for the SIP object directory"
 		reasonsFailed.append(failure)
 		print(failure)
 		structureValidated = False
-		status = "FAIL"
+	
 	pbcorePattern = os.path.join(metadataDir,'*_pbcore.xml')
 	pbcore = glob.glob(pbcorePattern)
 	if pbcore == []:
@@ -328,8 +385,6 @@ def validate_SIP_structure(SIPpath):
 		reasonsFailed.append(failure)
 		print(failure)
 		structureValidated = False
-		status = "FAIL"
-
 	if structureValidated:
 		outcome = "SIP validated against expected structure"
 	else:
@@ -337,7 +392,7 @@ def validate_SIP_structure(SIPpath):
 			"\n~ ".join(reasonsFailed)
 			)
 
-	return structureValidated
+	return structureValidated,outcome
 
 def database_connection(user):
 	connection = dbAccess.DB(user)
@@ -404,46 +459,6 @@ def insert_event(processingVars,event,outcome,status):
 	eventID = eventInsert.report_to_db()
 	del event
 	return eventID
-
-def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
-	pymm_log(
-		'',
-		processingVars['inputPath'],
-		'',
-		event,
-		outcome,
-		status
-		)
-	ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-	insert_event(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-
-def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
-	'''
-	same as log_event() but skip the system log for when the event
-	is too detailed.
-	'''
-	ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-	insert_event(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
 
 #
 # END PYMM ADMIN / LOGGING STUFF 
