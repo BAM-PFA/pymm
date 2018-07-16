@@ -925,28 +925,23 @@ def main():
 		'operator':operator,
 		'inputPath':inputPath
 		}
-	event = 'ingestion start'
-	outcome = "Let's go!"
-	status = 'STARTING'
+	# insert a database record for this SIP as an 'intellectual entity'
+	origFilename = processingVars['filename']
+	processingVars['filename'] = ingestUUID
+	processingVars = pymmFunctions.insert_object(
+		processingVars,
+		'intellectual entity'
+		)
+	# tell the various logs that we are starting
 	processingVars['caller'] = 'ingestSIP.main()'
-	# CHANGE THIS TO MAKE IT LOG_EVENT
-	# ...and log stuff to it
-	pymmFunctions.ingest_log(
-		'start',
-		'',
-		'',
-		**ingestLogBoilerplate
+	pymmFunctions.log_event(
+		processingVars,
+		ingestLogBoilerplate,
+		event = 'ingestion start',
+		outcome = "Let's go!",
+		status = 'STARTING'
 		)
-
-	# tell the system log that we are starting
-	pymmFunctions.pymm_log(
-		inputName,
-		inputPath,
-		operator,
-		'ingestion start',
-		'',
-		'STARTING'
-		)
+	# reset variables
 	processingVars['caller'] = None
 
 	# if interactive ask about cleanup
@@ -974,6 +969,7 @@ def main():
 
 	# create a PBCore XML file and send any existing BAMPFA metadata JSON
 	# to the object metadata directory.
+	# We will add instantiation data later during ingest
 	pbcoreXML = pbcore.PBCoreDocument()
 	# NOTE TO SELF: 
 	# REALLY I SHOULD SEPARATE THE BAMPFA COLLECTION JSON
@@ -1006,7 +1002,7 @@ def main():
 				)
 			)
 	else:
-		# if no bampfa metadata, just make a pbcore.xml w/o a
+		# if no bampfa metadata, just make a container pbcore.xml w/o a
 		# representation of the physical asset
 		pbcoreFile = makePbcore.xml_to_file(
 			pbcoreXML,
@@ -1017,23 +1013,20 @@ def main():
 			)
 
 	processingVars['pbcore'] = pbcoreFile
-
 	if os.path.exists(pbcoreFile):
 		status = 'OK'
 	else:
 		status = 'Fail'
-
-	event = 'metadata extraction'
-	outcome = 'make pbcore representation'
 	processingVars['caller'] = 'pbcore.PBCoreDocument() , makePbcore.xml_to_file()'
 	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'metadata extraction',
+		outcome = 'make pbcore representation',
+		status = status
 		)
 	processingVars['caller'] = None
+	processingVars['filename'] = origFilename
 
 	#### END LOGGING / CLEANUP ####
 	###############################
@@ -1043,11 +1036,10 @@ def main():
 	###############
 	if inputType == 'file':
 		if report_to_db:
-			objectCategory = 'file'
 			try:
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
-					objectCategory
+					objectCategory = 'file'
 					)
 			except:
 				print("CAN'T MAKE DB CONNECTION")
@@ -1055,9 +1047,9 @@ def main():
 					inputName,
 					tempID,
 					operator,
-					"Connect to database",
-					"NO DATABASE CONNECTION!!!",
-					"WARNING"
+					event = "connect to database",
+					outcome = "NO DATABASE CONNECTION!!!",
+					status = "WARNING"
 					)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
@@ -1081,20 +1073,19 @@ def main():
 			canonicalName,
 			filename,
 			operator,
-			'metadata extraction',
-			'calculate input file technical metadata',
-			'OK'
+			event = 'metadata extraction',
+			outcome = 'calculate input file technical metadata',
+			status = 'OK'
 			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
 		if report_to_db:
-			objectCategory = 'intellectual entity'
 			try:
 				# print(processingVars)
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
-					objectCategory
+					objectCategory = 'intellectual entity'
 					)
 			except:
 				print("CAN'T MAKE DB CONNECTION")
@@ -1102,9 +1093,9 @@ def main():
 					'',
 					'',
 					'',
-					"connect to database",
-					"NO DATABASE CONNECTION!!!",
-					"WARNING"
+					event = "connect to database",
+					outcome = "NO DATABASE CONNECTION!!!",
+					status = "WARNING"
 					)
 		for _file in source_list:			
 			# set processing variables per file 
@@ -1113,11 +1104,10 @@ def main():
 			processingVars['inputPath']=\
 				ingestLogBoilerplate['inputPath'] = _file
 			if report_to_db:
-				objectCategory = 'file'
 				try:
 					processingVars = pymmFunctions.insert_object(
 						processingVars,
-						objectCategory
+						objectCategory = 'file'
 						)
 				except:
 					print("CAN'T MAKE DB CONNECTION")
@@ -1125,9 +1115,9 @@ def main():
 						"",
 						"",
 						"",
-						"connect to database",
-						"NO DATABASE CONNECTION!!!",
-						"WARNING"
+						event = "connect to database",
+						outcome = "NO DATABASE CONNECTION!!!",
+						status = "WARNING"
 						)
 			#######################
 			# check that input file is actually a/v
@@ -1171,6 +1161,7 @@ def main():
 		# reset the processing variables to the original state 
 		processingVars['filename'] = ''
 		processingVars['inputPath']=\
+			processingVars['inputName'] =\
 			ingestLogBoilerplate['inputPath'] = inputPath
 
 		if concatChoice == True:
@@ -1196,6 +1187,8 @@ def main():
 
 	#########
 	# FLUFF THE SIP FOR STAGING
+	# set the logging 'filename' to the UUID for the rest of the process
+	processingVars['filename'] = ingestUUID
 	# rename SIP from temp to UUID
 	processingVars,_SIP = rename_SIP(processingVars,ingestLogBoilerplate)
 	# put the package into a UUID parent folder
@@ -1205,13 +1198,10 @@ def main():
 		)
 	###  MAKE A NEW FUNCTION TO CONTAIN THIS AND THE SIP MANIFEST CREATION INSTEAD
 	###  OF DOING THEM SEPARATELY/ D.R.Y.
-	print(_SIP)
 	objectManifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP,
 		'objects'
 		)
-	print(objectManifestPath)
-	
 	outcome = (
 		'create hashdeep manifest '
 		'for objects directory at {}'.format(objectManifestPath)
@@ -1337,7 +1327,7 @@ def main():
 		processingVars['caller'] = None
 	# print(processingVars)
 	# now stash the old manifest away and we can make a new one
-	stash_manifest(_SIP)
+	# stash_manifest(_SIP)
 	makeMetadata.make_hashdeep_manifest(
 		_SIP,
 		'hashdeep'
@@ -1347,13 +1337,13 @@ def main():
 	do_cleanup(
 		processingVars,
 		cleanupStrategy,
-		packageVerified,
+		objectsVerified,
 		inputPath,
 		packageOutputDir,
 		'done'
 		)
 
-	if packageVerified and validSIP:
+	if objectsVerified and validSIP:
 		ingestResults['status'] = True
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath

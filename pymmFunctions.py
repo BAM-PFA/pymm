@@ -102,7 +102,7 @@ def check_pymm_log_exists():
 def ingest_log(event,outcome,status,ingestLogPath,tempID,inputName,filename,operator,inputPath):
 	stamp = timestamp("iso8601")
 
-	if event == "start":
+	if event == "ingestion start":
 		stamp = ("#"*50)+"\n\n"+stamp+"\n\n"
 		systemInfo = system_info()
 		workingDir = os.path.join(
