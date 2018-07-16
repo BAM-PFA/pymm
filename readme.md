@@ -14,7 +14,7 @@ Thanks little buddy.
 Nonstandard python libraries:
 * xmltodict
 * ffmpy
-* Levenshtein
+* python-levenshtein
 * lxml
 
 DB modules dependencies: 
