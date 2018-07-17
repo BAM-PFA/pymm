@@ -31,7 +31,7 @@ import pymmFunctions
 
 # read in from the config file
 config = pymmFunctions.read_config()
-# check that paths required for ingest are declared in config.ini
+# # check that paths required for ingest are declared in config.ini
 pymmFunctions.check_missing_ingest_paths(config)
 
 def set_args():
@@ -420,6 +420,7 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 	# reset 'caller'
 	processingVars['caller'] = None
 
+	return processingVars
 
 def make_rs_package(inputObject,rsPackage):
 	'''
@@ -787,7 +788,7 @@ def main():
 	inputPath = args.inputPath
 	operator = args.operator
 	objectBAMPFAjson = args.metadataJSON
-	report_to_db = args.database_reporting
+	database_reporting = args.database_reporting
 	ingestType = args.ingestType
 	makeProres = args.makeProres
 	concatChoice = args.concatAccessFiles
@@ -821,7 +822,6 @@ def main():
 	if not inputType:
 		print(ingestResults)
 		return ingestResults
-
 	try:
 		# create directory paths for ingest...
 		packageOutputDir,packageObjectDir,packageMetadataDir,\
@@ -853,18 +853,14 @@ def main():
 			ingestResults["abortReason"] = (
 				"ingestSip.py called with some flags missing."
 				)
-			event = 'abort'
-			status = 'ABORTING'
-			outcome = problem
 			pymmFunctions.pymm_log(
 				processingVars,
-				event,
-				outcome,
-				status
+				event = 'abort',
+				outcome = missingVarsReport,
+				status = 'ABORTING'
 				)
 			print(ingestResults)
 			return ingestResults
-
 	else:
 		# ask operator/input file
 		operator = input("Please enter your name: ")
@@ -872,7 +868,7 @@ def main():
 		inputPath = pymmFunctions.sanitize_dragged_linux_paths(inputPath)
 
 	# get database details
-	if report_to_db != None:
+	if database_reporting != False:
 		pymmDB = config['database settings']['pymm_db']
 		if not operator in config['database users']:
 			# SHOULD THIS CAUSE AN EXIT(1)?
@@ -881,7 +877,6 @@ def main():
 				"{} is not a valid user in the pymm database."
 				"".format(operator)
 				)
-
 	# Set up a canonical name that will be passed to each log entry.
 	# For files it's the basename, for dirs it's the dir name.
 	if inputPath:
@@ -913,7 +908,7 @@ def main():
 		'componentObjectDBids':{},
 		'computer':computer,
 		'caller':None,
-		'database_reporting':report_to_db,
+		'database_reporting':database_reporting,
 		'ffmpeg':ffmpegVersion
 		}
 	#### END TEST / SET ENV VARS ####
@@ -1050,7 +1045,7 @@ def main():
 	## DO STUFF! ##
 	###############
 	if inputType == 'file':
-		if report_to_db:
+		if database_reporting:
 			try:
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
@@ -1091,7 +1086,7 @@ def main():
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
-		if report_to_db:
+		if database_reporting:
 			try:
 				# print(processingVars)
 				processingVars = pymmFunctions.insert_object(
@@ -1112,7 +1107,7 @@ def main():
 			processingVars['filename'] = os.path.basename(_file)
 			processingVars['inputPath']=\
 				ingestLogBoilerplate['inputPath'] = _file
-			if report_to_db:
+			if database_reporting:
 				try:
 					processingVars = pymmFunctions.insert_object(
 						processingVars,
