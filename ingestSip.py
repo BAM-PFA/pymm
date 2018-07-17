@@ -285,17 +285,25 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 	inputFile = processingVars['inputPath']
 	inputFileMD5 = makeMetadata.hash_file(inputFile)
-	
-	event = 'message digest calculation'
-	outcome = "The input file MD5 hash is: {}".format(inputFileMD5)
-	status = "OK"
+
 	processingVars['caller'] = 'Python3 hashlib'
-	pymmFunctions.short_log(
+	eventID = pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'message digest calculation',
+		outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
+		status = "OK"
+		)
+	# eventTimestamp = pymmFunctions.get_event_timestamp(
+	# 	eventID,
+	# 	processingVars['operator']
+	# 	)
+	pymmFunctions.insert_fixity(
+		processingVars,
+		eventID,
+		messageDigestAlgorithm = "md5",
+		messageDigestHashValue = inputFileMD5,
+		eventDateTime = None
 		)
 	processingVars['caller'] = None
 
@@ -313,7 +321,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			ingestLogBoilerplate,
 			event,
 			outcome,
-			status
+			status='OK'
 			)
 		processingVars['caller'] = None
 	
@@ -333,7 +341,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 				ingestLogBoilerplate,
 				event,
 				outcome,
-				status
+				status='OK'
 				)
 			processingVars['caller'] = None
 
@@ -1345,6 +1353,7 @@ def main():
 		outcome = 'Submission Information Package verified and staged',
 		status = 'ENDING'
 		)
+	print(processingVars)
 
 	do_cleanup(
 		processingVars,

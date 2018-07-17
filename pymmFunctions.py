@@ -228,12 +228,14 @@ def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
 		status,
 		**ingestLogBoilerplate
 		)
-	insert_event(
+	eventID = insert_event(
 		processingVars,
 		event,
 		outcome,
 		status
 		)
+
+	return eventID
 
 def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 	'''
@@ -246,12 +248,14 @@ def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 		status,
 		**ingestLogBoilerplate
 		)
-	insert_event(
+	eventID = insert_event(
 		processingVars,
 		event,
 		outcome,
 		status
 		)
+
+	return eventID
 
 def end_log(processingVars,event,outcome,status):
 	'''
@@ -264,12 +268,14 @@ def end_log(processingVars,event,outcome,status):
 		outcome,
 		status
 		)
-	insert_event(
+	eventID = insert_event(
 		processingVars,
 		event,
 		outcome,
 		status
 		)
+
+	return eventID
 
 def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 	# print(pathForDeletion)
@@ -446,7 +452,7 @@ def insert_object(processingVars,objectCategory):
 	del objectInsert
 	return processingVars
 
-def insert_event(processingVars,event,outcome,status):
+def insert_event(processingVars,eventType,outcome,status):
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
 	else:
@@ -456,9 +462,11 @@ def insert_event(processingVars,event,outcome,status):
 	# get the name of the program, script, or function doing the event
 	callingAgent = processingVars['caller']
 
+	objectID = processingVars['componentObjectDBids'][theObject]
 	#insert the event
 	eventInsert = dbReporters.EventInsert(
-		event,
+		eventType,
+		objectID,
 		theObject,
 		timestamp('iso8601'),
 		status,
@@ -470,8 +478,62 @@ def insert_event(processingVars,event,outcome,status):
 		)
 
 	eventID = eventInsert.report_to_db()
-	del event
+	del eventInsert
 	return eventID
+
+def get_event_timestamp(eventID,user):
+	connection = database_connection(user)
+	sql = premisSQL.getEventTimestamp
+
+	cursor = do_query(
+		connection,
+		sql,
+		eventID
+		)
+	# this returns a datetime.datetime tuple like 
+	# (datetime.datetime(2018, 7, 16, 15, 21, 13),)
+	value = cursor.fetchone()
+	timestamp =  value[0].strftime("%Y-%m-%dT%H:%M:%S")
+	return timestamp
+
+def insert_fixity(\
+	processingVars,\
+	eventID,\
+	messageDigestAlgorithm,\
+	messageDigestHashValue,\
+	eventDateTime=None\
+	):
+	inputFile = processingVars['inputName']
+	objectID = processingVars['componentObjectDBids'][inputFile]
+	objectIDValue = processingVars['inputName']
+	eventDetailCallingFunc = processingVars['caller']
+	messageDigestFilepath = processingVars['inputPath']
+	eventTimestamp = get_event_timestamp(
+		eventID,
+		processingVars['operator']
+		)
+
+	if not eventTimestamp:
+		eventDateTime = None
+	else:
+		eventDateTime = eventTimestamp
+
+	fixityInsert = dbReporters.FixityInsert(
+		processingVars['operator'],
+		eventID,
+		objectID,
+		objectIDValue,
+		eventDetailCallingFunc,
+		messageDigestAlgorithm,
+		messageDigestFilepath,
+		messageDigestHashValue,
+		eventDateTime
+		)
+
+	fixityID = fixityInsert.report_to_db()
+	del fixityInsert
+	print("HEY-O")
+	return fixityID
 
 #
 # END PYMM ADMIN / LOGGING STUFF 

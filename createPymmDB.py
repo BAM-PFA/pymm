@@ -92,9 +92,9 @@ def create_db(pymm_db=pymm_db):
 	print(cursor)
 
 	createObjectTable =	('''CREATE TABLE IF NOT EXISTS object(\
-							objectIdentifierValueID bigint NOT NULL AUTO_INCREMENT,\
-							objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
-							objectCategory varchar(30) NOT NULL,\
+							objectIdentifierValueID BIGINT(20) NOT NULL AUTO_INCREMENT,\
+							objectIdentifierValue VARCHAR(1000) NOT NULL UNIQUE,\
+							objectCategory VARCHAR(30) NOT NULL,\
 							objectDB_Insertion datetime NOT NULL DEFAULT NOW(),\
 							object_LastTouched datetime NOT NULL,\
 							PRIMARY KEY (objectIdentifierValueID)\
@@ -102,42 +102,59 @@ def create_db(pymm_db=pymm_db):
 						''')
 	createEventTable = 	('''CREATE TABLE IF NOT EXISTS event (\
 							eventIdentifierValue BIGINT(20) NOT NULL AUTO_INCREMENT,\
+							objectIdentifierValueID BIGINT(20),\
 							objectIdentifierValue VARCHAR(1000),\
-							eventType varchar(100) NOT NULL,\
+							eventType VARCHAR(100) NOT NULL,\
 							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventOutcome varchar(30) NOT NULL,\
-							eventOutcomeDetail varchar(1000),\
-							eventDetailCallingFunc varchar(1000),\
-							eventDetailCOMPUTER varchar(50) NOT NULL,\
-							linkingAgentIdentifierValue varchar(30) NOT NULL,\
+							eventOutcome VARCHAR(30) NOT NULL,\
+							eventOutcomeDetail VARCHAR(1000),\
+							eventDetailCallingFunc VARCHAR(1000),\
+							eventDetailCOMPUTER VARCHAR(50) NOT NULL,\
+							linkingAgentIdentifierValue VARCHAR(30) NOT NULL,\
 							PRIMARY KEY (eventIdentifierValue),\
-							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
 						''')
 	createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
-							fixityIdentifierValue bigint NOT NULL AUTO_INCREMENT,\
-							eventIdentifierValue bigint NOT NULL,\
-							objectIdentifierValue varchar(1000),\
-							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventDetail varchar(30) NOT NULL,\
-							messageDigestAlgorithm varchar (20) NOT NULL,\
-							messageDigestSOURCE varchar (1000),\
-							messageDigestPATH varchar (8000) NOT NULL,\
-							messageDigestFILENAME varchar (8000) NOT NULL,\
-							messageDigestHASH varchar (32) NOT NULL,\
+							fixityIdentifierValue BIGINT NOT NULL AUTO_INCREMENT,\
+							eventIdentifierValue BIGINT(20) NOT NULL,\
+							objectIdentifierValueID BIGINT(20),\
+							objectIdentifierValue VARCHAR(1000),\
+							eventDateTime DATETIME NOT NULL DEFAULT NOW(),\
+							eventDetailCallingFunc VARCHAR(30) NOT NULL,\
+							messageDigestAlgorithm VARCHAR (20) NOT NULL,\
+							messageDigestFilepath VARCHAR (8000) NOT NULL,\
+							messageDigestHashValue VARCHAR (32) NOT NULL,\
 							PRIMARY KEY (fixityIdentifierValue),\
 							FOREIGN KEY (eventIdentifierValue) REFERENCES event(eventIdentifierValue),\
-							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
-						''')							
-	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHASH);"
+						''')
+	# createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
+	# 						fixityIdentifierValue BIGINT NOT NULL AUTO_INCREMENT,\
+	# 						objectIdentifierValueID BIGINT(20),\
+	# 						objectIdentifierValue VARCHAR(1000),\
+	# 						eventIdentifierValue BIGINT NOT NULL,\
+	# 						eventDateTime datetime NOT NULL DEFAULT NOW(),\
+	# 						eventDetail VARCHAR(30) NOT NULL,\
+	# 						messageDigestAlgorithm VARCHAR (20) NOT NULL,\
+	# 						messageDigestSOURCE VARCHAR (1000),\
+	# 						messageDigestPATH VARCHAR (8000) NOT NULL,\
+	# 						messageDigestFILENAME VARCHAR (8000) NOT NULL,\
+	# 						messageDigestHASH VARCHAR (32) NOT NULL,\
+	# 						PRIMARY KEY (fixityIdentifierValue),\
+	# 						FOREIGN KEY (eventIdentifierValue) REFERENCES event(eventIdentifierValue),\
+	# 						FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
+	# 						);\
+	# 					''')
+	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHashValue);"
 	createLTOschemaTable = 	('''CREATE TABLE IF NOT EXISTS ltoSchema (\
-								ltoSchemaValueID bigint NOT NULL AUTO_INCREMENT,\
-								ltoID varchar(10) NOT NULL,\
-								fileName varchar(200),\
-								filePath varchar(400),\
-								fileSize varchar(100),\
-								modifyTime varchar(40),\
+								ltoSchemaValueID BIGINT NOT NULL AUTO_INCREMENT,\
+								ltoID VARCHAR(10) NOT NULL,\
+								fileName VARCHAR(200),\
+								filePath VARCHAR(400),\
+								fileSize VARCHAR(100),\
+								modifyTime VARCHAR(40),\
 								FULLTEXT (filePath),\
 								PRIMARY KEY (ltoSchemaValueID)\
 								);\
@@ -147,8 +164,8 @@ def create_db(pymm_db=pymm_db):
 								ON ltoSchema(ltoID,fileName,filePath,fileSize,modifyTime);\
 								''')
 	createObjectCharsTable = 	('''CREATE TABLE IF NOT EXISTS objectCharacteristics (\
-									objectCharacteristicValueID bigint NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
+									objectCharacteristicValueID BIGINT NOT NULL AUTO_INCREMENT,\
+									objectIdentifierValue VARCHAR(1000) NOT NULL UNIQUE,\
 									mediaInfo MEDIUMTEXT,\
 									captureLog TEXT,\
 									videoFingerprint MEDIUMTEXT,\
@@ -157,16 +174,17 @@ def create_db(pymm_db=pymm_db):
 									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
 									);\
 								''')
+	# THIS IS STRAIGHT FROM CUNY.... NOT SURE IF/HOW WE WILL USE IT.
 	createFingerprintsTable = 	('''CREATE TABLE IF NOT EXISTS fingerprints (\
-									hashNumber bigint NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValue varchar(1000) NOT NULL,\
-									startframe varchar(100),\
-									endframe varchar(100),\
-									hash1 varchar(255),\
-									hash2 varchar(255),\
-									hash3 varchar(255),\
-									hash4 varchar(255),\
-									hash5 varchar(255),\
+									hashNumber BIGINT NOT NULL AUTO_INCREMENT,\
+									objectIdentifierValue VARCHAR(1000) NOT NULL,\
+									startframe VARCHAR(100),\
+									endframe VARCHAR(100),\
+									hash1 VARCHAR(255),\
+									hash2 VARCHAR(255),\
+									hash3 VARCHAR(255),\
+									hash4 VARCHAR(255),\
+									hash5 VARCHAR(255),\
 									PRIMARY KEY (hashNumber),\
 									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
 									);\

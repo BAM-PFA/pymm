@@ -18,6 +18,7 @@ insertEventSQL = (
 	'''
 	INSERT INTO event (
 		eventType,
+		objectIdentifierValueID,
 		objectIdentifierValue,
 		eventDateTime,
 		eventOutcome,
@@ -27,6 +28,7 @@ insertEventSQL = (
 		linkingAgentIdentifierValue
 		)
 	VALUES (
+		%s,
 		%s,
 		%s,
 		%s,
@@ -44,13 +46,12 @@ insertFixitySQL = (
 	INSERT INTO fixity (
 		eventIdentifierValue,
 		objectIdentifierValueID,
+		objectIdentifierValue,
 		eventDateTime,
 		eventDetailCallingFunc,
 		messageDigestAlgorithm,
-		messageDigestSource,
-		messageDigestPath,
-		messageDigestFilename,
-		messageDigestHash
+		messageDigestFilepath,
+		messageDigestHashValue
 		)
 	VALUES (
 		%s,
@@ -60,8 +61,13 @@ insertFixitySQL = (
 		%s,
 		%s,
 		%s,
-		%s,
 		%s
 		)
+	'''
+	)
+
+getEventTimestamp = (
+	'''
+	SELECT eventDateTime FROM event WHERE eventIdentifierValue = %s;
 	'''
 	)

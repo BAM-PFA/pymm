@@ -75,18 +75,19 @@ class DB:
 
 	def query(self, sql,*args):
 		cursor = None
-		print(args)
+		# print(args)
+		self.connection.autocommit = True
 		try:
 			self.connection.get_warnings = True
 			cursor = self.connection.cursor()
 			cursor.execute(sql,args)
-			for item in cursor:
-				print(item)
-			try:
-				self.connection.commit()
-			except:
-				print("can't commit {}".format(sql))
-				pass
+			# for item in cursor:
+			# 	print(item)
+			# try:
+			# 	self.connection.commit()
+			# except:
+			# 	print("can't commit {}".format(sql))
+			# 	pass
 		except mysql.connector.Error as e:
 			# @fixme -- setting `get_warnings` to true I *think* grabs and prints out mysql.connector errors, but not all?
 			# https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlcursor-fetchwarnings.html
