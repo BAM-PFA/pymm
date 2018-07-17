@@ -430,6 +430,10 @@ def do_query(connection,sql,*args):
 	return cursor
 
 def insert_object(processingVars,objectCategory):
+	if processingVars['database_reporting'] == True:
+		pass
+	else:
+		return processingVars
 	operator = processingVars['operator']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
@@ -456,6 +460,10 @@ def insert_event(processingVars,eventType,outcome,status):
 	# print("^^"*100)
 	# print(eventType)
 	# print(processingVars)
+	if processingVars['database_reporting'] == True:
+		pass
+	else:
+		return None
 
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
@@ -507,6 +515,10 @@ def insert_fixity(\
 	messageDigestHashValue,\
 	eventDateTime=None\
 	):
+	if processingVars['database_reporting'] == True:
+		pass
+	else:
+		return None
 	inputFile = processingVars['filename']
 	objectID = processingVars['componentObjectDBids'][inputFile]
 	objectIDValue = processingVars['filename']
