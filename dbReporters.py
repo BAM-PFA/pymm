@@ -70,6 +70,9 @@ class EventInsert:
 			)
 		self.eventID = cursor.lastrowid
 
+		connection.close_cursor()
+		connection.close_connection()
+
 		return self.eventID
 
 class ObjectInsert:
@@ -109,6 +112,9 @@ class ObjectInsert:
 			self.objectCategory
 			)
 		self.objectIdentifierValueID = cursor.lastrowid
+
+		connection.close_cursor()
+		connection.close_connection()
 
 		return self.objectIdentifierValueID
 
@@ -167,5 +173,8 @@ class FixityInsert:
 			self.messageDigestHashValue
 			)
 		self.fixityID = cursor.lastrowid
+
+		connection.close_cursor()
+		connection.close_connection()
 
 		return self.fixityID

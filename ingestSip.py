@@ -68,6 +68,7 @@ def set_args():
 	parser.add_argument(
 		'-d','--database_reporting',
 		action='store_true',
+		default=False,
 		help='report preservation metadata/events to database'
 		)
 	parser.add_argument(
@@ -532,8 +533,6 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 				processingVars,\
 				_type='derivative'\
 				)
-			# fileMD5 = makeMetadata.hash_file(value) # @logme @dbme
-			# mediainfo = makeMetadata.get_mediainfo_report(value,mdDest) # @logme @dbme
 		else:
 			fileMD5 = "None"
 			mediainfo = "None"
@@ -587,16 +586,13 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 	stagedSIP = os.path.join(aip_staging,ingestUUID)
 	# UUIDpath = os.path.join(aip_staging,ingestUUID)
 	# pymmFunctions.rename_dir(stagedSIP,UUIDpath)
-	event = 'replication'
-	outcome = 'SIP moved to staging area at {}'.format(stagedSIP)
-	status = "OK"
 	processingVars['caller'] = 'rsync'
 	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event = 'replication',
+		outcome = 'SIP moved to staging area at {}'.format(stagedSIP),
+		status = "OK"
 		)
 	processingVars['caller'] = None
 
@@ -917,6 +913,7 @@ def main():
 		'componentObjectDBids':{},
 		'computer':computer,
 		'caller':None,
+		'database_reporting':report_to_db,
 		'ffmpeg':ffmpegVersion
 		}
 	#### END TEST / SET ENV VARS ####
