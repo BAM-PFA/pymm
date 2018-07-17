@@ -295,10 +295,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 		outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
 		status = "OK"
 		)
-	# eventTimestamp = pymmFunctions.get_event_timestamp(
-	# 	eventID,
-	# 	processingVars['operator']
-	# 	)
+
 	pymmFunctions.insert_fixity(
 		processingVars,
 		eventID,

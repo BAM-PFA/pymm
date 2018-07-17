@@ -453,9 +453,9 @@ def insert_object(processingVars,objectCategory):
 	return processingVars
 
 def insert_event(processingVars,eventType,outcome,status):
-	print("^^"*100)
-	print(eventType)
-	print(processingVars)
+	# print("^^"*100)
+	# print(eventType)
+	# print(processingVars)
 
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
@@ -507,9 +507,9 @@ def insert_fixity(\
 	messageDigestHashValue,\
 	eventDateTime=None\
 	):
-	inputFile = processingVars['inputName']
+	inputFile = processingVars['filename']
 	objectID = processingVars['componentObjectDBids'][inputFile]
-	objectIDValue = processingVars['inputName']
+	objectIDValue = processingVars['filename']
 	eventDetailCallingFunc = processingVars['caller']
 	messageDigestFilepath = processingVars['inputPath']
 	eventTimestamp = get_event_timestamp(
