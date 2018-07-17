@@ -150,7 +150,7 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	except:
 		print("couldn't concat files")
 
-	event = "creation"
+	origFilename = processingVars['filename']
 	if not success == False:
 		outcome = (
 			"Component files concatenated "
@@ -165,7 +165,7 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 			'file'
 			)
 		# now reset it to its original state
-		processingVars['filename'] = origFilename
+		# processingVars['filename'] = origFilename
 	else:
 		status = "FAIL"
 		outcome = (
@@ -178,11 +178,12 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	pymmFunctions.log_event(
 		processingVars,
 		ingestLogBoilerplate,
-		event,
-		outcome,
-		status
+		event='creation',
+		outcome=outcome,
+		status=status
 		)
 	processingVars['caller'] = None
+	processingVars['filename'] = origFilename
 
 	return concattedAccessFile
 

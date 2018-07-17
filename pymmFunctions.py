@@ -453,6 +453,10 @@ def insert_object(processingVars,objectCategory):
 	return processingVars
 
 def insert_event(processingVars,eventType,outcome,status):
+	print("^^"*100)
+	print(eventType)
+	print(processingVars)
+
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
 	else:
