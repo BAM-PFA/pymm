@@ -285,26 +285,31 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	processingVars['caller'] = None
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
+	# there's a calculation of the file hash here
+	# that really should be left to the object manifest
+	# to avoid excess processing drain
+	# @fixme
 	inputFile = processingVars['inputPath']
-	inputFileMD5 = makeMetadata.hash_file(inputFile)
+	# if _type == 'derivative':
+	# 	inputFileMD5 = makeMetadata.hash_file(inputFile)
 
-	processingVars['caller'] = 'Python3 hashlib'
-	eventID = pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
-		event = 'message digest calculation',
-		outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
-		status = "OK"
-		)
+	# processingVars['caller'] = 'Python3 hashlib'
+	# eventID = pymmFunctions.short_log(
+	# 	processingVars,
+	# 	ingestLogBoilerplate,
+	# 	event = 'message digest calculation',
+	# 	outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
+	# 	status = "OK"
+	# 	)
 
-	pymmFunctions.insert_fixity(
-		processingVars,
-		eventID,
-		messageDigestAlgorithm = "md5",
-		messageDigestHashValue = inputFileMD5,
-		eventDateTime = None
-		)
-	processingVars['caller'] = None
+	# pymmFunctions.insert_fixity(
+	# 	processingVars,
+	# 	eventID,
+	# 	messageDigestAlgorithm = "md5",
+	# 	messageDigestHashValue = inputFileMD5,
+	# 	eventDateTime = None
+	# 	)
+	# processingVars['caller'] = None
 
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
@@ -775,6 +780,25 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 
 	return precheckPass
 
+def report_SIP_fixity(processingVars,objectManifestPath,eventID):
+	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
+	knownObjects = processingVars['componentObjectDBids']
+	if not parsed == True:
+		return parsed
+	else:
+		for _object, _hash in hashes.items():
+			# hashes should look like {'filename':'md5hash'}
+			for key,value in knownObjects.items():
+				if _object == key:
+					processingVars['filename'] = _object
+					pymmFunctions.insert_fixity(
+						processingVars,
+						eventID,
+						messageDigestAlgorithm = "md5",
+						messageDigestHashValue = _hash,
+						messageDigestSource=objectManifestPath
+						)
+
 # def stash_manifest(manifestPath):
 # 	'''
 # 	rename a manifest as _old_ and stash it in the metadata directory
@@ -870,6 +894,7 @@ def main():
 	# get database details
 	if database_reporting != False:
 		pymmDB = config['database settings']['pymm_db']
+		# insert a db connection test here instead of later down in main()
 		if not operator in config['database users']:
 			# SHOULD THIS CAUSE AN EXIT(1)?
 			# @fixme
@@ -877,6 +902,7 @@ def main():
 				"{} is not a valid user in the pymm database."
 				"".format(operator)
 				)
+			# idea: set database_reporting to False
 	# Set up a canonical name that will be passed to each log entry.
 	# For files it's the basename, for dirs it's the dir name.
 	if inputPath:
@@ -1213,14 +1239,15 @@ def main():
 		outcome = 'could not '+outcome
 	else:
 		pass
-	pymmFunctions.short_log(
+	eventID = pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
 		event = 'message digest calculation',
 		outcome = outcome,
 		status = status
 		)
-	processingVars['caller'] = None
+	report_SIP_fixity(processingVars,objectManifestPath,eventID)
+	processingVars['caller'] = None	
 	
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
 	processingVars['caller'] = 'ingestSIP.main()'

@@ -513,7 +513,8 @@ def insert_fixity(\
 	eventID,\
 	messageDigestAlgorithm,\
 	messageDigestHashValue,\
-	eventDateTime=None\
+	messageDigestSOURCE=None,
+	eventDateTime=None
 	):
 	if processingVars['database_reporting'] == True:
 		pass
@@ -543,14 +544,52 @@ def insert_fixity(\
 		messageDigestAlgorithm,
 		messageDigestFilepath,
 		messageDigestHashValue,
+		messageDigestSOURCE,
 		eventDateTime
 		)
 
 	fixityID = fixityInsert.report_to_db()
 	del fixityInsert
-	print("HEY-O")
+	# print("HEY-O")
 	return fixityID
 
+def parse_object_manifest(manifestPath):
+	'''
+	parse an object manifest to grab md5 hashes for db reporting
+	'''
+	parsed = False
+	data = []
+	hashes = {}
+	if not os.path.basename(manifestPath).startswith('objects_manifest_'):
+		parsed = 'Not an object manifest'
+	else:
+		try:
+			with open(manifestPath,'r') as f:
+				for line in f:
+					# notes in the hashdeep manifest start with 
+					# '%' or '%'
+					if not (line.startswith('%') or line.startswith('#')):
+						data.append(line)
+			for element in data:
+				# this is the file
+				_file = element.split(',')[2].rstrip()
+				_file = os.path.basename(_file)
+				# this is the hash
+				hashes[_file] = element.split(',')[1]
+			parsed = True
+		except:
+			parsed = 'error parsing object manifest'
+
+	# hashes should look like {'filename':'md5 hash'}
+	return parsed,hashes
+
+def parse_pbcore_xml(pbcoreFile):
+	pbcoreString = ''
+	with open(pbcoreFile,'r') as f:
+		for line in f:
+			pbcoreString += line
+
+	return pbcoreString
 #
 # END PYMM ADMIN / LOGGING STUFF 
 #

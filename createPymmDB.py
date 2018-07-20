@@ -115,6 +115,7 @@ def create_db(pymm_db=pymm_db):
 							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
 						''')
+	# messageDigestSOURCE is optionally read from an objects_manifest
 	createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
 							fixityIdentifierValue BIGINT NOT NULL AUTO_INCREMENT,\
 							eventIdentifierValue BIGINT(20) NOT NULL,\
@@ -125,28 +126,13 @@ def create_db(pymm_db=pymm_db):
 							messageDigestAlgorithm VARCHAR (20) NOT NULL,\
 							messageDigestFilepath VARCHAR (8000) NOT NULL,\
 							messageDigestHashValue VARCHAR (32) NOT NULL,\
+							messageDigestSOURCE VARCHAR (1000),\
 							PRIMARY KEY (fixityIdentifierValue),\
 							FOREIGN KEY (eventIdentifierValue) REFERENCES event(eventIdentifierValue),\
 							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
 						''')
-	# createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
-	# 						fixityIdentifierValue BIGINT NOT NULL AUTO_INCREMENT,\
-	# 						objectIdentifierValueID BIGINT(20),\
-	# 						objectIdentifierValue VARCHAR(1000),\
-	# 						eventIdentifierValue BIGINT NOT NULL,\
-	# 						eventDateTime datetime NOT NULL DEFAULT NOW(),\
-	# 						eventDetail VARCHAR(30) NOT NULL,\
-	# 						messageDigestAlgorithm VARCHAR (20) NOT NULL,\
-	# 						messageDigestSOURCE VARCHAR (1000),\
-	# 						messageDigestPATH VARCHAR (8000) NOT NULL,\
-	# 						messageDigestFILENAME VARCHAR (8000) NOT NULL,\
-	# 						messageDigestHASH VARCHAR (32) NOT NULL,\
-	# 						PRIMARY KEY (fixityIdentifierValue),\
-	# 						FOREIGN KEY (eventIdentifierValue) REFERENCES event(eventIdentifierValue),\
-	# 						FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
-	# 						);\
-	# 					''')
+
 	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHashValue);"
 	createLTOschemaTable = 	('''CREATE TABLE IF NOT EXISTS ltoSchema (\
 								ltoSchemaValueID BIGINT NOT NULL AUTO_INCREMENT,\
@@ -165,13 +151,14 @@ def create_db(pymm_db=pymm_db):
 								''')
 	createObjectCharsTable = 	('''CREATE TABLE IF NOT EXISTS objectCharacteristics (\
 									objectCharacteristicValueID BIGINT NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValue VARCHAR(1000) NOT NULL UNIQUE,\
+									objectIdentifierValueID BIGINT(20) NOT NULL UNIQUE,\
+									objectIdentifierValue VARCHAR(1000),\
 									mediaInfo MEDIUMTEXT,\
-									captureLog TEXT,\
-									videoFingerprint MEDIUMTEXT,\
-									videoFingerprintSorted MEDIUMTEXT,\
+									ingestLog TEXT,\
+									pbcoreOutput MEDIUMTEXT,\
+									pbcoreXML MEDIUMBLOB,\
 									PRIMARY KEY (objectCharacteristicValueID),\
-									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+									FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 									);\
 								''')
 	# THIS IS STRAIGHT FROM CUNY.... NOT SURE IF/HOW WE WILL USE IT.

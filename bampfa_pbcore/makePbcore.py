@@ -324,7 +324,8 @@ def add_physical_elements(self,descriptiveJSONpath):
 
 def to_string(self):
 	self._string = ET.tostring(self.descriptionRoot, pretty_print=True)
-	print(self._string.decode())
+	# print(self._string.decode())
+	return self._string.decode()
 
 def xml_to_file(self,outputPath):
 	with open(outputPath,'wb') as outXML:

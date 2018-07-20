@@ -134,6 +134,7 @@ class FixityInsert:
 		messageDigestAlgorithm,
 		messageDigestFilepath,
 		messageDigestHashValue,
+		messageDigestSource=None,
 		eventDateTime = None,
 		fixityID = None
 		):
@@ -149,6 +150,7 @@ class FixityInsert:
 		self.messageDigestAlgorithm = messageDigestAlgorithm
 		self.messageDigestFilepath = messageDigestFilepath
 		self.messageDigestHashValue = messageDigestHashValue
+		self.messageDigestSource = messageDigestSource
 		self.eventDateTime = eventDateTime
 		self.fixityID = fixityID
 
@@ -170,7 +172,8 @@ class FixityInsert:
 			self.eventDetailCallingFunc,
 			self.messageDigestAlgorithm,
 			self.messageDigestFilepath,
-			self.messageDigestHashValue
+			self.messageDigestHashValue,
+			self.messageDigestSource
 			)
 		self.fixityID = cursor.lastrowid
 
@@ -178,3 +181,57 @@ class FixityInsert:
 		connection.close_connection()
 
 		return self.fixityID
+
+class InsertObjChars:
+	'''
+	gather variables
+	do the thing (make the report)
+
+	'''
+	def __init__(
+		self,
+		user,
+		objectID,
+		objectIdentifierValue,
+		mediaInfo = None,
+		ingestLog = None,
+		pbcoreOutput = None,
+		pbcoreXML = None
+		):
+		'''
+		Each attribute corresponds to a field in the table.
+		fixityID will be returned after report_to_db is called.
+		'''
+		self.user = user
+		self.objectID = objectID
+		self.objectIdentifierValue = objectIdentifierValue
+		self.mediaInfo = mediaInfo
+		self.ingestLog = ingestLog
+		self.pbcoreOutput = pbcoreOutput
+		self.pbcoreXML = pbcoreXML
+
+	def report_to_db(self):
+		# connect to the database
+		connection = pymmFunctions.database_connection(
+			self.user
+			)
+		# get the sql query
+		sql = premisSQL.insertFixitySQL
+
+		cursor = pymmFunctions.do_query(
+			connection,
+			sql,
+			self.eventID,
+			self.objectID,
+			self.objectIdentifierValue,
+			self.mediaInfo,
+			self.ingestLog,
+			self.pbcoreOutput,
+			self.pbcoreXML,
+			)
+		self.objCharID = cursor.lastrowid
+
+		connection.close_cursor()
+		connection.close_connection()
+
+		return self.objCharID
