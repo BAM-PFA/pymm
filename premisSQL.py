@@ -51,7 +51,8 @@ insertFixitySQL = (
 		eventDetailCallingFunc,
 		messageDigestAlgorithm,
 		messageDigestFilepath,
-		messageDigestHashValue
+		messageDigestHashValue,
+		messageDigestSource
 		)
 	VALUES (
 		%s,
