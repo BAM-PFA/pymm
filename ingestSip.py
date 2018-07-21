@@ -165,14 +165,12 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 			processingVars,
 			'file'
 			)
-		# now reset it to its original state
-		# processingVars['filename'] = origFilename
 	else:
 		status = "FAIL"
 		outcome = (
-			"Component files could not be concatenated."
-			" Probably you need to check the file specs?"
-			" Here's the output of the attempt:\n{}\n"
+			"Component files could not be concatenated. "
+			"Probably you need to check the file specs? "
+			"Here's the output of the attempt:\n{}\n"
 			"".format(concattedAccessFile)
 			)
 	processingVars['caller'] = processingVars['ffmpeg']
@@ -290,6 +288,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 	# to avoid excess processing drain
 	# @fixme
 	inputFile = processingVars['inputPath']
+	filename = os.path.basename(inputFile)
 	# if _type == 'derivative':
 	# 	inputFileMD5 = makeMetadata.hash_file(inputFile)
 
@@ -328,6 +327,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			status='OK'
 			)
 		processingVars['caller'] = None
+		processingVars['componentObjectData'][filename]['mediainfoPath'] = mediainfo
 	
 	if not _type == 'derivative':
 	# don't bother calculating frame md5 for derivs....
@@ -599,9 +599,6 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 				'-d'+aip_staging,
 				'-L'+os.path.join(aip_staging,ingestUUID,'metadata','logs')]
 	moveNcopy.main()
-	# print(a)
-	# print(b)
-	print("AIP "* 100)
 
 	# rename the staged dir
 	stagedSIP = os.path.join(aip_staging,ingestUUID)
@@ -616,10 +613,11 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 		status = "OK"
 		)
 	processingVars['caller'] = None
+	print(processingVars)
 
 	return stagedSIP
 
-def replace_tempID(processingVars):
+def update_tempID(processingVars):
 	'''
 	replace filepath instances of temp ID with UUID
 	to allow file opening
@@ -631,6 +629,9 @@ def replace_tempID(processingVars):
 			if not key == 'tempID':
 				if tempID in value:
 					processingVars[key] = value.replace(tempID,_uuid)
+
+		## @FIXME LOOK HERE FOR A WAY TO RECURSIVELY UPDATE NESTED DICT VALUES:
+		# https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
 	return processingVars
 
 def rename_SIP(processingVars,ingestLogBoilerplate):
@@ -642,8 +643,8 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 	ingestUUID = processingVars['ingestUUID']
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
 	# update the existing filepaths in processingVars & ingestLogBoilerplate
-	processingVars = replace_tempID(processingVars)
-	ingestLogBoilerplate = replace_tempID(ingestLogBoilerplate)
+	processingVars = update_tempID(processingVars)
+	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
 	# rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
 	processingVars['packageOutputDir'] = UUIDpath

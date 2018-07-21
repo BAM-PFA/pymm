@@ -20,10 +20,10 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 	basename = pymmFunctions.get_base(inputPath)
 	# write mediainfo output to a logfile if the destination is a directory ..
 	if os.path.isdir(destination):
-		mediainfoOutput = '--LogFile={}_mediainfo.xml'.format(
-			os.path.join(destination,basename
-				)
+		outputFilepath = '{}_mediainfo.xml'.format(
+			os.path.join(destination,basename)
 			)
+		mediainfoOutput = '--LogFile={}'.format(outputFilepath)
 		mediainfoXML = subprocess.Popen(
 			['mediainfo',inputPath,'--Output=XML',mediainfoOutput],
 			stdout=subprocess.PIPE
@@ -34,7 +34,7 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 		if _JSON:
 			return mediainfoJSON    
 		else:
-			return True
+			return outputFilepath
 	# ... otherwise pass something like '' as a destination 
 	# and just get the raw mediainfo output
 	else:
