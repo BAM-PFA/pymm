@@ -439,7 +439,7 @@ def insert_object(processingVars,objectCategory):
 		theObject = processingVars['inputName']
 	else:
 		theObject = processingVars['filename']
-	# print(theObject*20)
+	# print(processingVars)
 	# init an insertion instance
 	objectInsert = dbReporters.ObjectInsert(
 			operator,
@@ -449,9 +449,13 @@ def insert_object(processingVars,objectCategory):
 	# report the details to the db
 	objectIdentifierValueID = objectInsert.report_to_db()
 	# update the processingVars with the unique db ID of the object
-	processingVars['componentObjectDBids'][theObject] = str(
+	processingVars['componentObjectData'][theObject] = {}
+	processingVars['componentObjectData'][theObject]['databaseID'] = str(
 		objectIdentifierValueID
 		)
+	# set the object category in component object data
+	processingVars['componentObjectData'][theObject]\
+		['objectCategory'] = objectCategory
 	# print(processingVars)
 	del objectInsert
 	return processingVars
@@ -474,7 +478,7 @@ def insert_event(processingVars,eventType,outcome,status):
 	# get the name of the program, script, or function doing the event
 	callingAgent = processingVars['caller']
 
-	objectID = processingVars['componentObjectDBids'][theObject]
+	objectID = processingVars['componentObjectData'][theObject]['databaseID']
 	#insert the event
 	eventInsert = dbReporters.EventInsert(
 		eventType,
@@ -513,7 +517,7 @@ def insert_fixity(\
 	eventID,\
 	messageDigestAlgorithm,\
 	messageDigestHashValue,\
-	messageDigestSOURCE=None,
+	messageDigestSource=None,
 	eventDateTime=None
 	):
 	if processingVars['database_reporting'] == True:
@@ -521,7 +525,7 @@ def insert_fixity(\
 	else:
 		return None
 	inputFile = processingVars['filename']
-	objectID = processingVars['componentObjectDBids'][inputFile]
+	objectID = processingVars['componentObjectData'][inputFile]['databaseID']
 	objectIDValue = processingVars['filename']
 	eventDetailCallingFunc = processingVars['caller']
 	messageDigestFilepath = processingVars['inputPath']
@@ -544,7 +548,7 @@ def insert_fixity(\
 		messageDigestAlgorithm,
 		messageDigestFilepath,
 		messageDigestHashValue,
-		messageDigestSOURCE,
+		messageDigestSource,
 		eventDateTime
 		)
 
