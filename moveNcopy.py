@@ -38,7 +38,6 @@ def move_n_verify_sip(
 	stagedSIPpath,
 	destination
 	]
-
 	gcpCommand = gcpPath+gcpOptions
 
 	manifestPattern = os.path.join(stagedSIPpath,'hashdeep_manifest*')
@@ -253,6 +252,7 @@ def main():
 		
 	else:
 		stagedSIPpath,safe = move_n_verify_sip(inputPath,destination)
+		print(stagedSIPpath)
 		return stagedSIPpath,safe
 
 if __name__ == '__main__':

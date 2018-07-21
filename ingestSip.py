@@ -349,35 +349,47 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 				)
 			processingVars['caller'] = None
 
-	return inputFileMD5
+	return mediainfo
 
-def add_pbcore_md5_location(processingVars, inputFileMD5):
+def add_pbcore_md5_location(processingVars):
+	'''
+	as of 7/20/2018 have to call this after 
+	creation of object manifest for SIP
+	and parsing of manifest by report_SIP_fixity()
+	'''
 	if processingVars['pbcore'] != '':
 		pbcoreFile = processingVars['pbcore']
-		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
-		# add md5 as an identifier to the pbcoreInstantiation for the file
-		attributes = {
-			"source":"BAMPFA {}".format(pymmFunctions.timestamp()),
-			"annotation":"messageDigest",
-			"version":"MD5"
-		}
-		# print(attributes)
-		makePbcore.add_element_to_instantiation(
-			pbcoreXML,
-			processingVars['filename'],
-			'instantiationIdentifier',
-			attributes,
-			inputFileMD5
-			)
-		# add 'BAMPFA Digital Repository' as instantiationLocation
-		attributes = {}
-		makePbcore.add_element_to_instantiation(
-			pbcoreXML,
-			processingVars['filename'],
-			'instantiationLocation',
-			attributes,
-			"BAMPFA Digital Repository"
-			)
+		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)		
+		for _object, data in processingVars['componentObjectData'].items():
+			# look for component files and add instantiation data
+			if data['objectCategory'] == 'file':
+				# add md5 as an identifier to the 
+				# pbcoreInstantiation for the file
+				# processingVars['filename'] = _object
+				inputFileMD5 = data['md5hash']
+				attributes = {
+					"source":"BAMPFA {}".format(
+						pymmFunctions.timestamp('iso8601')
+						),
+					"annotation":"messageDigest",
+					"version":"MD5"
+				}
+				makePbcore.add_element_to_instantiation(
+					pbcoreXML,
+					_object,
+					'instantiationIdentifier',
+					attributes,
+					inputFileMD5
+					)
+				# add 'BAMPFA Digital Repository' as instantiationLocation
+				attributes = {}
+				makePbcore.add_element_to_instantiation(
+					pbcoreXML,
+					_object,
+					'instantiationLocation',
+					attributes,
+					"BAMPFA Digital Repository"
+					)
 		makePbcore.xml_to_file(
 			pbcoreXML,
 			pbcoreFile
@@ -534,14 +546,13 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 				processingVars,
 				'file'
 				)
-			fileMD5 = get_file_metadata(\
+			get_file_metadata(\
 				ingestLogBoilerplate,\
 				processingVars,\
 				_type='derivative'\
 				)
 		else:
-			fileMD5 = "None"
-			mediainfo = "None"
+			pass
 
 		if processingVars['pbcore'] != '':
 			if derivType in ('resourcespace'):
@@ -556,7 +567,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 				ingestLogBoilerplate,
 				level
 				)
-			add_pbcore_md5_location(processingVars, fileMD5)
+			# add_pbcore_md5_location(processingVars, fileMD5)
 
 	# get a return value that is the path to the access copy(ies) delivered
 	#   to a destination defined in config.ini
@@ -581,13 +592,17 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 	'''
 	packageOutputDir = processingVars['packageOutputDir']
 	aip_staging = processingVars['aip_staging']
-	tempID = processingVars['tempID']
+	# tempID = processingVars['tempID']
 	ingestUUID = processingVars['ingestUUID']
 	sys.argv = 	['',
 				'-i'+packageOutputDir,
 				'-d'+aip_staging,
 				'-L'+os.path.join(aip_staging,ingestUUID,'metadata','logs')]
 	moveNcopy.main()
+	# print(a)
+	# print(b)
+	print("AIP "* 100)
+
 	# rename the staged dir
 	stagedSIP = os.path.join(aip_staging,ingestUUID)
 	# UUIDpath = os.path.join(aip_staging,ingestUUID)
@@ -604,6 +619,20 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 
 	return stagedSIP
 
+def replace_tempID(processingVars):
+	'''
+	replace filepath instances of temp ID with UUID
+	to allow file opening
+	'''
+	tempID = processingVars['tempID']
+	_uuid = processingVars['ingestUUID']
+	for key, value in processingVars.items():
+		if value and isinstance(value,str):
+			if not key == 'tempID':
+				if tempID in value:
+					processingVars[key] = value.replace(tempID,_uuid)
+	return processingVars
+
 def rename_SIP(processingVars,ingestLogBoilerplate):
 	'''
 	Rename the directory to the ingest UUID.
@@ -612,14 +641,12 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 	packageOutputDir = processingVars['packageOutputDir']
 	ingestUUID = processingVars['ingestUUID']
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
+	# update the existing filepaths in processingVars & ingestLogBoilerplate
+	processingVars = replace_tempID(processingVars)
+	ingestLogBoilerplate = replace_tempID(ingestLogBoilerplate)
+	# rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
 	processingVars['packageOutputDir'] = UUIDpath
-
-	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
-	newPath = os.path.join(UUIDpath,"metadata","logs",logFile)
-	if not os.path.isfile(newPath):
-		newPath = False
-	ingestLogBoilerplate["ingestLogPath"] = newPath
 
 	event = 'filename change'
 	outcome = 'SIP renamed from {} to {}.'.format(
@@ -628,35 +655,49 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 		)
 	status = 'OK'
 	processingVars['caller'] = 'pymmFunctions.rename_dir()'
-	if not newPath == False:
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
+	pymmFunctions.short_log(
+		processingVars,
+		ingestLogBoilerplate,
+		event,
+		outcome,
+		status
+		)
 	processingVars['caller'] = None
 
 	return processingVars,UUIDpath
+
+def update_enveloped_paths(processingVars):
+	'''
+	update stored paths to reflect enveloped SIP structure
+	'''
+	pymmOutDir = config['paths']['outdir_ingestfile']
+	_uuid = processingVars['ingestUUID']
+	UUIDpath = os.path.join(pymmOutDir,_uuid)
+	envelopedPath = os.path.join(UUIDpath,_uuid)
+	for key, value in processingVars.items():
+		if value and isinstance(value,str):
+			if not key == 'packageOutputDir':
+				if UUIDpath in value:
+					processingVars[key] = value.replace(UUIDpath,envelopedPath)
+	return processingVars
 
 def envelop_SIP(processingVars,ingestLogBoilerplate):
 	'''
 	Make a parent directory named w UUID to facilitate hashdeeping/logging.
 	Update the ingest log to reflect the new path.
 	'''
+	# processingVarsOrig,ingestLogBoilerplateOrig =\
+	# 	processingVars,ingestLogBoilerplate
 	ingestUUID = processingVars['ingestUUID']
 	UUIDslice = ingestUUID[:8]
 	pymmOutDir = config['paths']['outdir_ingestfile']
 	_SIP = processingVars['packageOutputDir']
 	event = 'faux-bag'
-	outcome = 'Make a parent directory named w UUID to facilitate hash manifest/auditing.'
+	outcome = (
+		'Make a parent directory named w UUID '
+		'to facilitate hash manifest/auditing.'
+		)
 	processingVars['caller'] = 'ingestSIP.envelop_SIP()'
-
-	# update the ingest log filepath
-	logFile = os.path.basename(ingestLogBoilerplate["ingestLogPath"])
-	newPath = os.path.join(_SIP,ingestUUID,"metadata","logs",logFile)
-	ingestLogBoilerplate["ingestLogPath"] = newPath
 
 	try:
 		status = "OK"
@@ -667,10 +708,13 @@ def envelop_SIP(processingVars,ingestLogBoilerplate):
 		shutil.move(_SIP,parentSlice)
 		# ...and rename the parent w UUID path
 		pymmFunctions.rename_dir(parentSlice,_SIP)
+		processingVars = update_enveloped_paths(processingVars)
+		ingestLogBoilerplate = update_enveloped_paths(ingestLogBoilerplate)
+		print(processingVars)
 	except:
 		status = "FAIL"
 		# reset the log path to its original state
-		ingestLogBoilerplate["ingestLogPath"]
+		# ingestLogBoilerplate = ingestLogBoilerplateOrig
 		print("Something no bueno.")
 
 	pymmFunctions.short_log(
@@ -782,12 +826,13 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 
 def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
-	knownObjects = processingVars['componentObjectDBids']
+	knownObjects = processingVars['componentObjectData']
 	if not parsed == True:
 		return parsed
 	else:
 		for _object, _hash in hashes.items():
 			# hashes should look like {'filename':'md5hash'}
+			processingVars['componentObjectData'][_object]['md5hash'] = _hash
 			for key,value in knownObjects.items():
 				if _object == key:
 					processingVars['filename'] = _object
@@ -798,6 +843,7 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 						messageDigestHashValue = _hash,
 						messageDigestSource=objectManifestPath
 						)
+	return processingVars
 
 # def stash_manifest(manifestPath):
 # 	'''
@@ -931,7 +977,7 @@ def main():
 		'packageMetadataObjects':packageMetadataObjects,
 		'packageLogDir':packageLogDir,
 		'aip_staging':aip_staging,
-		'componentObjectDBids':{},
+		'componentObjectData':{},
 		'computer':computer,
 		'caller':None,
 		'database_reporting':database_reporting,
@@ -1246,9 +1292,15 @@ def main():
 		outcome = outcome,
 		status = status
 		)
-	report_SIP_fixity(processingVars,objectManifestPath,eventID)
+	# report data from the object manifest
+	# get back updated processingVars['componentObjectData'] dict
+	processingVars = report_SIP_fixity(processingVars,objectManifestPath,eventID)
 	processingVars['caller'] = None	
+	# also add md5 and filename for each object as identifiers
+	# to the pbcore record
+	add_pbcore_md5_location(processingVars)
 	
+	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
 	processingVars['caller'] = 'ingestSIP.main()'
 	pymmFunctions.short_log(
@@ -1342,6 +1394,8 @@ def main():
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath
 
+	# add_pbcore_md5_location(processingVars)
+
 	# THIS IS THE LAST CALL MADE TO MODIFY ANYTHING IN THE SIP.
 	pymmFunctions.ingest_log(
 		event = 'ingestion end',
@@ -1370,7 +1424,7 @@ def main():
 		outcome = 'Submission Information Package verified and staged',
 		status = 'ENDING'
 		)
-	print(processingVars)
+	# print(processingVars)
 
 	do_cleanup(
 		processingVars,
