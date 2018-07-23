@@ -48,7 +48,7 @@ def read_config():
 
 def check_missing_ingest_paths(pymmConfig):
 	requiredPaths = {
-					'outdir_ingestfile':'the ingestfile output path',
+					'outdir_ingestsip':'the ingestSip.py output path',
 					'aip_staging':'the AIP storage path',
 					'resourcespace_deliver':'the resourcespace output path'
 					}
@@ -117,7 +117,7 @@ def ingest_log(\
 		stamp = ("#"*50)+"\n\n"+stamp+"\n\n"
 		systemInfo = system_info()
 		workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestfile"],
+			pymmConfig["paths"]["outdir_ingestsip"],
 			tempID
 			)
 		stuffToLog = [
@@ -167,7 +167,7 @@ def pymm_log(processingVars,event,outcome,status):
 	ingestUUID = processingVars['ingestUUID']
 	tempID = get_temp_id(objectRootPath)
 	workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestfile"],
+			pymmConfig["paths"]["outdir_ingestsip"],
 			tempID
 			)
 	prefix = ''
@@ -430,24 +430,37 @@ def do_query(connection,sql,*args):
 	return cursor
 
 def insert_object(processingVars,objectCategory):
-	if processingVars['database_reporting'] == True:
-		pass
-	else:
-		return processingVars
 	operator = processingVars['operator']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
 	else:
 		theObject = processingVars['filename']
+	
+	# print("oooooo "* 30)
+	# print(theObject)
 	# print(processingVars)
-	# init an insertion instance
-	objectInsert = dbReporters.ObjectInsert(
-			operator,
-			theObject,
-			objectCategory
-			)
-	# report the details to the db
-	objectIdentifierValueID = objectInsert.report_to_db()
+	if processingVars['database_reporting'] == True:
+		# init an insertion instance
+		objectInsert = dbReporters.ObjectInsert(
+				operator,
+				theObject,
+				objectCategory
+				)
+		try:
+			# report the details to the db
+			objectIdentifierValueID = objectInsert.report_to_db()
+			del objectInsert
+		except:
+			print("CAN'T MAKE DB CONNECTION")
+			pymm_log(
+				processingVars,
+				event = "connect to database",
+				outcome = "NO DATABASE CONNECTION!!!",
+				status = "WARNING"
+				)
+			processingVars['database_reporting'] = False
+	else:
+		objectIdentifierValueID = None
 	# update the processingVars with the unique db ID of the object
 	processingVars['componentObjectData'][theObject] = {}
 	processingVars['componentObjectData'][theObject]['databaseID'] = str(
@@ -456,19 +469,10 @@ def insert_object(processingVars,objectCategory):
 	# set the object category in component object data
 	processingVars['componentObjectData'][theObject]\
 		['objectCategory'] = objectCategory
-	# print(processingVars)
-	del objectInsert
+
 	return processingVars
 
 def insert_event(processingVars,eventType,outcome,status):
-	# print("^^"*100)
-	# print(eventType)
-	# print(processingVars)
-	if processingVars['database_reporting'] == True:
-		pass
-	else:
-		return None
-
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
 	else:
@@ -479,22 +483,25 @@ def insert_event(processingVars,eventType,outcome,status):
 	callingAgent = processingVars['caller']
 
 	objectID = processingVars['componentObjectData'][theObject]['databaseID']
-	#insert the event
-	eventInsert = dbReporters.EventInsert(
-		eventType,
-		objectID,
-		theObject,
-		timestamp('iso8601'),
-		status,
-		outcome,
-		callingAgent,
-		computer,
-		processingVars['operator'],
-		eventID=None
-		)
+	if processingVars['database_reporting'] == True:
+		#insert the event
+		eventInsert = dbReporters.EventInsert(
+			eventType,
+			objectID,
+			theObject,
+			timestamp('iso8601'),
+			status,
+			outcome,
+			callingAgent,
+			computer,
+			processingVars['operator'],
+			eventID=None
+			)
 
-	eventID = eventInsert.report_to_db()
-	del eventInsert
+		eventID = eventInsert.report_to_db()
+		del eventInsert
+	else:
+		eventID = None
 	return eventID
 
 def get_event_timestamp(eventID,user):
@@ -520,40 +527,44 @@ def insert_fixity(\
 	messageDigestSource=None,
 	eventDateTime=None
 	):
-	if processingVars['database_reporting'] == True:
-		pass
-	else:
-		return None
+	# if processingVars['database_reporting'] == True:
+	# 	pass
+	# else:
+	# 	return None
 	inputFile = processingVars['filename']
 	objectID = processingVars['componentObjectData'][inputFile]['databaseID']
 	objectIDValue = processingVars['filename']
 	eventDetailCallingFunc = processingVars['caller']
 	messageDigestFilepath = processingVars['inputPath']
-	eventTimestamp = get_event_timestamp(
-		eventID,
-		processingVars['operator']
-		)
+	
+	if processingVars['database_reporting'] == True:
+		eventTimestamp = get_event_timestamp(
+			eventID,
+			processingVars['operator']
+			)
 
-	if not eventTimestamp:
-		eventDateTime = None
+		if not eventTimestamp:
+			eventDateTime = None
+		else:
+			eventDateTime = eventTimestamp
+
+		fixityInsert = dbReporters.FixityInsert(
+			processingVars['operator'],
+			eventID,
+			objectID,
+			objectIDValue,
+			eventDetailCallingFunc,
+			messageDigestAlgorithm,
+			messageDigestFilepath,
+			messageDigestHashValue,
+			messageDigestSource,
+			eventDateTime
+			)
+
+		fixityID = fixityInsert.report_to_db()
+		del fixityInsert
 	else:
-		eventDateTime = eventTimestamp
-
-	fixityInsert = dbReporters.FixityInsert(
-		processingVars['operator'],
-		eventID,
-		objectID,
-		objectIDValue,
-		eventDetailCallingFunc,
-		messageDigestAlgorithm,
-		messageDigestFilepath,
-		messageDigestHashValue,
-		messageDigestSource,
-		eventDateTime
-		)
-
-	fixityID = fixityInsert.report_to_db()
-	del fixityInsert
+		fixityID = None
 	# print("HEY-O")
 	return fixityID
 

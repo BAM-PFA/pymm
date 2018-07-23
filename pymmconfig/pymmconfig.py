@@ -16,7 +16,7 @@ def make_config(configPath):
 		print('theres no system config file yet... hang on...')
 		open(configPath,'x')
 		with open(configPath,'w+') as config:
-			config.write('''[paths]\noutdir_ingestfile:\naip_staging:\nresourcespace_deliver:\nprores_deliver:\
+			config.write('''[paths]\noutdir_ingestsip:\naip_staging:\nresourcespace_deliver:\nprores_deliver:\
 				\n\n[deriv delivery options]\nresourcespace: n\nproresHQ: n\
 				\n\n[database settings]\nuse_db:\npymm_db:\npymm_db_access:\npymm_db_address:\
 				\n\n[database users]\nuser: password\
