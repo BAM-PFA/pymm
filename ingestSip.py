@@ -92,8 +92,6 @@ def set_args():
 		)
 	parser.add_argument(
 		'-o','--outdir_ingestsip',
-		action='store_true',
-		default=False,
 		help=(
 			'enter a full directory path to override path set in config; '
 			'sets output directory for ingestSip.py'

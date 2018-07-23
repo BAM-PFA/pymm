@@ -28,6 +28,26 @@ def set_middle_options(derivType):
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
 		middleOptions = json.loads(config['ffmpeg']['resourcespace_opts'])
+		# test/set a default proxy command for FFMPEG call
+		if middleOptions == ['a','b','c']:
+			middleOptions = [
+				"-movflags","faststart",
+				"-pix_fmt","yuv420p",
+				"-c:v","libx264",
+				"-bufsize","1835k",
+				"-f","mp4",
+				"-crf","25",
+				"-maxrate","8760k",
+				"-c:a","aac",
+				"-ac","2",
+				"-b:a","320k",
+				"-ar","48000"
+				]
+			print(
+				"WARNING: YOU HAVEN'T SET FFMPEG "
+				"OPTIONS FOR ACCESS FILE TRANSCODING "
+				"IN config.ini.\nWE'RE GOING TO USE SOME DEFAULTS!!"
+				)
 
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine for color correction, cropping, etc.
