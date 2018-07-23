@@ -32,7 +32,7 @@ import pymmFunctions
 # read in from the config file
 config = pymmFunctions.read_config()
 # # check that paths required for ingest are declared in config.ini
-pymmFunctions.check_missing_ingest_paths(config)
+# pymmFunctions.check_missing_ingest_paths(config)
 
 def set_args():
 	parser = argparse.ArgumentParser()
@@ -82,19 +82,49 @@ def set_args():
 		default=False,
 		help='set this flag to delete source files after ingest'
 		)
+	parser.add_argument(
+		'-a','--aip_staging',
+		help=(
+			'enter a full directory path to override path set in config; '
+			'sets directory for staging AIP after ingest\n\n'
+			'PRO TIP: for testing, leave this blank or use the same dir as -o'
+			)
+		)
+	parser.add_argument(
+		'-o','--outdir_ingestsip',
+		action='store_true',
+		default=False,
+		help=(
+			'enter a full directory path to override path set in config; '
+			'sets output directory for ingestSip.py'
+			)
+		)
+	parser.add_argument(
+		'-r','--resourcespace_deliver',
+		help=(
+			'enter a full directory path to override path set in config; '
+			'sets output directory for ingestSip.py'
+			)
+		)
 
 	return parser.parse_args()
 
-def prep_package(tempID):
+def prep_package(tempID,outdir_ingestsip):
 	'''
 	Create a directory structure for a SIP
 	'''
-	packageOutputDir = os.path.join(config['paths']['outdir_ingestfile'],tempID)
+	packageOutputDir = os.path.join(outdir_ingestsip,tempID)
 	packageObjectDir = os.path.join(packageOutputDir,'objects')
 	packageMetadataDir = os.path.join(packageOutputDir,'metadata')
 	packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
 	packageLogDir = os.path.join(packageMetadataDir,'logs')
-	packageDirs = [packageOutputDir,packageObjectDir,packageMetadataDir,packageMetadataObjects,packageLogDir]
+	packageDirs = [
+		packageOutputDir,
+		packageObjectDir,
+		packageMetadataDir,
+		packageMetadataObjects,
+		packageLogDir
+		]
 	
 	# ... SEE IF THE TOP DIR EXISTS ...
 	if os.path.isdir(packageOutputDir):
@@ -439,7 +469,7 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 
 	return processingVars
 
-def make_rs_package(inputObject,rsPackage):
+def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 	'''
 	If the ingest input is a dir of files, put all the _lrp access files
 	into a folder named for the object
@@ -447,9 +477,8 @@ def make_rs_package(inputObject,rsPackage):
 	rsPackageDelivery = ''
 	if rsPackage != None:
 		try:
-			rsOutDir = config['paths']['resourcespace_deliver']
 			_object = os.path.basename(inputObject)
-			rsPackageDelivery = os.path.join(rsOutDir,_object)
+			rsPackageDelivery = os.path.join(resourcespace_deliver,_object)
 
 			if not os.path.isdir(rsPackageDelivery):
 				try:
@@ -476,10 +505,15 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	packageMetadataObjects = processingVars['packageMetadataObjects']
 	makeProres = processingVars['makeProres']
 	ingestType = processingVars['ingestType']
+	resourcespace_deliver = processingVars['resourcespace_deliver']
 
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
-	rsPackageDelivery = make_rs_package(processingVars['inputName'],rsPackage)
+	rsPackageDelivery = make_rs_package(
+		processingVars['inputName'],
+		rsPackage,
+		resourcespace_deliver
+		)
 
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
@@ -580,8 +614,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	else:
 		SIPaccessPath = deliveredDerivPaths['resourcespace']
 		deliveredAccessBase = os.path.basename(SIPaccessPath)
-		rsOutDir = config['paths']['resourcespace_deliver']
-		accessPath = os.path.join(rsOutDir,deliveredAccessBase)
+		accessPath = os.path.join(resourcespace_deliver,deliveredAccessBase)
 	# reset metadata dir
 	processingVars['packageMetadataObjects'] = origMDdest
 	return accessPath
@@ -613,9 +646,22 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 		status = "OK"
 		)
 	processingVars['caller'] = None
-	print(processingVars)
+	# print(processingVars)
 
 	return stagedSIP
+
+def uuid_logfile(ingestLogBoilerplate,_uuid):
+	logpath = ingestLogBoilerplate['ingestLogPath']
+	logbase = os.path.basename(logpath)
+	tempID = ingestLogBoilerplate['tempID'].strip()
+	newbase = logbase.replace(tempID,_uuid)
+	newpath = logpath.replace(logbase,newbase)
+	os.rename(logpath,newpath)
+	# ingestLogBoilerplate['ingestLogPath'] = newpath
+	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
+	print(ingestLogBoilerplate)
+
+	return ingestLogBoilerplate
 
 def update_tempID(processingVars):
 	'''
@@ -626,25 +672,37 @@ def update_tempID(processingVars):
 	_uuid = processingVars['ingestUUID']
 	for key, value in processingVars.items():
 		if value and isinstance(value,str):
-			if not key == 'tempID':
+			if not (key == 'tempID'):
 				if tempID in value:
 					processingVars[key] = value.replace(tempID,_uuid)
+	# print("o~"*100)
+	# print(processingVars)
+	# update paths in componentObjectData dict 
+	if 'componentObjectData' in processingVars:
+		for key, value in processingVars['componentObjectData'].items():
+			if isinstance(value,dict):
+				processingVars['componentObjectData'][key] = replace_paths(
+					value,
+					tempID,
+					_uuid
+					)
 
-		## @FIXME LOOK HERE FOR A WAY TO RECURSIVELY UPDATE NESTED DICT VALUES:
-		# https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
 	return processingVars
 
 def rename_SIP(processingVars,ingestLogBoilerplate):
 	'''
 	Rename the directory to the ingest UUID.
 	'''
-	pymmOutDir = config['paths']['outdir_ingestfile']
+	pymmOutDir = processingVars['outdir_ingestsip']
 	packageOutputDir = processingVars['packageOutputDir']
 	ingestUUID = processingVars['ingestUUID']
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
-	# update the existing filepaths in processingVars & ingestLogBoilerplate
+	# update the existing filepaths in processingVars
+	# print("o "*100)
+	# print(processingVars)
 	processingVars = update_tempID(processingVars)
-	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
+	# update the log filepath
+	ingestLogBoilerplate = uuid_logfile(ingestLogBoilerplate,ingestUUID)
 	# rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
 	processingVars['packageOutputDir'] = UUIDpath
@@ -667,31 +725,42 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 
 	return processingVars,UUIDpath
 
-def update_enveloped_paths(processingVars):
+def replace_paths(_dict,target,replacement,exceptions=None):
+	for key, value in _dict.items():
+		if value and key != exceptions and isinstance(value,str):
+			if target in value:
+				_dict[key] = value.replace(target,replacement)
+	return _dict
+
+def update_enveloped_paths(processingVars,ingestLogBoilerplate):
 	'''
 	update stored paths to reflect enveloped SIP structure
 	'''
-	pymmOutDir = config['paths']['outdir_ingestfile']
+	pymmOutDir = processingVars['outdir_ingestsip']
 	_uuid = processingVars['ingestUUID']
 	UUIDpath = os.path.join(pymmOutDir,_uuid)
 	envelopedPath = os.path.join(UUIDpath,_uuid)
-	for key, value in processingVars.items():
-		if value and isinstance(value,str):
-			if not key == 'packageOutputDir':
-				if UUIDpath in value:
-					processingVars[key] = value.replace(UUIDpath,envelopedPath)
-	return processingVars
+	# update processingVars specifically
+	processingVars = replace_paths(processingVars,UUIDpath,envelopedPath,'packageOutputDir')
+	# update paths in componentObjectData dict
+	for key, value in processingVars['componentObjectData'].items():
+		print(type(value))
+		if isinstance(value,dict):
+			value = replace_paths(value,UUIDpath,envelopedPath)
+			processingVars['componentObjectData'][key] = value
+	# this is basically just the log path
+	ingestLogBoilerplate = replace_paths(ingestLogBoilerplate,UUIDpath,envelopedPath)
+	print(processingVars)
+	return processingVars,ingestLogBoilerplate
 
 def envelop_SIP(processingVars,ingestLogBoilerplate):
 	'''
 	Make a parent directory named w UUID to facilitate hashdeeping/logging.
 	Update the ingest log to reflect the new path.
 	'''
-	# processingVarsOrig,ingestLogBoilerplateOrig =\
-	# 	processingVars,ingestLogBoilerplate
 	ingestUUID = processingVars['ingestUUID']
 	UUIDslice = ingestUUID[:8]
-	pymmOutDir = config['paths']['outdir_ingestfile']
+	pymmOutDir = processingVars['outdir_ingestsip']
 	_SIP = processingVars['packageOutputDir']
 	event = 'faux-bag'
 	outcome = (
@@ -709,13 +778,9 @@ def envelop_SIP(processingVars,ingestLogBoilerplate):
 		shutil.move(_SIP,parentSlice)
 		# ...and rename the parent w UUID path
 		pymmFunctions.rename_dir(parentSlice,_SIP)
-		processingVars = update_enveloped_paths(processingVars)
-		ingestLogBoilerplate = update_enveloped_paths(ingestLogBoilerplate)
-		print(processingVars)
+		processingVars,ingestLogBoilerplate = update_enveloped_paths(processingVars,ingestLogBoilerplate)
 	except:
 		status = "FAIL"
-		# reset the log path to its original state
-		# ingestLogBoilerplate = ingestLogBoilerplateOrig
 		print("Something no bueno.")
 
 	pymmFunctions.short_log(
@@ -832,7 +897,7 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 		return parsed
 	else:
 		for _object, _hash in hashes.items():
-			# hashes should look like {'filename':'md5hash'}
+			# hashes dict should look like {'filename':'md5hash'}
 			processingVars['componentObjectData'][_object]['md5hash'] = _hash
 			for key,value in knownObjects.items():
 				if _object == key:
@@ -865,9 +930,19 @@ def main():
 	concatChoice = args.concatAccessFiles
 	cleanupStrategy = args.cleanup_originals
 	interactiveMode = args.interactiveMode
-	# read aip staging dir from config
-	aip_staging = config['paths']['aip_staging']
-
+	overrideOutdir = args.outdir_ingestsip
+	overrideAipdir = args.aip_staging
+	overrideRS = args.resourcespace_deliver
+	if None in (overrideOutdir,overrideAipdir,overrideRS):
+		# if any of the outdirs is empty check for config settings
+		pymmFunctions.check_missing_ingest_paths(config)
+		aip_staging = config['paths']['aip_staging']
+		resourcespace_deliver = config['paths']['resourcespace_deliver']
+		outdir_ingestsip = config['paths']['outdir_ingestsip']
+	else:
+		aip_staging = overrideAipdir
+		resourcespace_deliver = overrideRS
+		outdir_ingestsip = overrideOutdir
 	# make a uuid for the ingest
 	ingestUUID = str(uuid.uuid4())
 	# make a temp ID based on input path for the ingested object
@@ -896,7 +971,7 @@ def main():
 	try:
 		# create directory paths for ingest...
 		packageOutputDir,packageObjectDir,packageMetadataDir,\
-		packageMetadataObjects,packageLogDir = prep_package(tempID)
+		packageMetadataObjects,packageLogDir = prep_package(tempID,outdir_ingestsip)
 	except:
 		ingestResults["abortReason"] = (
 			"package previously ingested, remove manually"
@@ -978,6 +1053,8 @@ def main():
 		'packageMetadataObjects':packageMetadataObjects,
 		'packageLogDir':packageLogDir,
 		'aip_staging':aip_staging,
+		'outdir_ingestsip':outdir_ingestsip,
+		'resourcespace_deliver':resourcespace_deliver,
 		'componentObjectData':{},
 		'computer':computer,
 		'caller':None,
@@ -1118,20 +1195,10 @@ def main():
 	## DO STUFF! ##
 	###############
 	if inputType == 'file':
-		if database_reporting:
-			try:
-				processingVars = pymmFunctions.insert_object(
-					processingVars,
-					objectCategory = 'file'
-					)
-			except:
-				print("CAN'T MAKE DB CONNECTION")
-				pymmFunctions.pymm_log(
-					processingVars,
-					event = "connect to database",
-					outcome = "NO DATABASE CONNECTION!!!",
-					status = "WARNING"
-					)
+		processingVars = pymmFunctions.insert_object(
+			processingVars,
+			objectCategory = 'file'
+			)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
 		avStatus = check_av_status(
@@ -1159,41 +1226,21 @@ def main():
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
-		if database_reporting:
-			try:
-				# print(processingVars)
-				processingVars = pymmFunctions.insert_object(
-					processingVars,
-					objectCategory = 'intellectual entity'
-					)
-			except:
-				print("CAN'T MAKE DB CONNECTION")
-				pymmFunctions.pymm_log(
-					processingVars,
-					event = "connect to database",
-					outcome = "NO DATABASE CONNECTION!!!",
-					status = "WARNING"
-					)
+		processingVars = pymmFunctions.insert_object(
+			processingVars,
+			objectCategory = 'intellectual entity'
+			)
+		# print(processingVars)
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
 			processingVars['filename'] = os.path.basename(_file)
 			processingVars['inputPath']=\
 				ingestLogBoilerplate['inputPath'] = _file
-			if database_reporting:
-				try:
-					processingVars = pymmFunctions.insert_object(
-						processingVars,
-						objectCategory = 'file'
-						)
-				except:
-					print("CAN'T MAKE DB CONNECTION")
-					pymmFunctions.pymm_log(
-						processingVars,
-						event = "connect to database",
-						outcome = "NO DATABASE CONNECTION!!!",
-						status = "WARNING"
-						)
+			processingVars = pymmFunctions.insert_object(
+				processingVars,
+				objectCategory = 'file'
+				)
 			#######################
 			# check that input file is actually a/v
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
@@ -1327,7 +1374,7 @@ def main():
 
 	packageVerified = False
 	# move the SIP if needed
-	if not aip_staging == config['paths']['outdir_ingestfile']:
+	if not aip_staging == outdir_ingestsip:
 		_SIP = stage_sip(processingVars, ingestLogBoilerplate)
 		# audit the hashdeep manifest 
 		objectsVerified = False
