@@ -92,8 +92,6 @@ def set_args():
 		)
 	parser.add_argument(
 		'-o','--outdir_ingestsip',
-		action='store_true',
-		default=False,
 		help=(
 			'enter a full directory path to override path set in config; '
 			'sets output directory for ingestSip.py'
@@ -911,6 +909,25 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 						)
 	return processingVars
 
+def report_SIP_object_chars(processingVars):
+	# MOVE THIS TO PYMMFUNCTIONS AND PARSE THE OBJECT DICT THERE
+	if processingVars['database_reporting'] != True:
+		return processingVars
+	else:
+		for _object,chars in processingVars['componentObjectData'].items():
+			if processingVars['componentObjectData'][_object]['category'] == 'file':
+				try:
+					mediainfoPath = processingVars['componentObjectData'][_object]['mediainfoPath']
+					objID = processingVars['componentObjectData'][_object]['databaseID']
+					with open(mediainfoPath,'r') as MI:
+						mediainfoText = MI.read()
+					pymmFunctions.insert_chars(
+						processingVars
+						objID,
+						mediainfoText
+						)
+
+
 # def stash_manifest(manifestPath):
 # 	'''
 # 	rename a manifest as _old_ and stash it in the metadata directory
@@ -1016,15 +1033,12 @@ def main():
 	# get database details
 	if database_reporting != False:
 		pymmDB = config['database settings']['pymm_db']
-		# insert a db connection test here instead of later down in main()
 		if not operator in config['database users']:
-			# SHOULD THIS CAUSE AN EXIT(1)?
-			# @fixme
 			print(
 				"{} is not a valid user in the pymm database."
 				"".format(operator)
 				)
-			# idea: set database_reporting to False
+			database_reporting = False
 	# Set up a canonical name that will be passed to each log entry.
 	# For files it's the basename, for dirs it's the dir name.
 	if inputPath:
@@ -1209,7 +1223,6 @@ def main():
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_input_file(processingVars,ingestLogBoilerplate)
-
 		add_pbcore_instantiation(
 			processingVars,
 			ingestLogBoilerplate,
@@ -1230,7 +1243,6 @@ def main():
 			processingVars,
 			objectCategory = 'intellectual entity'
 			)
-		# print(processingVars)
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
@@ -1252,9 +1264,7 @@ def main():
 				)
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-
 			move_input_file(processingVars,ingestLogBoilerplate)
-
 			add_pbcore_instantiation(
 				processingVars,
 				ingestLogBoilerplate,
@@ -1269,7 +1279,7 @@ def main():
 				status = 'OK'
 				)
 			#######################
-			# for a directory input, accessPath is 
+			# for a directory input, `accessPath` is 
 			# the containing folder under the one
 			# defined in config.ini
 			accessPath = make_derivs(
@@ -1316,8 +1326,7 @@ def main():
 		processingVars,
 		ingestLogBoilerplate
 		)
-	###  MAKE A NEW FUNCTION TO CONTAIN THIS AND THE SIP MANIFEST CREATION INSTEAD
-	###  OF DOING THEM SEPARATELY/ D.R.Y.
+	# make a hashdeep manifest for the objects directory
 	objectManifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP,
 		'objects'
@@ -1347,6 +1356,7 @@ def main():
 	# also add md5 and filename for each object as identifiers
 	# to the pbcore record
 	add_pbcore_md5_location(processingVars)
+	processingVars = report_SIP_object_chars(processingVars)
 	
 	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
@@ -1423,6 +1433,7 @@ def main():
 			"ABORTING",
 			validationOutcome
 			)
+		print(ingestResults)
 		return ingestResults
 	else:
 		# set inputPath as the SIP path
@@ -1472,7 +1483,7 @@ def main():
 		outcome = 'Submission Information Package verified and staged',
 		status = 'ENDING'
 		)
-	# print(processingVars)
+	print(processingVars)
 
 	do_cleanup(
 		processingVars,

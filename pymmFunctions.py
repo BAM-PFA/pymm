@@ -48,10 +48,10 @@ def read_config():
 
 def check_missing_ingest_paths(pymmConfig):
 	requiredPaths = {
-					'outdir_ingestsip':'the ingestSip.py output path',
-					'aip_staging':'the AIP storage path',
-					'resourcespace_deliver':'the resourcespace output path'
-					}
+		'outdir_ingestsip':'the ingestSip.py output path',
+		'aip_staging':'the AIP storage path',
+		'resourcespace_deliver':'the resourcespace output path'
+		}
 	missingPaths = 0
 	for path in requiredPaths.items():
 		if not os.path.isdir(pymmConfig['paths'][path[0]]):
@@ -80,21 +80,42 @@ def check_missing_ingest_paths(pymmConfig):
 import dbAccess
 
 def check_pymm_log_exists():
+	# open a local instance of config here in case 
+	# it has changed since importing this file
+	pymmConfig = read_config()
+	pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
+	pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
+	# sys.exit()
+	opener = (
+		((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
+		'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
+		)
+
 	if not os.path.isfile(pymmLogPath):
 		print('wait i need to make a logfile')
 		if pymmLogDir == '':
-			print("CONFIGURATION PROBLEM:\n"
-				  "THERE IS NO DIRECTORY SET FOR THE SYSTEM-WIDE LOG.\n"
-				  "PLEASE RUN pymmconfig.py OR EDIT config.ini DIRECTLY\n"
-				  "TO ADD A VALID DIRECTORY FOR pymm_log.txt TO LIVE IN.\n"
-				  "NOW EXITING. BYE!")
-			sys.exit()
+			print("!~"*75)
+			print(
+				"CONFIGURATION PROBLEM:\n"
+				"THERE IS NO DIRECTORY SET FOR THE SYSTEM-WIDE LOG.\n"
+				"PLEASE RUN pymmconfig.py OR EDIT config.ini DIRECTLY\n"
+				"TO ADD A VALID DIRECTORY FOR pymm_log.txt TO LIVE IN.\n"
+				"WE'RE JUST GOING TO PUT IT ON YOUR DESKTOP FOR NOW..."
+				)
+			desktop = get_desktop()
+			pymmLogPath = os.path.join(
+				desktop,
+				'pymm_log.txt'
+				)
+			from pymmconfig import pymmconfig
+			pymmconfig.set_value('logging','pymm_log_dir',desktop)
+			with open(pymmLogPath,'w+') as pymmLog:
+				pymmLog.write(opener)
 		else:
 			open(pymmLogPath,'x')
 			with open(pymmLogPath,'w+') as pymmLog:
 				pymmLog.write(
-					((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
-					'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
+					opener
 					)
 	else:
 		pass
@@ -157,8 +178,13 @@ def ingest_log(\
 		ingestLog.write("\n\n")
 
 def pymm_log(processingVars,event,outcome,status):
-	# mm log content = echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
 	check_pymm_log_exists()
+	# open a local instance of config here in case 
+	# it has changed since importing this file
+	pymmConfig = read_config()
+	pymmConfig = read_config()
+	pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
+	pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
 	stamp = timestamp('iso8601')
 	systemInfo = system_info()
 	objectRootPath = processingVars['inputPath']
@@ -503,6 +529,16 @@ def insert_event(processingVars,eventType,outcome,status):
 	else:
 		eventID = None
 	return eventID
+
+def insert_obj_chars(objID,mediainfoText):
+	'''
+	- get the object dict
+	- for files report the mediainfo text
+	- for ingests/canonical names? report the pbcore, ingestLog
+	- 
+	'''
+
+	pass
 
 def get_event_timestamp(eventID,user):
 	connection = database_connection(user)
@@ -1005,6 +1041,9 @@ def remove_hidden_system_files(inputPath):
 
 	return removed
 
+def get_desktop():
+	desktop = os.path.expanduser("~/Desktop")
+	return desktop
 
 #
 # SYSTEM / ENVIRONMENT STUFF
@@ -1015,5 +1054,5 @@ today = str(date.today())
 now = timestamp('now')
 iso8601 = timestamp('iso8601')
 pymmConfig = read_config()
-pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
-pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
+# pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
+# pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
