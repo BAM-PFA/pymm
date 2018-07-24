@@ -38,11 +38,13 @@ def set_args():
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
 		'-i','--inputPath',
-		help='path of input file'
+		help='path of input file',
+		required=True
 		)
 	parser.add_argument(
 		'-u','--operator',
-		help='name of the person doing the ingest'
+		help='name of the person doing the ingest',
+		required=True
 		)
 	parser.add_argument(
 		'-j','--metadataJSON',
