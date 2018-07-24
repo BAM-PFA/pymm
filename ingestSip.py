@@ -922,10 +922,12 @@ def report_SIP_object_chars(processingVars):
 					with open(mediainfoPath,'r') as MI:
 						mediainfoText = MI.read()
 					pymmFunctions.insert_chars(
-						processingVars
+						processingVars,
 						objID,
 						mediainfoText
 						)
+				except:
+					pass
 
 
 # def stash_manifest(manifestPath):
