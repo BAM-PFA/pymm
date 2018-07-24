@@ -530,6 +530,16 @@ def insert_event(processingVars,eventType,outcome,status):
 		eventID = None
 	return eventID
 
+def insert_obj_chars(objID,mediainfoText):
+	'''
+	- get the object dict
+	- for files report the mediainfo text
+	- for ingests/canonical names? report the pbcore, ingestLog
+	- 
+	'''
+
+	pass
+
 def get_event_timestamp(eventID,user):
 	connection = database_connection(user)
 	sql = premisSQL.getEventTimestamp
