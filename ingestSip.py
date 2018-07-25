@@ -31,8 +31,6 @@ import pymmFunctions
 
 # read in from the config file
 config = pymmFunctions.read_config()
-# # check that paths required for ingest are declared in config.ini
-# pymmFunctions.check_missing_ingest_paths(config)
 
 def set_args():
 	parser = argparse.ArgumentParser()
@@ -601,7 +599,6 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 				ingestLogBoilerplate,
 				level
 				)
-			# add_pbcore_md5_location(processingVars, fileMD5)
 
 	# get a return value that is the path to the access copy(ies) delivered
 	#   to a destination defined in config.ini
@@ -651,15 +648,17 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 	return stagedSIP
 
 def uuid_logfile(ingestLogBoilerplate,_uuid):
+	'''
+	rename the ingest log w the UUID
+	'''
 	logpath = ingestLogBoilerplate['ingestLogPath']
 	logbase = os.path.basename(logpath)
 	tempID = ingestLogBoilerplate['tempID'].strip()
 	newbase = logbase.replace(tempID,_uuid)
 	newpath = logpath.replace(logbase,newbase)
 	os.rename(logpath,newpath)
-	# ingestLogBoilerplate['ingestLogPath'] = newpath
 	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
-	print(ingestLogBoilerplate)
+	# print(ingestLogBoilerplate)
 
 	return ingestLogBoilerplate
 
@@ -675,8 +674,6 @@ def update_tempID(processingVars):
 			if not (key == 'tempID'):
 				if tempID in value:
 					processingVars[key] = value.replace(tempID,_uuid)
-	# print("o~"*100)
-	# print(processingVars)
 	# update paths in componentObjectData dict 
 	if 'componentObjectData' in processingVars:
 		for key, value in processingVars['componentObjectData'].items():
@@ -744,13 +741,11 @@ def update_enveloped_paths(processingVars,ingestLogBoilerplate):
 	processingVars = replace_paths(processingVars,UUIDpath,envelopedPath,'packageOutputDir')
 	# update paths in componentObjectData dict
 	for key, value in processingVars['componentObjectData'].items():
-		print(type(value))
 		if isinstance(value,dict):
 			value = replace_paths(value,UUIDpath,envelopedPath)
 			processingVars['componentObjectData'][key] = value
 	# this is basically just the log path
 	ingestLogBoilerplate = replace_paths(ingestLogBoilerplate,UUIDpath,envelopedPath)
-	print(processingVars)
 	return processingVars,ingestLogBoilerplate
 
 def envelop_SIP(processingVars,ingestLogBoilerplate):
@@ -1205,7 +1200,6 @@ def main():
 		)
 	processingVars['caller'] = None
 	processingVars['filename'] = origFilename
-
 	#### END LOGGING / CLEANUP ####
 	###############################
 
@@ -1300,7 +1294,6 @@ def main():
 
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
-			# @dbme
 			SIPaccessPath = os.path.join(
 				processingVars['packageObjectDir'],
 				'resourcespace'
@@ -1425,8 +1418,8 @@ def main():
 
 	validSIP,validationOutcome = pymmFunctions.validate_SIP_structure(_SIP)
 	if not validSIP:
-		# IS THIS EXCESSIVE?? MAYBE JUST LOG 
-		#     THAT IT DIDN"T PASS MUSTER BUT SAVE IT.
+		# IS QUITTING HERE EXCESSIVE?? MAYBE JUST LOG 
+		#     THAT IT DIDN'T PASS MUSTER BUT SAVE IT.
 		# OR MAKE AN "INCONCLUSIVE/WARNING" VERSION?
 		# NOTE: the failure gets logged in the system log,
 		# along with listing reasons for failure
@@ -1456,8 +1449,6 @@ def main():
 		ingestResults['status'] = True
 	ingestResults['ingestUUID'] = ingestUUID
 	ingestResults['accessPath'] = accessPath
-
-	# add_pbcore_md5_location(processingVars)
 
 	# THIS IS THE LAST CALL MADE TO MODIFY ANYTHING IN THE SIP.
 	pymmFunctions.ingest_log(
@@ -1497,6 +1488,12 @@ def main():
 		packageOutputDir,
 		'done'
 		)
+	if ingestResults['status'] == True:
+		print("####\nEVERYTHING WENT GREAT! "
+			"THE SIP IS GOOD TO GO! @{}\n####".format(_SIP))
+	else:
+		print("####\nSOMETHING DID NOT GO AS PLANNED. "
+			"CHECK THE LOG FOR MORE DETAILS!\n####")
 
 	print(ingestResults)
 	return ingestResults
