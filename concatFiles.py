@@ -45,12 +45,13 @@ def parse_args(**kwargs):
 
 def get_profiles(input_list):
 	# BUILD A DICT OF PROFILES TO COMPARE FOR CONCATENATION
+	print("*"*100)
 	profiles = {}
 	for sourceFile in input_list:
 		profiles[sourceFile] = {'video':'','audio':''}
 		videoProfile,audioProfile = makeMetadata.get_track_profiles(
 			makeMetadata.get_mediainfo_report(
-				sourceFile,'','GET JSON'
+				sourceFile,'',_JSON=True
 				)
 			)
 		profiles[sourceFile]['video'] = json.loads(videoProfile)

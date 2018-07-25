@@ -165,6 +165,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
+	print(processingVars)
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -172,12 +173,14 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 		'-c'+canonicalName,
 		'-w'+wrapper
 		]
-	try:
+	# try:
 		# concattedAccessFile is either a path to the file
 		# or a list of problems with the concatenation.
-		concattedAccessFile,success = concatFiles.main()
-	except:
-		print("couldn't concat files")
+	success = False
+	concattedAccessFile,success = concatFiles.main()
+	# except:
+	# 	success = False
+	# 	print("couldn't concat files")
 
 	origFilename = processingVars['filename']
 	if not success == False:
@@ -1464,6 +1467,14 @@ def main():
 			outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
 			status = 'OK'
 			)
+	do_cleanup(
+		processingVars,
+		cleanupStrategy,
+		objectsVerified,
+		inputPath,
+		packageOutputDir,
+		'done'
+		)
 	processingVars['caller'] = 'ingestSIP.main()'	
 	pymmFunctions.end_log(
 		processingVars,
@@ -1473,14 +1484,7 @@ def main():
 		)
 	print(processingVars)
 
-	do_cleanup(
-		processingVars,
-		cleanupStrategy,
-		objectsVerified,
-		inputPath,
-		packageOutputDir,
-		'done'
-		)
+	
 	if ingestResults['status'] == True:
 		print("####\nEVERYTHING WENT GREAT! "
 			"THE SIP IS GOOD TO GO! @{}\n####".format(_SIP))

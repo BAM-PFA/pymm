@@ -3,14 +3,15 @@
 these are functions to output metadata files
 and structured data (xml/json) about a/v files
 '''
+import argparse
+import ast
+import configparser
 import datetime
+import hashlib
+import json
 import os
 import subprocess
 import sys
-import json
-import argparse
-import configparser
-import hashlib
 # nonstandard libraries:
 # import xmltodict
 # local modules:
@@ -28,13 +29,14 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 			os.path.join(destination,basename)
 			)
 		mediainfoOutput = '--LogFile={}'.format(outputFilepath)
-		mediainfoJSON = subprocess.Popen(
+		out = subprocess.run(
 			['mediainfo',
 			inputPath,
 			'--Output={}'.format(outputType),
 			mediainfoOutput],
 			stdout=subprocess.PIPE
 			)
+		mediainfoJSON = out.stdout.decode('utf-8')
 		if _JSON:
 			return mediainfoJSON    
 		else:
@@ -42,10 +44,11 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 	# ... otherwise pass something like '' as a destination 
 	# and just get the raw mediainfo output
 	else:
-		mediainfoJSON = subprocess.Popen(
+		out = subprocess.run(
 			['mediainfo','--Output=JSON',inputPath],
 			stdout=subprocess.PIPE
 			)
+		mediainfoJSON = out.stdout.decode('utf-8')
 		# print(mediainfoJSON)
 		if _JSON:
 			return mediainfoJSON
@@ -74,6 +77,8 @@ def get_track_profiles(mediainfoDict):
 	so presumably if there are additional tracks things will get screwy. 
 	'''
 	problems = 0
+	if isinstance(mediainfoDict,str):
+		mediainfoDict = ast.literal_eval(mediainfoDict)
 	videoAttribsToDiscard = [
 		'@type', 'ID', 'Format_Info', 'Format_profile',
 		'Format_settings__CABAC', 'Format_settings__ReFrames', 
@@ -87,7 +92,8 @@ def get_track_profiles(mediainfoDict):
 		'Language', 'Encoded_date', 'Tagged_date'
 		]
 	try:
-		videoTrackProfile = mediainfoDict['MediaInfo']['media']['track'][1]
+		videoTrackProfile = mediainfoDict['media']['track'][1]
+		# print("!! "*100)
 		# print(videoTrackProfile)
 		for attr in videoAttribsToDiscard:
 			videoTrackProfile.pop(attr,None)
@@ -110,7 +116,7 @@ def get_track_profiles(mediainfoDict):
 		if videoTrackProfile:
 			return json.dumps(videoTrackProfile),"{}"
 		elif audioTrackProfile:
-			return json.dumps(audioTrackProfile),"{}"
+			return "{}",json.dumps(audioTrackProfile)
 		else:
 			return "{}","{}"
 
