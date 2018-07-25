@@ -73,3 +73,29 @@ getEventTimestamp = (
 	SELECT eventDateTime FROM event WHERE eventIdentifierValue = %s;
 	'''
 	)
+
+insertObjCharSQL = (
+	'''
+	INSERT INTO objectCharacteristics (
+		objectIdentifierValueID,
+		objectIdentifierValue,
+		mediaInfo,
+		ingestLog,
+		pbcoreOutput,
+		pbcoreXML
+		)
+	VALUES (
+		%s,
+		%s,
+		%s,
+		%s,
+		%s,
+		LOAD_FILE(%s)
+		)
+	'''
+	)
+# grantFILEprivilege = (
+# 	'''
+# 	GRANT FILE ON %s
+# 	'''
+# 	)
