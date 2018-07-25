@@ -219,12 +219,12 @@ def create_user(pymm_db=pymm_db):
 		connect.query(grantPrivsSQL,newUser,userIP)
 		connect.close_cursor()
 		connect.close_connection()
-		print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"
-			"mysql_config_editor set --login-path="+newUser+"_db_access --host="+userIP+" --user="+newUser+" --password=\n"
-			"\nAND THEN TYPE IN THE USER PASSWORD ("+userPass+")\n"
-			"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
-			"pymm_db_name = "+newUser+"_db_access\n"
-			"pymm_db = "+pymm_db+"\n")
+		# print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"
+		# 	"mysql_config_editor set --login-path="+newUser+"_db_access --host="+userIP+" --user="+newUser+" --password=\n"
+		# 	"\nAND THEN TYPE IN THE USER PASSWORD ("+userPass+")\n"
+		# 	"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
+		# 	"pymm_db_name = "+newUser+"_db_access\n"
+		# 	"pymm_db = "+pymm_db+"\n")
 		pymmconfig.set_value("database users",newUser,userPass)
 	except:
 		print("stupid error")
