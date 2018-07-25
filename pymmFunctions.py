@@ -21,7 +21,6 @@ import sys
 import shutil
 import time
 # nonstandard libraries:
-from ffmpy import FFprobe, FFmpeg
 import Levenshtein
 # local modules:
 import dbReporters
@@ -709,15 +708,18 @@ def is_video(inputPath):
 	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
 	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
 	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
-	ffprobe = 	FFprobe(
-				inputs={
-				inputPath:'-v error -print_format json -show_streams -select_streams v:0'
-				}
-				)
+	ffprobe = [
+		'ffprobe',
+		'-i',inputPath,
+		'-v','error',
+		'-print_format','json',
+		'-show_streams',
+		'-select_streams','v:0'
+		]
 	try:
-		FR = ffprobe.run(stdout=subprocess.PIPE)
-		output = json.loads(FR[0].decode('utf-8'))
-		# print(output)
+		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
+		out = probe.stdout.decode('utf-8')
+		output = json.loads(out)
 		try:
 			indexValue = output['streams'][0]['index']
 			if indexValue == 0:
@@ -735,14 +737,18 @@ def is_audio(inputPath):
 	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
 	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
 	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
-	ffprobe = 	FFprobe(
-				inputs={
-				inputPath:'-v error -print_format json -show_streams -select_streams a:0'
-				}
-				)
+	ffprobe = [
+		'ffprobe',
+		'-i',inputPath,
+		'-v','error',
+		'-print_format','json',
+		'-show_streams',
+		'-select_streams','a:0'
+		]
 	try:
-		FR = ffprobe.run(stdout=subprocess.PIPE)
-		output = json.loads(FR[0].decode('utf-8'))
+		probe = subprocess.run(ffrprobe,stdout=subprocess.PIPE)
+		out = probe.stdout.decode('utf-8')
+		output = json.loads(out)
 		try:
 			indexValue = output['streams'][0]['index']
 			if indexValue == 0:
