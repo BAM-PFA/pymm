@@ -12,7 +12,7 @@ import argparse
 import configparser
 import hashlib
 # nonstandard libraries:
-import xmltodict
+# import xmltodict
 # local modules:
 import pymmFunctions
 
@@ -20,17 +20,21 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 	basename = pymmFunctions.get_base(inputPath)
 	# write mediainfo output to a logfile if the destination is a directory ..
 	if os.path.isdir(destination):
+		if _JSON:
+			outputType = "JSON"
+		else:
+			outputType = "XML"
 		outputFilepath = '{}_mediainfo.xml'.format(
 			os.path.join(destination,basename)
 			)
 		mediainfoOutput = '--LogFile={}'.format(outputFilepath)
-		mediainfoXML = subprocess.Popen(
-			['mediainfo',inputPath,'--Output=XML',mediainfoOutput],
+		mediainfoJSON = subprocess.Popen(
+			['mediainfo',
+			inputPath,
+			'--Output={}'.format(outputType),
+			mediainfoOutput],
 			stdout=subprocess.PIPE
 			)
-		# yeah it's an OrderedDict, not JSON, but I will grab the 
-		# Video track and Audio track as JSON later
-		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		if _JSON:
 			return mediainfoJSON    
 		else:
@@ -38,11 +42,10 @@ def get_mediainfo_report(inputPath,destination,_JSON=False):
 	# ... otherwise pass something like '' as a destination 
 	# and just get the raw mediainfo output
 	else:
-		mediainfoXML = subprocess.Popen(
-			['mediainfo','--Output=XML',inputPath],
+		mediainfoJSON = subprocess.Popen(
+			['mediainfo','--Output=JSON',inputPath],
 			stdout=subprocess.PIPE
 			)
-		mediainfoJSON = xmltodict.parse(mediainfoXML.communicate()[0])
 		# print(mediainfoJSON)
 		if _JSON:
 			return mediainfoJSON

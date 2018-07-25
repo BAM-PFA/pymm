@@ -12,8 +12,6 @@ Thanks little buddy.
 
 ## Dependencies
 Nonstandard python libraries:
-* xmltodict
-* ffmpy
 * python-levenshtein
 * lxml
 
