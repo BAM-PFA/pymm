@@ -151,11 +151,11 @@ def create_db(pymm_db=pymm_db):
 								''')
 	createObjectCharsTable = 	('''CREATE TABLE IF NOT EXISTS objectCharacteristics (\
 									objectCharacteristicValueID BIGINT NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValueID BIGINT(20) NOT NULL UNIQUE,\
+									objectIdentifierValueID BIGINT(20) NOT NULL,\
 									objectIdentifierValue VARCHAR(1000),\
-									mediaInfo MEDIUMTEXT,\
-									ingestLog TEXT,\
-									pbcoreOutput MEDIUMTEXT,\
+									mediaInfo LONGTEXT,\
+									ingestLog LONGTEXT,\
+									pbcoreOutput LONGTEXT,\
 									pbcoreXML MEDIUMBLOB,\
 									PRIMARY KEY (objectCharacteristicValueID),\
 									FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\

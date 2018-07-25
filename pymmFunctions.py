@@ -461,10 +461,6 @@ def insert_object(processingVars,objectCategory):
 		theObject = processingVars['inputName']
 	else:
 		theObject = processingVars['filename']
-	
-	# print("oooooo "* 30)
-	# print(theObject)
-	# print(processingVars)
 	if processingVars['database_reporting'] == True:
 		# init an insertion instance
 		objectInsert = dbReporters.ObjectInsert(
@@ -530,15 +526,73 @@ def insert_event(processingVars,eventType,outcome,status):
 		eventID = None
 	return eventID
 
-def insert_obj_chars(objID,mediainfoText):
+def insert_obj_chars(processingVars,ingestLogBoilerplate):
 	'''
+	report obect characteristics to db:
 	- get the object dict
 	- for files report the mediainfo text
-	- for ingests/canonical names? report the pbcore, ingestLog
+	- for SIPs report the pbcore, ingestLog
 	- 
 	'''
+	if processingVars['database_reporting'] != True:
+		return processingVars
+	user = processingVars['operator']
+	for _object,chars in processingVars['componentObjectData'].items():
+		data = processingVars['componentObjectData'][_object]
+		category = data['objectCategory']
+		if category == 'file':
+			try:
+				mediainfoPath = data['mediainfoPath']
+				objID = data['databaseID']
+				with open(mediainfoPath,'r') as MI:
+					mediainfoText = MI.read()
+				objectCharsInsert = dbReporters.InsertObjChars(
+					user,
+					objID,
+					_object,
+					mediainfoText
+					)
+				objectCharsInsert.report_to_db()
+				del objectCharsInsert
+			except:
+				pass
+		elif category == 'intellectual entity':
+			try:
+				objID = data['databaseID']
+				pbcorePath = processingVars['pbcore']
+				# print(pbcorePath)
+				if os.path.isfile(pbcorePath):
+					with open(pbcorePath,'r') as PB:
+						pbcoreText = PB.read()
+						# print(pbcoreText)
+				else:
+					pbcoreText = None
+					pbcorePath = None
+				ingestLogPath = ingestLogBoilerplate['ingestLogPath']
+				if os.path.isfile(ingestLogPath):
+					with open(ingestLogPath,'r') as IL:
+						ingestLogText = IL.read()
+				else:
+					ingestLogText = None				
+				# theres some mysql permission preventing
+				# load_file(pbcorePath) as BLOB
+				# @fixme ... also, is it worth it?
+				objectCharsInsert = dbReporters.InsertObjChars(
+					user,
+					objID,
+					_object,
+					mediaInfo=None,
+					ingestLog=ingestLogText,
+					pbcoreText=pbcoreText,
+					pbcoreXML=pbcorePath
+					)
+				objectCharsInsert.report_to_db()
+			except:
+				print(
+					"COULDN'T REPORT characteristics FOR {}".format(_object)
+					)
+	return processingVars
 
-	pass
 
 def get_event_timestamp(eventID,user):
 	connection = database_connection(user)

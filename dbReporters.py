@@ -195,7 +195,7 @@ class InsertObjChars:
 		objectIdentifierValue,
 		mediaInfo = None,
 		ingestLog = None,
-		pbcoreOutput = None,
+		pbcoreText = None,
 		pbcoreXML = None
 		):
 		'''
@@ -207,7 +207,7 @@ class InsertObjChars:
 		self.objectIdentifierValue = objectIdentifierValue
 		self.mediaInfo = mediaInfo
 		self.ingestLog = ingestLog
-		self.pbcoreOutput = pbcoreOutput
+		self.pbcoreText = pbcoreText
 		self.pbcoreXML = pbcoreXML
 
 	def report_to_db(self):
@@ -216,18 +216,17 @@ class InsertObjChars:
 			self.user
 			)
 		# get the sql query
-		sql = premisSQL.insertFixitySQL
+		sql = premisSQL.insertObjCharSQL
 
 		cursor = pymmFunctions.do_query(
 			connection,
 			sql,
-			self.eventID,
 			self.objectID,
 			self.objectIdentifierValue,
 			self.mediaInfo,
 			self.ingestLog,
-			self.pbcoreOutput,
-			self.pbcoreXML,
+			self.pbcoreText,
+			self.pbcoreXML
 			)
 		self.objCharID = cursor.lastrowid
 

@@ -906,26 +906,16 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 						)
 	return processingVars
 
-def report_SIP_object_chars(processingVars):
+def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
 	# MOVE THIS TO PYMMFUNCTIONS AND PARSE THE OBJECT DICT THERE
 	if processingVars['database_reporting'] != True:
 		return processingVars
 	else:
-		for _object,chars in processingVars['componentObjectData'].items():
-			if processingVars['componentObjectData'][_object]['category'] == 'file':
-				try:
-					mediainfoPath = processingVars['componentObjectData'][_object]['mediainfoPath']
-					objID = processingVars['componentObjectData'][_object]['databaseID']
-					with open(mediainfoPath,'r') as MI:
-						mediainfoText = MI.read()
-					pymmFunctions.insert_chars(
-						processingVars,
-						objID,
-						mediainfoText
-						)
-				except:
-					pass
-
+		processingVars = pymmFunctions.insert_obj_chars(
+			processingVars,
+			ingestLogBoilerplate
+			)
+		return processingVars
 
 # def stash_manifest(manifestPath):
 # 	'''
@@ -1237,10 +1227,10 @@ def main():
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
-		processingVars = pymmFunctions.insert_object(
-			processingVars,
-			objectCategory = 'intellectual entity'
-			)
+		# processingVars = pymmFunctions.insert_object(
+		# 	processingVars,
+		# 	objectCategory = 'intellectual entity'
+		# 	)
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
@@ -1353,7 +1343,10 @@ def main():
 	# also add md5 and filename for each object as identifiers
 	# to the pbcore record
 	add_pbcore_md5_location(processingVars)
-	processingVars = report_SIP_object_chars(processingVars)
+	report_SIP_object_chars(
+		processingVars,
+		ingestLogBoilerplate
+		)
 	
 	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
