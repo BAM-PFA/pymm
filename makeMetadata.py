@@ -232,15 +232,16 @@ def hashdeep_audit(inputPath,manifestPath,_type=None):
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
-	if not pymmFunctions.is_av(inputPath):
+	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
+	frameMd5Filepath = os.path.join(metadataDir,md5File)
+	av = pymmFunctions.is_av(inputPath)
+	if not av:
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
 		print("{} IS NOT AN AV FILE SO "
 			"WHY ARE YOU TRYING TO MAKE "
 			"A FRAME MD5 REPORT?".format(inputPath))
 		return False
-	else:
-		md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
-		frameMd5Filepath = os.path.join(metadataDir,md5File)
+	elif av == 'VIDEO':
 		frameMd5Command = [
 			'ffmpeg',
 			'-i',inputPath,
@@ -257,6 +258,23 @@ def make_frame_md5(inputPath,metadataDir):
 			if err:
 				print("FRAME MD5 CHA CHA CHA")
 				# print(err.decode('utf-8'))
+			return frameMd5Filepath
+		except:
+			return False
+	elif av == 'AUDIO':
+		sampleRate = pymmFunctions.get_audio_sample_rate(inputPath)
+		frameMd5Command = [
+			'ffmpeg',
+			'-i',inputPath,
+			'-af','asetnsamples=n={}'.format(sampleRate),
+			'-f','framemd5',
+			'-vn',
+			frameMd5Filepath
+			]
+		try:
+			output = subprocess.run(frameMd5Command,stdout=subprocess.PIPE)
+			# print(output)
+			print("FRAME MD5 CHA CHA CHA")
 			return frameMd5Filepath
 		except:
 			return False

@@ -235,8 +235,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 	'''
 	event = 'format identification'
 	processingVars['caller'] = 'pymmFunctions.is_av()'
-	if not pymmFunctions.is_av(inputPath):
-		_is_av = False
+	AV = pymmFunctions.is_av(inputPath)
+	if not AV:
 		outcome = "WARNING: {} is not recognized as an a/v file.".format(
 			ingestLogBoilerplate['filename']
 			)
@@ -253,7 +253,10 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 	else:
 		# THIS IS NOT CORRECT: 
 		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
-		outcome = ingestLogBoilerplate['filename']+" is an AV file, way to go."
+		outcome = "{} is a(n) {} file, way to go.".format(
+			ingestLogBoilerplate['filename'],
+			AV
+			)
 		status = "OK"
 	pymmFunctions.log_event(
 		processingVars,
