@@ -746,7 +746,7 @@ def is_audio(inputPath):
 		'-select_streams','a:0'
 		]
 	try:
-		probe = subprocess.run(ffrprobe,stdout=subprocess.PIPE)
+		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
 		out = probe.stdout.decode('utf-8')
 		output = json.loads(out)
 		try:
@@ -769,8 +769,10 @@ def is_av(inputPath):
 		if not _is_audio:
 			print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
 			return False
+		else:
+			return 'AUDIO'
 	else:
-		return True
+		return 'VIDEO'
 
 def is_dpx_sequence(inputPath):
 	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
@@ -933,6 +935,25 @@ def convert_millis(milli):
         c += '.000000'
     # trim off the unneeded zeros
     return str(c)[:-3]
+
+def get_audio_sample_rate(inputPath):
+	'''
+	inspired by IFIscripts and StackOverflow answer by Jerome M.
+	Note: you don't need quotation marks here after --inform parameter
+		which you do need when calling mediainfo from command line.
+	'''
+	mediainfo = [
+	'mediainfo',
+	'--inform=Audio;%SamplingRate%',
+	inputPath
+	]
+	out = subprocess.run(mediainfo,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	rate = out.stdout.decode().rstrip()
+	# rate = int(rate)
+	# print(out.stdout.decode())
+
+	return rate
+
 
 #
 # END FILE CHECK STUFF 
