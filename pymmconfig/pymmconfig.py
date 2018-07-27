@@ -22,7 +22,8 @@ def make_config(configPath):
 				\n\n[database users]\nuser: password\
 				\n\n[logging]\npymm_log_dir:\
 				\n\n[mediaconch format policies]\nfilm_scan_master:\nvideo_capture_master:\nmagnetic_video_mezzanine:\nfilm_scan_mezzanine:\nlow_res_proxy:\
-				\n\n[ffmpeg]\nresourcespace_opts:["a","b","c"]\nproresHQ_opts:["x","y","z"]
+				\n\n[ffmpeg]\nresourcespace_video_opts:["a","b","c"]\nproresHQ_opts:["a","b","c"]\nresourcespace_audio_opts:["a","b","c"]
+				\n\n[bwf constants]\noriginator:\ncoding_history_ANALOG:\
 				''')
 
 def set_value(section, optionToSet,newValue=None):

@@ -937,23 +937,45 @@ def convert_millis(milli):
     return str(c)[:-3]
 
 def get_audio_sample_rate(inputPath):
+	# get the sample rate for an audio file
+	_type = 'Audio'
+	fieldName = 'SamplingRate'
+	rate = get_mediainfo_value(
+		inputPath,
+		_type,
+		fieldName
+		)
+
+	return rate
+
+def get_encoded_date(inputPath):
+	encodedDate = get_mediainfo_value(
+		inputPath,
+		'General',
+		'Encoded_Date'
+		)
+
+	return encodedDate
+
+def get_mediainfo_value(inputPath,_type,fieldName):
 	'''
 	inspired by IFIscripts and StackOverflow answer by Jerome M.
 	Note: you don't need quotation marks here after --inform parameter
 		which you do need when calling mediainfo from command line.
+	`_type` is either General, Audio, or Video
+	`fieldName` is the raw field name 
+		(look at `mediainfo --Language=raw --Full /file/path` 
+		to see all the fields)
 	'''
 	mediainfo = [
 	'mediainfo',
-	'--inform=Audio;%SamplingRate%',
+	'--inform={};%{}%'.format(_type,fieldName),
 	inputPath
 	]
 	out = subprocess.run(mediainfo,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-	rate = out.stdout.decode().rstrip()
-	# rate = int(rate)
-	# print(out.stdout.decode())
+	value = out.stdout.decode().rstrip()
 
-	return rate
-
+	return value
 
 #
 # END FILE CHECK STUFF 

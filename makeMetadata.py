@@ -235,12 +235,12 @@ def make_frame_md5(inputPath,metadataDir):
 	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
 	frameMd5Filepath = os.path.join(metadataDir,md5File)
 	av = pymmFunctions.is_av(inputPath)
+	returnValue = False
 	if not av:
 		# FUN FACT: YOU CAN RUN FFMPEG FRAMEMD5 ON A TEXT FILE!!
 		print("{} IS NOT AN AV FILE SO "
 			"WHY ARE YOU TRYING TO MAKE "
 			"A FRAME MD5 REPORT?".format(inputPath))
-		return False
 	elif av == 'VIDEO':
 		frameMd5Command = [
 			'ffmpeg',
@@ -256,11 +256,12 @@ def make_frame_md5(inputPath,metadataDir):
 		try:
 			out,err = output.communicate()
 			if err:
+				# this output is captured in stderr for some reason
 				print("FRAME MD5 CHA CHA CHA")
 				# print(err.decode('utf-8'))
-			return frameMd5Filepath
+			returnValue = frameMd5Filepath
 		except:
-			return False
+			print(out.decode())
 	elif av == 'AUDIO':
 		sampleRate = pymmFunctions.get_audio_sample_rate(inputPath)
 		frameMd5Command = [
@@ -271,13 +272,16 @@ def make_frame_md5(inputPath,metadataDir):
 			'-vn',
 			frameMd5Filepath
 			]
+		output = subprocess.run(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		try:
-			output = subprocess.run(frameMd5Command,stdout=subprocess.PIPE)
-			# print(output)
-			print("FRAME MD5 CHA CHA CHA")
-			return frameMd5Filepath
+			if output.stdout.decode() not in ('',None): 
+				# print(output)
+				print("FRAME MD5 CHA CHA CHA")
+				returnValue = frameMd5Filepath
 		except:
-			return False
+			print(output.stderr.decode())
+
+	return returnValue
 
 def get_duration(inputPath):
 	print('getting input file duration via general track 0')
