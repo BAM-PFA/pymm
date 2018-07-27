@@ -8,6 +8,11 @@ import sys
 import moveNcopy
 import pymmFunctions
 
+
+'''
+WIP JUNK FOR WORKING WITH BEXT METADATA IN BWF FILES
+'''
+
 # def set_args():
 # 	parser = argparse.ArgumentParser()
 # 	parser.add_argument(
