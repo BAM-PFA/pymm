@@ -1,15 +1,35 @@
 #!/usr/bin/env python3
 # YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
-import os
-import sys
-import subprocess
 import argparse
 import json
+import os
+import subprocess
+import sys
 # local modules:
-import pymmFunctions
 import moveNcopy
+import pymmFunctions
 
 config = pymmFunctions.read_config()
+
+defaultVideoAccessOptions = [
+	"-movflags","faststart",
+	"-pix_fmt","yuv420p",
+	"-c:v","libx264",
+	"-bufsize","1835k",
+	"-f","mp4",
+	"-crf","25",
+	"-maxrate","8760k",
+	"-c:a","aac",
+	"-ac","2",
+	"-b:a","320k",
+	"-ar","48000"
+	]
+
+defaultAudioAccessOptions = [
+	"-id3v2_version","3",
+	"-dither_method","rectangular",
+	"-qscale:a","1"
+	]
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None):
@@ -20,29 +40,25 @@ def set_input_options(derivType,inputPath,ffmpegLogDir=None):
 	
 	return inputOptions
 
-# SET FFMPEG MIDDLE OPTIONS
-def set_middle_options(derivType):
+def set_middle_options(derivType,inputType):
+	'''
+	SET FFMPEG MIDDLE OPTIONS
+	'''
 	middleOptions = []
 	if derivType == 'resourcespace':
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
-		middleOptions = json.loads(config['ffmpeg']['resourcespace_opts'])
+		if inputType == 'VIDEO':
+			middleOptions = json.loads(config['ffmpeg']['resourcespace_video_opts'])
+		elif inputType == 'AUDIO':
+			middleOptions = json.loads(config['ffmpeg']['resourcespace_audio_opts'])
 		# test/set a default proxy command for FFMPEG call
 		if middleOptions == ['a','b','c']:
-			middleOptions = [
-				"-movflags","faststart",
-				"-pix_fmt","yuv420p",
-				"-c:v","libx264",
-				"-bufsize","1835k",
-				"-f","mp4",
-				"-crf","25",
-				"-maxrate","8760k",
-				"-c:a","aac",
-				"-ac","2",
-				"-b:a","320k",
-				"-ar","48000"
-				]
+			if inputType == 'VIDEO':
+				middleOptions = defaultVideoAccessOptions
+			elif inputType == 'AUDIO':
+				middleOptions = defaultAudioAccessOptions
 			print(
 				"WARNING: YOU HAVEN'T SET FFMPEG "
 				"OPTIONS FOR ACCESS FILE TRANSCODING "
@@ -50,7 +66,8 @@ def set_middle_options(derivType):
 				)
 
 	elif derivType == 'proresHQ':
-		# make a HQ prores .mov file as a mezzanine for color correction, cropping, etc.
+		# make a HQ prores .mov file as a mezzanine 
+		# for color correction, cropping, etc.
 		middleOptions = json.loads(config['ffmpeg']['proresHQ_opts'])
 	
 	elif True == True:
@@ -59,11 +76,17 @@ def set_middle_options(derivType):
 
 	return middleOptions
 
-def set_output_options(derivType,inputPath,outputDir):
+def set_output_options(derivType,inputType,inputPath,outputDir):
 	outputOptions = []
+	# the ffmpeg docs say the strict flag is no longer required 
+	# for aac encoding in mp4 but I ran into issues without it, 
+	# so I'll keep it for now (7/2018)
 	strict = ['-strict','-2'] 
 	base = pymmFunctions.get_base(inputPath)
-	baseMinusExtension = pymmFunctions.get_base(inputPath,'baseMinusExtension')
+	baseMinusExtension = pymmFunctions.get_base(
+		inputPath,
+		'baseMinusExtension'
+		)
 	# make a delivery directory for a package that is based on the deriv type
 	derivDeliv = os.path.join(outputDir,derivType)
 	if not os.path.isdir(derivDeliv):
@@ -73,13 +96,25 @@ def set_output_options(derivType,inputPath,outputDir):
 		except:
 			print("couldn't make a dir at "+derivDeliv)
 	if derivType == 'resourcespace':
-		ext = 'mp4'
-		outputOptions.extend(strict)
-		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_lrp.'+ext)
+		if inputType == 'VIDEO':
+			ext = 'mp4'
+			outputOptions.extend(strict)
+		elif inputType == 'AUDIO':
+			ext = 'mp3'
+		else:
+			ext = 'mp4'
+			print("FUCK EVERYTHING: ERROR GETTING THE FILE TYPE.")
+		outputFilePath = os.path.join(
+			derivDeliv,
+			baseMinusExtension+'_lrp.'+ext
+			)
 		outputOptions.append(outputFilePath)
 	elif derivType == 'proresHQ':
 		ext = 'mov'
-		outputFilePath = os.path.join(derivDeliv,baseMinusExtension+'_proresHQ.'+ext)
+		outputFilePath = os.path.join(
+			derivDeliv,
+			baseMinusExtension+'_proresHQ.'+ext
+			)
 		outputOptions.append(outputFilePath)
 	else:
 		print('~ ~ ~ ~ ~')
@@ -122,7 +157,10 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	deliveryDir = destinations[derivType]
 
 	if deliveryDir == '':
-		print("there's no directory set for "+derivType+" delivery... SET IT!!")
+		print(
+			"there's no directory set "
+			"for {} delivery... SET IT!!".format(derivType)
+			)
 		pass
 	elif deliveryDir != '' and rsMulti != None:
 		sys.argv = ['',
@@ -138,7 +176,10 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	try:
 		moveNcopy.main()
 	except:
-		print('there was an error in rsyncing the output deriv to the destination folder')
+		print(
+			'there was an error in rsyncing the output '
+			'deriv to the destination folder'
+			)
 
 def main():
 	# DO STUFF
@@ -152,16 +193,30 @@ def main():
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
-	
+
+	inputType = pymmFunctions.is_av(inputPath)	
 	ffmpegArgs = []
-	inputOptions = set_input_options(derivType,inputPath,logDir)
-	middleOptions = set_middle_options(derivType)
-	outputOptions = set_output_options(derivType,inputPath,outputDir)
+	inputOptions = set_input_options(
+		derivType,
+		inputPath,
+		logDir
+		)
+	middleOptions = set_middle_options(derivType,inputType)
+	outputOptions = set_output_options(
+		derivType,
+		inputType,
+		inputPath,
+		outputDir
+		)
 	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
 	# print(ffmpegArgs)
-	output = subprocess.Popen(ffmpegArgs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	output = subprocess.Popen(
+		ffmpegArgs,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE
+		)
 	out,err = output.communicate()
 	# print(out.decode('utf-8'))
 	
@@ -172,7 +227,9 @@ def main():
 	
 	# get the output path to rsync the deriv to access directories
 	outputFilePath = outputOptions[-1]
-	if pymmFunctions.boolean_answer(config['deriv delivery options'][derivType]):
+	if pymmFunctions.boolean_answer(
+		config['deriv delivery options'][derivType]
+		):
 		additional_delivery(outputFilePath,derivType,rsMulti)
 	# print(outputFilePath)
 	return outputFilePath

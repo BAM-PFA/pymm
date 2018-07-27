@@ -1,8 +1,8 @@
 # pymediamicroservices
 ## Contents
-- [Dependencies](#Dependencies)
-- [Installation](#Installation)
-- [Usage](#Usage)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [Usage](#usage)
 
 This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). Or at least it started that way. It also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. A lot has been changed to be less institutionally specific. And of course there's a lot added back to be institutionally specific to BAMPFA.
 

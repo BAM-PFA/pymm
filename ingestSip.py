@@ -50,7 +50,7 @@ def set_args():
 		)
 	parser.add_argument(
 		'-t','--ingestType',
-		choices=['film scan','video transfer'],
+		choices=['film scan','video transfer','audio xfer'],
 		default='video transfer',
 		help='type of file(s) being ingested: film scan, video xfer'
 		)
@@ -521,7 +521,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
-	if ingestType in ('film scan','video transfer'):
+	if ingestType in ('film scan','video transfer','audio xfer'):
 		derivTypes = ['resourcespace']
 	
 	# deliveredDerivPaths is a dict as follows:
@@ -1307,9 +1307,11 @@ def main():
 					concatPath,
 					accessPath
 					)
-
-	#########
-	# FLUFF THE SIP FOR STAGING
+	### END ACTUAL STUFF DOING ###
+	##############################
+	
+	###############################
+	## FLUFF THE SIP FOR STAGING ##
 	# set the logging 'filename' to the UUID for the rest of the process
 	processingVars['filename'] = ingestUUID
 	# rename SIP from temp to UUID
