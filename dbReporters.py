@@ -5,7 +5,7 @@
 import os
 import sys
 # local modules
-import premisSQL
+import MySQLqueries
 import pymmFunctions
 
 class EventInsert:
@@ -53,7 +53,7 @@ class EventInsert:
 			)
 		# print(connection)
 		# get the sql query
-		sql = premisSQL.insertEventSQL
+		sql = MySQLqueries.insertEventSQL
 
 		cursor = pymmFunctions.do_query(
 			connection,
@@ -103,7 +103,7 @@ class ObjectInsert:
 			self.user
 			)
 		# get the sql query
-		sql = premisSQL.insertObjectSQL
+		sql = MySQLqueries.insertObjectSQL
 
 		cursor = pymmFunctions.do_query(
 			connection,
@@ -160,7 +160,7 @@ class FixityInsert:
 			self.user
 			)
 		# get the sql query
-		sql = premisSQL.insertFixitySQL
+		sql = MySQLqueries.insertFixitySQL
 
 		cursor = pymmFunctions.do_query(
 			connection,
@@ -216,7 +216,7 @@ class InsertObjChars:
 			self.user
 			)
 		# get the sql query
-		sql = premisSQL.insertObjCharSQL
+		sql = MySQLqueries.insertObjCharSQL
 
 		cursor = pymmFunctions.do_query(
 			connection,
@@ -234,3 +234,55 @@ class InsertObjChars:
 		connection.close_connection()
 
 		return self.objCharID
+
+class ReportLTFS:
+	def __init__(
+		self,
+		user,
+		ltfsContents,
+		):
+		'''
+		ltfsContents is a dict like so:
+			{
+			'ltoID':tapeID,
+			'objects':{
+				'filename':{
+					path:/path/on/tape,
+					size:in_bytes,
+					modified:timespamp
+					}
+				}	
+			}
+		'''
+		self.user = user
+		self.ltfsContents = ltfsContents
+
+	def report_to_db(self):
+		# connect to the database
+		connection = pymmFunctions.database_connection(
+			self.user
+			)
+		# get the sql query
+		sql = MySQLqueries.reportLTFScontents
+
+		for _object, details in self.ltfsContents['objects'].items():
+			ltoID = self.ltfsContents['ltoID']
+			filename = _object
+			fileSize = self.ltfsContents['objects'][_object]['size']
+			modifyTime = self.ltfsContents['objects'][_object]['modified']
+			filePath = self.ltfsContents['objects'][_object]['path']
+
+			cursor = pymmFunctions.do_query(
+				connection,
+				sql,
+				ltoID,
+				filename,
+				fileSize,
+				modifyTime,
+				filePath
+				)
+
+			connection.close_cursor()
+		connection.close_connection()
+
+		return True

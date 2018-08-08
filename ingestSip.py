@@ -26,7 +26,6 @@ import dbReporters
 import makeDerivs
 import moveNcopy
 import makeMetadata
-import premisSQL
 import pymmFunctions
 
 # read in from the config file
