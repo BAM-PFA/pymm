@@ -99,3 +99,22 @@ insertObjCharSQL = (
 # 	GRANT FILE ON %s
 # 	'''
 # 	)
+
+reportLTFScontents = (
+	'''
+	INSERT IGNORE INTO ltoSchema (
+		ltoID,
+		fileName,
+		fileSize,
+		modifyTime,
+		filePath
+		) 
+	VALUES (
+		%s,
+		%s,
+		%s,
+		%s,
+		%s
+		)
+	'''
+	)

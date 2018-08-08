@@ -24,7 +24,7 @@ import time
 import Levenshtein
 # local modules:
 import dbReporters
-import premisSQL
+import MySQLqueries
 
 ################################################################
 # 
@@ -595,7 +595,7 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 
 def get_event_timestamp(eventID,user):
 	connection = database_connection(user)
-	sql = premisSQL.getEventTimestamp
+	sql = MySQLqueries.getEventTimestamp
 
 	cursor = do_query(
 		connection,
