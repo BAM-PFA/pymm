@@ -50,6 +50,7 @@ def parse_it(ltoSchemaPath):
 	xpathFilesize = '../length/text()'
 	# this gets the modified time
 	xpathModifyTime = '../modifytime/text()'
+	# get the ID of the tape based off the top-level directory element
 	xpathLTOid = '/ltfsindex/directory/name/text()'
 
 	tree = etree.parse(ltoSchemaPath)
@@ -69,13 +70,7 @@ def main():
 	args = set_args()
 	ltoSchemaPath = args.ltoSchemaPath
 	user = args.user
-
-
 	contents = parse_it(ltoSchemaPath)
-	print(contents)
-	for k,v in contents.items():
-		print(v)
-		print(type(v))
 
 	if user:
 		report = dbReporters.ReportLTFS(

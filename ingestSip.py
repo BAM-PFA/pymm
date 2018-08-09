@@ -818,7 +818,7 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 
 	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
-	### DESTROY DESTROY DESTROY DEST ###
+	### DESTROY!! DESTROY!! DESTROY! ###
 
 	removedFiles = pymmFunctions.remove_hidden_system_files(
 		ingestLogBoilerplate['inputPath']
@@ -1232,10 +1232,6 @@ def main():
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
 	elif inputType == 'dir':
-		# processingVars = pymmFunctions.insert_object(
-		# 	processingVars,
-		# 	objectCategory = 'intellectual entity'
-		# 	)
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
