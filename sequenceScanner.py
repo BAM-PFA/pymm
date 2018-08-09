@@ -51,6 +51,7 @@ def scan_dir(inputPath):
 		# scan the top level
 		dirs = []
 		for entry in thePath:
+			# summon all the subdirectories for judgement
 			if entry.is_dir():
 				dirs.append(entry.path)
 		if len(dirs) > 0:

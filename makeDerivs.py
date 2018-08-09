@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 # local modules:
@@ -32,8 +33,11 @@ defaultAudioAccessOptions = [
 	]
 
 # SET FFMPEG INPUT OPTIONS
-def set_input_options(derivType,inputPath,ffmpegLogDir=None):
-	inputOptions = ['-i']
+def set_input_options(derivType,inputPath,ffmpegLogDir=None,sequence=None):
+	if sequence:
+		audioPath,file0,startNumber = parse_sequence_stuff(inputPath)
+	else:
+		inputOptions = ['-i']
 	inputOptions.append(inputPath)
 	if ffmpegLogDir:
 		inputOptions.append('-report')
@@ -123,7 +127,7 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 
 def set_args():
 	parser = argparse.ArgumentParser(
-		description='make derivatives of an input a/v file'
+		description='make derivatives of an input a/v file or an image sequence'
 		)
 	parser.add_argument(
 		'-i','--inputPath',
@@ -146,8 +150,39 @@ def set_args():
 		'-r','--rspaceMulti',
 		help='set directory for multi-file resourcespace object'
 		)
+	parser.add_argument(
+		'-s','--isSequence',
+		action='store_true',
+		help='flag if the input is an image sequence'
+		)
 
 	return parser.parse_args()
+
+def parse_sequence_stuff(inputPath):
+	'''
+	input path should only ever be:
+	title_acc#_barcode_reel#/
+		dpx/
+			title_acc#_barcode_reel#_sequence#.dpx
+		[optionaltitle_acc#_barcode_reel#.wav]
+	'''
+	with os.scandir(inputPath) as whatApath:
+		for entry in whatApath:
+			if entry.name.endswith('.wav'):
+				audioPath = entry.path
+			else:
+				audioPath = None
+			if entry.is_dir():
+				# should be a single DPX dir with only dpx files in it
+				files = os.listdir(entry.path)
+				file0 = files[0]
+
+	dpxBase = os.path.basename(file0)
+	match = re.search(r'(\d{7})(\.)',dpxBase)
+	startNumber = match.group(1)
+	return audioPath,file0,startNumber
+
+
 
 def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	destinations = 	{
