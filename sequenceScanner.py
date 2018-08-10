@@ -4,7 +4,7 @@ import sys
 
 import pymmFunctions
 
-inputPath = sys.argv[1]
+# inputPath = sys.argv[1]
 
 def scan_dir(inputPath):
 	'''
@@ -50,6 +50,7 @@ def scan_dir(inputPath):
 	with os.scandir(inputPath) as thePath:
 		# scan the top level
 		dirs = []
+		outcome = None
 		for entry in thePath:
 			# summon all the subdirectories for judgement
 			if entry.is_dir():
@@ -76,6 +77,8 @@ def scan_dir(inputPath):
 				else:
 					print("DPX dirs are ok")
 					outcome = True
+			else:
+				outcome = True
 
 	return outcome,problems
 
@@ -108,7 +111,7 @@ def check_formats(inputPath):
 					# print(format)
 	return result,badFiles
 
-def main():
+def main(inputPath):
 	result,problems = scan_dir(inputPath)
 	if not result:
 		pass

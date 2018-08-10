@@ -9,6 +9,7 @@ import sys
 # local modules:
 import moveNcopy
 import pymmFunctions
+import sequenceScanner
 
 config = pymmFunctions.read_config()
 
@@ -18,7 +19,7 @@ defaultVideoAccessOptions = [
 	"-c:v","libx264",
 	"-bufsize","1835k",
 	"-f","mp4",
-	"-crf","25",
+	"-crf","23",
 	"-maxrate","8760k",
 	"-c:a","aac",
 	"-ac","2",
@@ -33,16 +34,26 @@ defaultAudioAccessOptions = [
 	]
 
 # SET FFMPEG INPUT OPTIONS
-def set_input_options(derivType,inputPath,ffmpegLogDir=None,sequence=None):
-	if sequence:
-		audioPath,file0,startNumber = parse_sequence_stuff(inputPath)
+def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
+	if isSequence:
+		print("HI")
+		audioPath,filePattern,startNumber = parse_sequence_stuff(inputPath)
+		inputOptions = [
+			'-start_number',startNumber,
+			'-i',filePattern
+			]
+		if audioPath:
+			inputOptions.extend(
+				['-i',audioPath]
+				)
 	else:
-		inputOptions = ['-i']
-	inputOptions.append(inputPath)
+		audioPath = None
+		inputOptions = ['-i',inputPath]
+
 	if ffmpegLogDir:
 		inputOptions.append('-report')
 	
-	return inputOptions
+	return inputOptions,audioPath
 
 def set_middle_options(derivType,inputType):
 	'''
@@ -53,10 +64,11 @@ def set_middle_options(derivType,inputType):
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
-		if inputType == 'VIDEO':
+		if inputType in ('VIDEO','sequence'):
 			middleOptions = json.loads(config['ffmpeg']['resourcespace_video_opts'])
 		elif inputType == 'AUDIO':
 			middleOptions = json.loads(config['ffmpeg']['resourcespace_audio_opts'])
+
 		# test/set a default proxy command for FFMPEG call
 		if middleOptions == ['a','b','c']:
 			if inputType == 'VIDEO':
@@ -100,7 +112,7 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 		except:
 			print("couldn't make a dir at "+derivDeliv)
 	if derivType == 'resourcespace':
-		if inputType == 'VIDEO':
+		if inputType in ('VIDEO','sequence'):
 			ext = 'mp4'
 			outputOptions.extend(strict)
 		elif inputType == 'AUDIO':
@@ -131,11 +143,13 @@ def set_args():
 		)
 	parser.add_argument(
 		'-i','--inputPath',
-		help='path of input file'
+		required=True,
+		help='path of input material'
 		)
 	parser.add_argument(
 		'-d','--derivType',
 		choices=['resourcespace','proresHQ'],
+		default='resourcespace',
 		help='choose a derivative type to output'
 		)
 	parser.add_argument(
@@ -166,6 +180,7 @@ def parse_sequence_stuff(inputPath):
 			title_acc#_barcode_reel#_sequence#.dpx
 		[optionaltitle_acc#_barcode_reel#.wav]
 	'''
+	sequenceScanner.main(inputPath)
 	with os.scandir(inputPath) as whatApath:
 		for entry in whatApath:
 			if entry.name.endswith('.wav'):
@@ -174,15 +189,20 @@ def parse_sequence_stuff(inputPath):
 				audioPath = None
 			if entry.is_dir():
 				# should be a single DPX dir with only dpx files in it
-				files = os.listdir(entry.path)
-				file0 = files[0]
+				with os.scandir(entry.path) as scan:
+					file0 = next(scan).path
+				print(file0)
+				print("x "*100)
 
 	dpxBase = os.path.basename(file0)
-	match = re.search(r'(\d{7})(\.)',dpxBase)
-	startNumber = match.group(1)
-	return audioPath,file0,startNumber
-
-
+	# print(file0)
+	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	fileBase = match.group(1)
+	startNumber = match.group(2)
+	numberOfDigits = len(startNumber)
+	extension = match.group(3)
+	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+	return audioPath,filePattern,startNumber
 
 def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	destinations = 	{
@@ -225,16 +245,21 @@ def main():
 	derivType = args.derivType
 	logDir = args.logDir
 	rsMulti = args.rspaceMulti
+	isSequence = args.isSequence
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
 
-	inputType = pymmFunctions.is_av(inputPath)	
+	if not isSequence:
+		inputType = pymmFunctions.is_av(inputPath)
+	else:
+		inputType = 'sequence'
 	ffmpegArgs = []
-	inputOptions = set_input_options(
+	inputOptions,audioPath = set_input_options(
 		derivType,
 		inputPath,
-		logDir
+		logDir,
+		isSequence
 		)
 	middleOptions = set_middle_options(derivType,inputType)
 	outputOptions = set_output_options(
@@ -246,7 +271,7 @@ def main():
 	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	# print(ffmpegArgs)
+	print(' '.join(ffmpegArgs))
 	output = subprocess.Popen(
 		ffmpegArgs,
 		stdout=subprocess.PIPE,
