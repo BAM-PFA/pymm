@@ -763,23 +763,28 @@ def is_audio(inputPath):
 		return False
 
 def is_av(inputPath):
+	'''
+	run tests for video, then audio, then DPX seq, then give up.
+	'''
 	_is_video = is_video(inputPath)
-	if not _is_video:
-		_is_audio = is_audio(inputPath)
-		if not _is_audio:
-			print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
-			return False
-		else:
-			return 'AUDIO'
-	else:
+	if _is_video:
 		return 'VIDEO'
+	else:
+		_is_audio = is_audio(inputPath)
+		if _is_audio:
+			return 'AUDIO'
+		else:
+			_is_dpx,details = sequeceScanner.main(inputPath)
+			if _is_dpx:
+				if details == 'single reel dpx':
+					# insert test for only dpx contents
+					pass
+
+				return 'DPX'
 
 def is_dpx_sequence(inputPath):
-	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
-	# AUTOMATICALLY? 
 	if os.path.isdir(inputPath):
-		for root,dirs,files in os.walk(inputPath):
-			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
+		pass
 
 def check_policy(ingestType,inputPath):
 	print('do policy check stuff')
@@ -977,6 +982,17 @@ def get_mediainfo_value(inputPath,_type,fieldName):
 
 	return value
 
+def get_framerate(inputPath):
+	'''
+	get the framerate from a video file
+	'''
+	framerate = get_mediainfo_value(
+		inputPath,
+		'Video',
+		'FrameRate'
+		)
+	return framerate
+
 #
 # END FILE CHECK STUFF 
 #
@@ -1127,20 +1143,36 @@ def recursive_chmod(path,mode=0o777):
 
 def remove_hidden_system_files(inputPath):
 	removed = []
+	dont_remove = ['.git','.tmp.drivedownload']
 	for root,dirs,files in os.walk(inputPath):
 		for f in os.listdir(root):
 			if f.startswith('.'):
-					target = os.path.join(root,f)
-					removed.append(target)
-					os.remove(target)
-					print("removed a system file at {}".format(target))
+				# weird list comprehension to make sure not to delete
+				# files accidentally - checks for .git/gitignore 
+				# and Drive hidden files; can add to list!!
+				if not any(
+					[x for x in f if (f in dont_remove) or (
+						[x for x in dont_remove if x in f]
+						)
+					]
+					):
+						target = os.path.join(root,f)
+						os.remove(target)
+						removed.append(target)
+						print("removed a system file at {}".format(target))
 		for _dir in dirs:
 			for f in os.listdir(os.path.join(root,_dir)):
 				if f.startswith('.'):
-					target = os.path.join(root,_dir,f)
-					removed.append(target)
-					os.remove(target)
-					print("removed a system file at {}".format(target))
+					if not any(
+					[x for x in f if (f in dont_remove) or (
+						[x for x in dont_remove if x in f]
+						)
+					]
+					):
+						target = os.path.join(root,_dir,f)
+						removed.append(target)
+						os.remove(target)
+						print("removed a system file at {}".format(target))
 
 	return removed
 

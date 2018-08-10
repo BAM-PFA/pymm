@@ -27,6 +27,7 @@ import makeDerivs
 import moveNcopy
 import makeMetadata
 import pymmFunctions
+import sequenceScanner
 
 # read in from the config file
 config = pymmFunctions.read_config()
@@ -815,16 +816,16 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 	- check for subdirectories
 	'''
 	precheckPass = (True,'')
-
+	inputPath = ingestLogBoilerplate['inputPath']
 	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
 	### DESTROY!! DESTROY!! DESTROY! ###
 
 	removedFiles = pymmFunctions.remove_hidden_system_files(
-		ingestLogBoilerplate['inputPath']
+		inputPath
 		)
 	source_list = pymmFunctions.list_files(
-		ingestLogBoilerplate['inputPath']
+		inputPath
 		)
 	removeFailures = []
 	status = "OK"
@@ -885,8 +886,17 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 			print("\nYou have subdirectory(ies) in your input:"
 				"\n({})\n".format(_object))
 	if subs > 0:
-		print("This is not currently supported. Exiting!")
-		precheckPass = (False,'subdirectories in input')
+		# sequenceScanner checks for DPX folder structure compliance
+		# and whether it is a single or multi-reel scan
+		result,details = sequenceScanner.main(inputPath)
+		# print("This is not currently supported. Exiting!")
+		# precheckPass = (False,'subdirectories in input')
+		if result != True:
+			precheckPass = (False,"Problems! See: {}".format(details))
+		else:
+			precheckPass = (True,details)
+	else:
+		precheckPass = (True,'discrete files')
 
 	return precheckPass
 
@@ -1116,9 +1126,9 @@ def main():
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# RUN A PRECHECK ON DIRECTORY INPUTS
+	### RUN A PRECHECK ON DIRECTORY INPUTS
 	if inputType == 'dir':
-		precheckPass,precheckFailReason = directory_precheck(
+		precheckPass,precheckDetails = directory_precheck(
 			ingestLogBoilerplate,
 			processingVars
 			)
@@ -1127,17 +1137,21 @@ def main():
 				processingVars,
 				packageOutputDir,
 				"ABORTING",
-				precheckFailReason
+				precheckDetails
 				)
-			ingestResults['abortReason'] = precheckFailReason
+			ingestResults['abortReason'] = precheckDetails
 			print(ingestResults)
 			return ingestResults
-		else:
+		elif precheckPass == True and precheckDetails == 'discrete files':
 			source_list = pymmFunctions.list_files(inputPath)
+		elif precheckPass == True and precheckDetails == 'single reel dpx':
+			inputType = 'single reel dpx'
+		elif precheckPass == True and precheckDetails == 'multi-reel dpx':
+			inputType = 'multi-reel dpx'
 
-	# create a PBCore XML file and send any existing BAMPFA metadata JSON
-	# to the object metadata directory.
-	# We will add instantiation data later during ingest
+	### Create a PBCore XML file and send any existing BAMPFA metadata JSON
+	### 	to the object metadata directory.
+	### 	We will add instantiation data later during ingest
 	pbcoreXML = pbcore.PBCoreDocument()
 	# NOTE TO SELF: 
 	# REALLY I SHOULD SEPARATE THE BAMPFA COLLECTION JSON
