@@ -36,12 +36,13 @@ defaultAudioAccessOptions = [
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	if isSequence:
-		print("HI")
-		audioPath,filePattern,startNumber = parse_sequence_stuff(inputPath)
+		audioPath,filePattern,startNumber,framerate = parse_sequence_stuff(inputPath)
 		inputOptions = [
 			'-start_number',startNumber,
 			'-i',filePattern
 			]
+		if framerate:
+			inputOptions.extend(['-r',framerate])
 		if audioPath:
 			inputOptions.extend(
 				['-i',audioPath]
@@ -191,10 +192,14 @@ def parse_sequence_stuff(inputPath):
 				# should be a single DPX dir with only dpx files in it
 				with os.scandir(entry.path) as scan:
 					file0 = next(scan).path
-				print(file0)
-				print("x "*100)
+				# print(file0)
+				# print("x "*100)
 
-	dpxBase = os.path.basename(file0)
+	try:
+		framerate = pymmFunctions.get_framerate(file0)
+		print(framerate)
+	except:
+		framerate = None
 	# print(file0)
 	match = re.search(r'(.*)(\d{7})(\..+)',file0)
 	fileBase = match.group(1)
@@ -202,7 +207,7 @@ def parse_sequence_stuff(inputPath):
 	numberOfDigits = len(startNumber)
 	extension = match.group(3)
 	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
-	return audioPath,filePattern,startNumber
+	return audioPath,filePattern,startNumber,framerate
 
 def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	destinations = 	{

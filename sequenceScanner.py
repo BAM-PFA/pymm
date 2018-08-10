@@ -39,8 +39,6 @@ def scan_dir(inputPath):
 		for _dir in dirs:
 			path = os.path.join(root,_dir)
 			if os.path.isdir(path):
-				print("DIRRRR")
-				print(path)
 				contents = os.listdir(path)
 				if len(contents) == 0:
 					print("removing empty dir at "+path)

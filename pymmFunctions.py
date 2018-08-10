@@ -977,6 +977,17 @@ def get_mediainfo_value(inputPath,_type,fieldName):
 
 	return value
 
+def get_framerate(inputPath):
+	'''
+	get the framerate from a video file
+	'''
+	framerate = get_mediainfo_value(
+		inputPath,
+		'Video',
+		'FrameRate'
+		)
+	return framerate
+
 #
 # END FILE CHECK STUFF 
 #
