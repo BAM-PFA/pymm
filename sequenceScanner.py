@@ -109,15 +109,31 @@ def check_formats(inputPath):
 					# print(format)
 	return result,badFiles
 
+def check_complexity(inputPath):
+	# by the time it gets here the structure and contents 
+	# should be valid, so if there's any subdir other than dpx, 
+	# we can assume that it is a multi-reel scan input
+	complexity = 'single reel dpx'
+	with os.scandir(inputPath) as contents:
+		for item in contents:
+			if item.is_dir() and item.name.lower() != 'dpx':
+				complexity = 'multi-reel dpx'
+
+	return complexity
+
 def main(inputPath):
-	result,problems = scan_dir(inputPath)
+	result,details = scan_dir(inputPath)
 	if not result:
 		pass
 
 	else:
-		result,problems = check_formats(inputPath)
-	print(result,problems)
-	return result,problems
+		result,details = check_formats(inputPath)
+	print(result,details)
+
+	if result == True:
+		complexity = check_complexity(inputPath)
+		details = complexity
+	return result,details
 
 if __name__ == "__main__":
 	main()

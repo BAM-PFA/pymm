@@ -36,6 +36,7 @@ defaultAudioAccessOptions = [
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	if isSequence:
+		# get variables needed to process a derivative from a dpx sequence
 		audioPath,filePattern,startNumber,framerate = parse_sequence_stuff(inputPath)
 		inputOptions = [
 			'-start_number',startNumber,
@@ -163,7 +164,7 @@ def set_args():
 		)
 	parser.add_argument(
 		'-r','--rspaceMulti',
-		help='set directory for multi-file resourcespace object'
+		help='set directory for multi-part resourcespace object'
 		)
 	parser.add_argument(
 		'-s','--isSequence',
@@ -180,6 +181,12 @@ def parse_sequence_stuff(inputPath):
 		dpx/
 			title_acc#_barcode_reel#_sequence#.dpx
 		[optionaltitle_acc#_barcode_reel#.wav]
+
+	this function returns a few variables:
+		* audioPath = path to an audio file (should be .wav in all our cases)
+		* filePattern = pattern for ffmpeg to parse
+		* startNumber = first sequence number
+		* framerate = embedded by scanner in DPX files
 	'''
 	sequenceScanner.main(inputPath)
 	with os.scandir(inputPath) as whatApath:
