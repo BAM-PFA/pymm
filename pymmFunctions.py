@@ -25,6 +25,7 @@ import Levenshtein
 # local modules:
 import dbReporters
 import MySQLqueries
+import sequenceScanner
 
 ################################################################
 # 
@@ -774,17 +775,52 @@ def is_av(inputPath):
 		if _is_audio:
 			return 'AUDIO'
 		else:
-			_is_dpx,details = sequeceScanner.main(inputPath)
+			_is_dpx,details = sequenceScanner.main(inputPath)
 			if _is_dpx:
 				if details == 'single reel dpx':
 					# insert test for only dpx contents
-					pass
+					with os.scandir(inputPath) as scan:
+						for item in scan:
+							if item.is_dir():
+								_is_dpx_av = is_dpx_sequence(item.path)
+							else:
+								print("HELLO")
 
 				return 'DPX'
 
+def gen_dict_extract(key, var):
+	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
+	# will try this to see if there is more than one General track in a DPX mediainfo report. 
+
+	# if there is, it means there's more than a dpx sequence in the folder and it should be remedied before being processed.
+    if hasattr(var,'iteritems'):
+        for k, v in var.iteritems():
+            if k == key:
+                yield v
+            if isinstance(v, dict):
+                for result in gen_dict_extract(key, v):
+                    yield result
+            elif isinstance(v, list):
+                for d in v:
+                    for result in gen_dict_extract(key, d):
+                        yield result
+
 def is_dpx_sequence(inputPath):
-	if os.path.isdir(inputPath):
-		pass
+	_is_dpx_av = False
+	try:
+		mediainfo = makeMetadata.get_mediainfo_report(inputPath,'',_JSON=True)
+		mediainfo = json.loads(mediainfo)
+	except:
+		return False
+
+	if mediainfo:
+		_is_dpx_av = True
+
+	return _is_dpx_av
+
+
+
+
 
 def check_policy(ingestType,inputPath):
 	print('do policy check stuff')
