@@ -232,6 +232,7 @@ def hashdeep_audit(inputPath,manifestPath,_type=None):
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
+	print(inputPath)
 	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
 	frameMd5Filepath = os.path.join(metadataDir,md5File)
 	av = pymmFunctions.is_av(inputPath)
@@ -273,13 +274,38 @@ def make_frame_md5(inputPath,metadataDir):
 			frameMd5Filepath
 			]
 		output = subprocess.run(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		# print(output.returncode)
 		try:
-			if output.stdout.decode() not in ('',None): 
+			if output.returncode == 0: 
 				# print(output)
 				print("FRAME MD5 CHA CHA CHA")
 				returnValue = frameMd5Filepath
 		except:
 			print(output.stderr.decode())
+
+	elif av == 'DPX':
+		filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
+		frameMd5Command = [
+			'ffmpeg',
+			'-start_number',startNumber,
+			'-i',filePattern,
+			'-f','framemd5',
+			frameMd5Filepath
+			]
+		output = subprocess.Popen(
+			frameMd5Command,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+		try:
+			out,err = output.communicate()
+			if err:
+				# this output is captured in stderr for some reason
+				print("FRAME MD5 CHA CHA CHA")
+				# print(err.decode('utf-8'))
+			returnValue = frameMd5Filepath
+		except:
+			print(out.decode())
 
 	return returnValue
 

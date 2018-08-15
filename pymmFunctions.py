@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import shutil
@@ -779,6 +780,7 @@ def is_av(inputPath):
 	_is_video = is_video(inputPath)
 	_is_audio = False
 	_is_dpx = False
+	_is_dpx_av = False
 	if _is_video == True:
 		return 'VIDEO'
 	else:
@@ -789,10 +791,10 @@ def is_av(inputPath):
 			try:
 				_is_dpx,details = sequenceScanner.main(inputPath)
 			except:
-				print('error scanning a sequenece directory')
+				print('error scanning a sequence directory')
 				return False
 			if _is_dpx:
-				if details == 'single reel dpx':
+				if details in ('single reel dpx','multi-reel dpx'):
 					# insert test for only dpx contents
 					status, failedDirs = test_sequence_reel_dir(inputPath)
 					if status == True:
@@ -803,16 +805,22 @@ def is_av(inputPath):
 							'problem directories: {}'.format(failedDirs)
 							)
 						return False
-				elif details == 'multi-reel dpx':
-					status, failedDirs = test_sequence_reel_dir(inputPath)
-					if status == True:
-						return 'DPX'
-					else:
-						print(
-							'False: check out this list of '
-							'problem directories: {}'.format(failedDirs)
-							)
-						return False
+				# elif details == 'multi-reel dpx':
+				# 	status, failedDirs = test_sequence_reel_dir(inputPath)
+				# 	if status == True:
+				# 		return 'DPX'
+				# 	else:
+				# 		print(
+				# 			'False: check out this list of '
+				# 			'problem directories: {}'.format(failedDirs)
+				# 			)
+				# 		return False
+			elif _is_dpx == None:
+				_is_dpx_av = is_dpx_sequence(inputPath)
+				if _is_dpx_av:
+					return 'DPX'
+			else:
+				return None
 
 def test_sequence_reel_dir(reelPath):
 	'''
@@ -1080,6 +1088,61 @@ def get_framerate(inputPath):
 		'FrameRate'
 		)
 	return framerate
+
+def parse_sequence_parent(inputPath):
+	'''
+	input path should only ever be:
+	title_acc#_barcode_reel#/
+		dpx/
+			title_acc#_barcode_reel#_sequence#.dpx
+		[optionaltitle_acc#_barcode_reel#.wav]
+
+	this function returns a few variables:
+		* audioPath = path to an audio file (should be .wav in all our cases)
+		* filePattern = pattern for ffmpeg to parse
+		* startNumber = first sequence number
+		* framerate = embedded by scanner in DPX files
+	'''
+	sequenceScanner.main(inputPath)
+	with os.scandir(inputPath) as whatApath:
+		for entry in whatApath:
+			if entry.name.endswith('.wav'):
+				audioPath = entry.path
+			else:
+				audioPath = None
+			if entry.is_dir():
+				# should be a single DPX dir with only dpx files in it
+				filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
+				# with os.scandir(entry.path) as scan:
+					# file0 = next(scan).path
+				# print(file0)
+				# print("x "*100)
+
+	try:
+		framerate = get_framerate(file0)
+		# print(framerate)
+	except:
+		framerate = None
+	# print(file0)
+	# match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	# fileBase = match.group(1)
+	# startNumber = match.group(2)
+	# numberOfDigits = len(startNumber)
+	# extension = match.group(3)
+	# filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+	return audioPath,filePattern,startNumber,framerate
+
+def parse_sequence_folder(dpxPath):
+	with os.scandir(dpxPath) as scan:
+		file0 = next(scan).path
+	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	fileBase = match.group(1)
+	startNumber = match.group(2)
+	numberOfDigits = len(startNumber)
+	extension = match.group(3)
+	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+	# print(filePattern,startNumber,file0)
+	return filePattern,startNumber,file0
 
 #
 # END FILE CHECK STUFF 

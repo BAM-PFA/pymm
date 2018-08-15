@@ -92,21 +92,7 @@ def check_formats(inputPath):
 				if not ext.lower() in ('.dpx','.wav'):
 					result = False
 					badFiles.append(os.path.join(root,_file))
-				# could do this but it takes forever
-				# if ext == '.wav':
-					# format = pymmFunctions.get_mediainfo_value(
-					# 	filePath,
-					# 	'Audio',
-					# 	'Format'
-					# 	)
-					# print(format)
-				# elif ext == '.dpx':
-					# format = pymmFunctions.get_mediainfo_value(
-					# 	filePath,
-					# 	'Video',
-					# 	'Format'
-					# 	)
-					# print(format)
+
 	return result,badFiles
 
 def check_complexity(inputPath):

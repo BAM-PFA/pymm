@@ -321,32 +321,12 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	processingVars['caller'] = None
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
-	# there's a calculation of the file hash here
-	# that really should be left to the object manifest
-	# to avoid excess processing drain
-	# @fixme
 	inputFile = processingVars['inputPath']
-	filename = os.path.basename(inputFile)
-	# if _type == 'derivative':
-	# 	inputFileMD5 = makeMetadata.hash_file(inputFile)
-
-	# processingVars['caller'] = 'Python3 hashlib'
-	# eventID = pymmFunctions.short_log(
-	# 	processingVars,
-	# 	ingestLogBoilerplate,
-	# 	event = 'message digest calculation',
-	# 	outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
-	# 	status = "OK"
-	# 	)
-
-	# pymmFunctions.insert_fixity(
-	# 	processingVars,
-	# 	eventID,
-	# 	messageDigestAlgorithm = "md5",
-	# 	messageDigestHashValue = inputFileMD5,
-	# 	eventDateTime = None
-	# 	)
-	# processingVars['caller'] = None
+	if not inputFile == processingVars['filename']:
+		filename = os.path.basename(inputFile)
+	else:
+		# this is an exception for DPX folders
+		filename = inputFile
 
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
@@ -373,6 +353,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			processingVars['inputPath'],
 			processingVars['packageMetadataObjects']
 			)
+		print(frameMD5)
 		if frameMD5 != False:
 			event = 'message digest calculation'
 			outcome = ("frameMD5 report for input file "
@@ -1357,6 +1338,7 @@ def main():
 					objectCategoryDetail='preservation master audio'
 					)
 			elif os.path.isdir(element):
+				# set filename to be the 
 				ingestLogBoilerplate['filename'] =\
 					processingVars['filename'] =\
 					processingVars['inputPath']=\
@@ -1366,6 +1348,13 @@ def main():
 					objectCategory='intellectual entity',
 					objectCategoryDetail='preservation master image sequence'
 					)
+			# move_input_file(processingVars,ingestLogBoilerplate)
+			get_file_metadata(ingestLogBoilerplate,processingVars)
+			add_pbcore_instantiation(
+				processingVars,
+				ingestLogBoilerplate,
+				"Preservation master"
+				)
 		print(processingVars)
 		print(ingestLogBoilerplate)
 		sys.exit()
