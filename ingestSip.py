@@ -1346,18 +1346,26 @@ def main():
 				)
 		for element in source_list:
 			print(element)
-			# ingestLogBoilerplate['filename'] = os.path.basename(element)
-			# processingVars['filename'] = os.path.basename(element)
-			# processingVars['inputPath']=\
-			# 	ingestLogBoilerplate['inputPath'] = element
-			# if os.path.isdir(element):
-			# 	objectCategory = 'intellectual entity'
-
-			# processingVars = pymmFunctions.insert_object(
-			# 	processingVars,
-			# 	objectCategory = 'file'
-			# 	)
-		print(avStatus)
+			if os.path.isfile(element):
+				ingestLogBoilerplate['filename'] = os.path.basename(element)
+				processingVars['filename'] = os.path.basename(element)
+				processingVars['inputPath']=\
+					ingestLogBoilerplate['inputPath'] = element
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='file',
+					objectCategoryDetail='preservation master audio'
+					)
+			elif os.path.isdir(element):
+				ingestLogBoilerplate['filename'] =\
+					processingVars['filename'] =\
+					processingVars['inputPath']=\
+					ingestLogBoilerplate['inputPath'] = element
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='intellectual entity',
+					objectCategoryDetail='preservation master image sequence'
+					)
 		print(processingVars)
 		print(ingestLogBoilerplate)
 		sys.exit()

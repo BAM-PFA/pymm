@@ -95,7 +95,7 @@ def create_db(pymm_db=pymm_db):
 							objectIdentifierValueID BIGINT(20) NOT NULL AUTO_INCREMENT,\
 							objectIdentifierValue VARCHAR(1000) NOT NULL UNIQUE,\
 							objectCategory VARCHAR(30) NOT NULL,\
-							objectCategoryDetail VARCHAR(30) NOT NULL,\
+							objectCategoryDetail VARCHAR(50) NOT NULL,\
 							objectDB_Insertion datetime NOT NULL DEFAULT NOW(),\
 							object_LastTouched datetime NOT NULL,\
 							PRIMARY KEY (objectIdentifierValueID)\
