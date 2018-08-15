@@ -24,6 +24,7 @@ import time
 import Levenshtein
 # local modules:
 import dbReporters
+import makeMetadata
 import MySQLqueries
 import sequenceScanner
 
@@ -782,45 +783,51 @@ def is_av(inputPath):
 					with os.scandir(inputPath) as scan:
 						for item in scan:
 							if item.is_dir():
+								print(item.path)
 								_is_dpx_av = is_dpx_sequence(item.path)
+								if _is_dpx_av:
+									return 'DPX'
 							else:
-								print("HELLO")
+								return False
 
-				return 'DPX'
+				elif details == 'multi-reel dpx':
+					pass
 
-def gen_dict_extract(key, var):
-	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
-	# will try this to see if there is more than one General track in a DPX mediainfo report. 
+# def gen_dict_extract(key, var):
+# 	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
+# 	# will try this to see if there is more than one General track in a DPX mediainfo report. 
 
-	# if there is, it means there's more than a dpx sequence in the folder and it should be remedied before being processed.
-    if hasattr(var,'iteritems'):
-        for k, v in var.iteritems():
-            if k == key:
-                yield v
-            if isinstance(v, dict):
-                for result in gen_dict_extract(key, v):
-                    yield result
-            elif isinstance(v, list):
-                for d in v:
-                    for result in gen_dict_extract(key, d):
+# 	# if there is, it means there's more than a dpx sequence in the folder and it should be remedied before being processed.
+#     if hasattr(var,'iteritems'):
+#         for k, v in var.iteritems():
+#             if k == key:
+#                 yield v
+#             if isinstance(v, dict):
+#                 for result in gen_dict_extract(key, v):
+#                     yield result
+#             elif isinstance(v, list):
+#                 for d in v:
+#                     for result in gen_dict_extract(key, d):
                         yield result
 
 def is_dpx_sequence(inputPath):
+	'''
+	run mediainfo on the 'dpx' folder
+	if there's anything other than dpx files in there
+	the result will not parse as json and it indicates
+	noncompliance with expected structure
+	(PS-this is a hack)
+	'''
 	_is_dpx_av = False
 	try:
 		mediainfo = makeMetadata.get_mediainfo_report(inputPath,'',_JSON=True)
 		mediainfo = json.loads(mediainfo)
 	except:
-		return False
-
+		_is_dpx_av = False
 	if mediainfo:
 		_is_dpx_av = True
 
 	return _is_dpx_av
-
-
-
-
 
 def check_policy(ingestType,inputPath):
 	print('do policy check stuff')
