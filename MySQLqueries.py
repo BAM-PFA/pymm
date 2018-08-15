@@ -3,9 +3,11 @@ insertObjectSQL = (
 		INSERT IGNORE INTO object (
 			objectIdentifierValue,
 			objectCategory,
+			objectCategoryDetail,
 			object_LastTouched
 			)
 		VALUES (
+			%s,
 			%s,
 			%s,
 			NOW()

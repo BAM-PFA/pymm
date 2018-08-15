@@ -86,6 +86,7 @@ class ObjectInsert:
 		user,
 		objectIdentifierValue,
 		objectCategory=None,
+		objectCategoryDetail=None,
 		objectIdentifierValueID=None
 		):
 		'''
@@ -95,6 +96,7 @@ class ObjectInsert:
 		self.user = user
 		self.objectIdentifierValue = objectIdentifierValue
 		self.objectCategory = objectCategory
+		self.objectCategoryDetail = objectCategoryDetail
 		self.objectIdentifierValueID = objectIdentifierValueID
 
 	def report_to_db(self):
@@ -109,7 +111,8 @@ class ObjectInsert:
 			connection,
 			sql,
 			self.objectIdentifierValue,
-			self.objectCategory
+			self.objectCategory,
+			self.objectCategoryDetail
 			)
 		self.objectIdentifierValueID = cursor.lastrowid
 

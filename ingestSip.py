@@ -194,7 +194,8 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 		processingVars['filename'] = os.path.basename(concattedAccessFile)
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
-			'file'
+			objectCategory='file',
+			objectCategoryDetail='concatenated access file'
 			)
 	else:
 		status = "FAIL"
@@ -585,7 +586,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		if os.path.isfile(value):
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
-				'file'
+				objectCategory='file',
+				objectCategoryDetail='access file'
 				)
 			get_file_metadata(\
 				ingestLogBoilerplate,\
@@ -1112,7 +1114,8 @@ def main():
 	processingVars['filename'] = ingestUUID
 	processingVars = pymmFunctions.insert_object(
 		processingVars,
-		'intellectual entity'
+		objectCategory='intellectual entity',
+		objectCategoryDetail='Archival Information Package'
 		)
 	# tell the various logs that we are starting
 	processingVars['caller'] = 'ingestSIP.main()'
@@ -1220,10 +1223,13 @@ def main():
 	###############
 	## DO STUFF! ##
 	###############
+	
+	### SINGLE-FILE INPUT ###
 	if inputType == 'file':
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
-			objectCategory = 'file'
+			objectCategory = 'file',
+			objectCategoryDetail='preservation master'
 			)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
@@ -1250,6 +1256,7 @@ def main():
 			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
+	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':
 		for _file in source_list:			
 			# set processing variables per file 
@@ -1259,7 +1266,8 @@ def main():
 				ingestLogBoilerplate['inputPath'] = _file
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
-				objectCategory = 'file'
+				objectCategory = 'file',
+				objectCategoryDetail='preservation master'
 				)
 			#######################
 			# check that input file is actually a/v
@@ -1321,17 +1329,43 @@ def main():
 					concatPath,
 					accessPath
 					)
-	elif inputType in ('single reel dpx','multi-reel dpx'):
+
+	elif inputType == 'single reel dpx': #,'multi-reel dpx'):
 		# print(processingVars)
 		# print(ingestLogBoilerplate)
-		processingVars = pymmFunctions.insert_object(processingVars,objectCategory = 'intellectual entity')
+		processingVars = pymmFunctions.insert_object(
+			processingVars,
+			objectCategory='intellectual entity',
+			objectCategoryDetail='film scanner output reel'
+			)
 		avStatus = check_av_status(
 				inputPath,
 				interactiveMode,
 				ingestLogBoilerplate,
 				processingVars
 				)
-		print(avStatus)
+		for element in source_list:
+			print(element)
+			if os.path.isfile(element):
+				ingestLogBoilerplate['filename'] = os.path.basename(element)
+				processingVars['filename'] = os.path.basename(element)
+				processingVars['inputPath']=\
+					ingestLogBoilerplate['inputPath'] = element
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='file',
+					objectCategoryDetail='preservation master audio'
+					)
+			elif os.path.isdir(element):
+				ingestLogBoilerplate['filename'] =\
+					processingVars['filename'] =\
+					processingVars['inputPath']=\
+					ingestLogBoilerplate['inputPath'] = element
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='intellectual entity',
+					objectCategoryDetail='preservation master image sequence'
+					)
 		print(processingVars)
 		print(ingestLogBoilerplate)
 		sys.exit()
