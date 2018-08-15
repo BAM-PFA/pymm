@@ -767,31 +767,71 @@ def is_audio(inputPath):
 def is_av(inputPath):
 	'''
 	run tests for video, then audio, then DPX seq, then give up.
+	@FIXME - this should return a more verbose/useful
+		explanation of failed tests.
+		Currently the expected return value os Boolean when is_av() is called. 
 	'''
 	_is_video = is_video(inputPath)
-	if _is_video:
+	_is_audio = False
+	_is_dpx = False
+	if _is_video == True:
 		return 'VIDEO'
 	else:
 		_is_audio = is_audio(inputPath)
 		if _is_audio:
 			return 'AUDIO'
 		else:
-			_is_dpx,details = sequenceScanner.main(inputPath)
+			try:
+				_is_dpx,details = sequenceScanner.main(inputPath)
+			except:
+				print('error scanning a sequenece directory')
+				return False
 			if _is_dpx:
 				if details == 'single reel dpx':
 					# insert test for only dpx contents
-					with os.scandir(inputPath) as scan:
-						for item in scan:
-							if item.is_dir():
-								print(item.path)
-								_is_dpx_av = is_dpx_sequence(item.path)
-								if _is_dpx_av:
-									return 'DPX'
-							else:
-								return False
-
+					status, failedDirs = test_sequence_reel_dir(inputPath)
+					if status == True:
+						return 'DPX'
+					else:
+						print(
+							'ERROR: check out this list of '
+							'problem directories: {}'.format(failedDirs)
+							)
+						return False
 				elif details == 'multi-reel dpx':
+					status, failedDirs = test_sequence_reel_dir(inputPath)
+					if status == True:
+						return 'DPX'
+					else:
+						print(
+							'False: check out this list of '
+							'problem directories: {}'.format(failedDirs)
+							)
+						return False
+
+def test_sequence_reel_dir(reelPath):
+	'''
+	Take a directory that should contain only a wav file
+	and a corresponding directory with an image sequence in it.
+	If there's a problem with one or more of the directories return
+	it/them in a list.
+	'''
+	failedDirs = []
+	failures = 0
+	with os.scandir(reelPath) as scan:
+		for item in scan:
+			if item.is_dir():
+				# print(item.path)
+				_is_dpx_av = is_dpx_sequence(item.path)
+				if not _is_dpx_av:
+					failedDirs.append(item.path)
+					failures += 1
+				else:
 					pass
+	if failures > 0:
+		return False, failedDirs
+	else:
+		return True, failedDirs
 
 # def gen_dict_extract(key, var):
 # 	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
@@ -808,7 +848,7 @@ def is_av(inputPath):
 #             elif isinstance(v, list):
 #                 for d in v:
 #                     for result in gen_dict_extract(key, d):
-                        yield result
+                        # yield result
 
 def is_dpx_sequence(inputPath):
 	'''
