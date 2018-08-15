@@ -72,6 +72,21 @@ def move_n_verify_sip(
 	print(verify)
 	return destSIP,safe
 
+def mv_object(inputPath,destination):
+	'''
+	call mv on an object... 
+	'''
+	command = [
+		'mv','-f',
+		inputPath,
+		destination
+		]
+	out = subprocess.run(command,stdout=subprocess.PIPE)
+	if out.returncode == 0:
+		return True
+	else:
+		return False
+
 def copy_file(inputPath,rsyncLogPath,destination):
 	'''
 	call rsync on an input file
@@ -103,7 +118,7 @@ def copy_file(inputPath,rsyncLogPath,destination):
 		print('go get a mac, my man.')
 	return False
 
-def copy_dir(inputDir,rsyncLogPath,destination):
+def copy_object(inputDir,rsyncLogPath,destination):
 	'''
 	call rsync on an input dir
 	'''
@@ -203,6 +218,21 @@ def main():
 	now = pymmFunctions.timestamp('now')
 	# Quit if there are required variables missing
 	missingArgs = 0
+
+	try:
+		# see if the input/destination are on the same filesystem
+		# if so, we will use mv rather than rsync for efficiency
+		inputFS = pymmFunctions.get_filesystem_id(inputPath)
+		destFS = pymmFunctions.get_filesystem_id(destination)
+		print(inputFS,destFS)
+		if inputFS == destFS:
+			print("HEYYYY")
+			sameFilesystem = True
+		else:
+			sameFilesystem = False
+	except:
+		sameFilesystem = False
+
 	for _arg in requiredArgs:
 		if getattr(args,_arg) == None:
 			print("CONFIGURATION PROBLEM:\n"
@@ -243,12 +273,18 @@ def main():
 			# add trailing slash for rsync destination directory
 			if not destination[-1] == '/':
 				destination = destination+'/'
-			copy_dir(inputPath,rsyncLogPath,destination)
+			if not sameFilesystem == True:
+				copy_object(inputPath,rsyncLogPath,destination)
+			else:
+				mv_object(inputPath,destination)
 		elif dir_or_file == 'file':
-			copy_file(inputPath,rsyncLogPath,destination)
+			if not sameFilesystem == True:
+				copy_object(inputPath,rsyncLogPath,destination)
+			else:
+				mv_object(inputPath,destination)
 		else:
 			print("o_O what is going on here? you up to something?")
-			sys.exit()
+			# sys.exit()
 		
 	else:
 		stagedSIPpath,safe = move_n_verify_sip(inputPath,destination)

@@ -37,7 +37,7 @@ defaultAudioAccessOptions = [
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
-		audioPath,filePattern,startNumber,framerate = parse_sequence_stuff(inputPath)
+		audioPath,filePattern,startNumber,framerate = pymmFunctions.parse_sequence_parent(inputPath)
 		inputOptions = [
 			'-start_number',startNumber,
 			'-i',filePattern
@@ -174,47 +174,47 @@ def set_args():
 
 	return parser.parse_args()
 
-def parse_sequence_stuff(inputPath):
-	'''
-	input path should only ever be:
-	title_acc#_barcode_reel#/
-		dpx/
-			title_acc#_barcode_reel#_sequence#.dpx
-		[optionaltitle_acc#_barcode_reel#.wav]
+# def parse_sequence_stuff(inputPath):
+# 	'''
+# 	input path should only ever be:
+# 	title_acc#_barcode_reel#/
+# 		dpx/
+# 			title_acc#_barcode_reel#_sequence#.dpx
+# 		[optionaltitle_acc#_barcode_reel#.wav]
 
-	this function returns a few variables:
-		* audioPath = path to an audio file (should be .wav in all our cases)
-		* filePattern = pattern for ffmpeg to parse
-		* startNumber = first sequence number
-		* framerate = embedded by scanner in DPX files
-	'''
-	sequenceScanner.main(inputPath)
-	with os.scandir(inputPath) as whatApath:
-		for entry in whatApath:
-			if entry.name.endswith('.wav'):
-				audioPath = entry.path
-			else:
-				audioPath = None
-			if entry.is_dir():
-				# should be a single DPX dir with only dpx files in it
-				with os.scandir(entry.path) as scan:
-					file0 = next(scan).path
-				# print(file0)
-				# print("x "*100)
+# 	this function returns a few variables:
+# 		* audioPath = path to an audio file (should be .wav in all our cases)
+# 		* filePattern = pattern for ffmpeg to parse
+# 		* startNumber = first sequence number
+# 		* framerate = embedded by scanner in DPX files
+# 	'''
+# 	sequenceScanner.main(inputPath)
+# 	with os.scandir(inputPath) as whatApath:
+# 		for entry in whatApath:
+# 			if entry.name.endswith('.wav'):
+# 				audioPath = entry.path
+# 			else:
+# 				audioPath = None
+# 			if entry.is_dir():
+# 				# should be a single DPX dir with only dpx files in it
+# 				with os.scandir(entry.path) as scan:
+# 					file0 = next(scan).path
+# 				# print(file0)
+# 				# print("x "*100)
 
-	try:
-		framerate = pymmFunctions.get_framerate(file0)
-		print(framerate)
-	except:
-		framerate = None
-	# print(file0)
-	match = re.search(r'(.*)(\d{7})(\..+)',file0)
-	fileBase = match.group(1)
-	startNumber = match.group(2)
-	numberOfDigits = len(startNumber)
-	extension = match.group(3)
-	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
-	return audioPath,filePattern,startNumber,framerate
+# 	try:
+# 		framerate = pymmFunctions.get_framerate(file0)
+# 		print(framerate)
+# 	except:
+# 		framerate = None
+# 	# print(file0)
+# 	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+# 	fileBase = match.group(1)
+# 	startNumber = match.group(2)
+# 	numberOfDigits = len(startNumber)
+# 	extension = match.group(3)
+# 	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+# 	return audioPath,filePattern,startNumber,framerate
 
 def additional_delivery(derivFilepath,derivType,rsMulti=None):
 	destinations = 	{
