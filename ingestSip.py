@@ -229,15 +229,16 @@ def deliver_concat_access(concatPath,accessPath):
 
 def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVars):
 	'''
-	Check whether or not a file is recognized as an a/v file.
+	Check whether or not a file is recognized as an a/v object.
 	If it isn't and user declares interactive mode,
 		ask whether to continue, otherwise quit.
 	'''
+	avStatus = False
 	event = 'format identification'
 	processingVars['caller'] = 'pymmFunctions.is_av()'
 	AV = pymmFunctions.is_av(inputPath)
 	if not AV:
-		outcome = "WARNING: {} is not recognized as an a/v file.".format(
+		outcome = "WARNING: {} is not recognized as an a/v object.".format(
 			ingestLogBoilerplate['filename']
 			)
 		status = "WARNING"
@@ -258,6 +259,7 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 			AV
 			)
 		status = "OK"
+		avStatus = True
 	pymmFunctions.log_event(
 		processingVars,
 		ingestLogBoilerplate,
@@ -265,7 +267,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 		outcome,
 		status
 		)
-	processingVars['caller'] = None
+	# processingVars['caller'] = None
+	return avStatus
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
@@ -1103,6 +1106,7 @@ def main():
 		'inputPath':inputPath,
 		'ingestUUID':ingestUUID
 		}
+	print(ingestLogBoilerplate)
 	# insert a database record for this SIP as an 'intellectual entity'
 	origFilename = processingVars['filename']
 	processingVars['filename'] = ingestUUID
@@ -1127,7 +1131,10 @@ def main():
 		reset_cleanup_choice()
 
 	### RUN A PRECHECK ON DIRECTORY INPUTS
+	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
+	### DPX INPUT.
 	if inputType == 'dir':
+		# precheckDetails == dir type to be set later
 		precheckPass,precheckDetails = directory_precheck(
 			ingestLogBoilerplate,
 			processingVars
@@ -1142,12 +1149,10 @@ def main():
 			ingestResults['abortReason'] = precheckDetails
 			print(ingestResults)
 			return ingestResults
-		elif precheckPass == True and precheckDetails == 'discrete files':
+		elif precheckPass == True:
 			source_list = pymmFunctions.list_files(inputPath)
-		elif precheckPass == True and precheckDetails == 'single reel dpx':
-			inputType = 'single reel dpx'
-		elif precheckPass == True and precheckDetails == 'multi-reel dpx':
-			inputType = 'multi-reel dpx'
+			# set inputType to 'discrete files','single reel dpx','multi-reel dpx'
+			inputType = precheckDetails
 
 	### Create a PBCore XML file and send any existing BAMPFA metadata JSON
 	### 	to the object metadata directory.
@@ -1245,7 +1250,7 @@ def main():
 			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
-	elif inputType == 'dir':
+	elif inputType == 'discrete files':
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
@@ -1259,7 +1264,7 @@ def main():
 			#######################
 			# check that input file is actually a/v
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-			check_av_status(
+			avStatus = check_av_status(
 				_file,
 				interactiveMode,
 				ingestLogBoilerplate,
@@ -1316,6 +1321,50 @@ def main():
 					concatPath,
 					accessPath
 					)
+	elif inputType in ('single reel dpx','multi-reel dpx'):
+		# print(processingVars)
+		# print(ingestLogBoilerplate)
+		processingVars = pymmFunctions.insert_object(processingVars,objectCategory = 'intellectual entity')
+		avStatus = check_av_status(
+				inputPath,
+				interactiveMode,
+				ingestLogBoilerplate,
+				processingVars
+				)
+		print(avStatus)
+		print(processingVars)
+		print(ingestLogBoilerplate)
+		sys.exit()
+
+	# elif inputType == 'single-reel dpx':
+	# 	processingVars = pymmFunctions.insert_object(
+	# 		processingVars,
+	# 		objectCategory = 'file'
+	# 		)
+	# 	# check that input file is actually a/v
+	# 	# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
+	# 	avStatus = check_av_status(
+	# 		inputPath,
+	# 		interactiveMode,
+	# 		ingestLogBoilerplate,
+	# 		processingVars
+	# 		)
+	# 	# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+	# 	move_input_file(processingVars,ingestLogBoilerplate)
+	# 	add_pbcore_instantiation(
+	# 		processingVars,
+	# 		ingestLogBoilerplate,
+	# 		"Preservation master"
+	# 		)
+
+	# 	get_file_metadata(ingestLogBoilerplate,processingVars)
+	# 	pymmFunctions.pymm_log(
+	# 		processingVars,
+	# 		event = 'metadata extraction',
+	# 		outcome = 'calculate input file technical metadata',
+	# 		status = 'OK'
+	# 		)
+	# 	accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 	### END ACTUAL STUFF DOING ###
 	##############################
 	
