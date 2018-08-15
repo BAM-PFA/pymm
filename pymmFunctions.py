@@ -456,7 +456,7 @@ def do_query(connection,sql,*args):
 	cursor = connection.query(sql,*args)
 	return cursor
 
-def insert_object(processingVars,objectCategory):
+def insert_object(processingVars,objectCategory,objectCategoryDetail):
 	operator = processingVars['operator']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
@@ -467,7 +467,8 @@ def insert_object(processingVars,objectCategory):
 		objectInsert = dbReporters.ObjectInsert(
 				operator,
 				theObject,
-				objectCategory
+				objectCategory,
+				objectCategoryDetail
 				)
 		try:
 			# report the details to the db
@@ -492,6 +493,8 @@ def insert_object(processingVars,objectCategory):
 	# set the object category in component object data
 	processingVars['componentObjectData'][theObject]\
 		['objectCategory'] = objectCategory
+	processingVars['componentObjectData'][theObject]\
+		['objectCategoryDetail'] = objectCategoryDetail
 
 	return processingVars
 
@@ -541,6 +544,7 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 	for _object,chars in processingVars['componentObjectData'].items():
 		data = processingVars['componentObjectData'][_object]
 		category = data['objectCategory']
+		categoryDetail = data['objectCategoryDetail']
 		if category == 'file':
 			try:
 				mediainfoPath = data['mediainfoPath']
@@ -557,7 +561,8 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 				del objectCharsInsert
 			except:
 				pass
-		elif category == 'intellectual entity':
+		elif category == 'intellectual entity'\
+			and categoryDetail == 'Archival Information Package':
 			try:
 				objID = data['databaseID']
 				pbcorePath = processingVars['pbcore']
