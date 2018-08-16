@@ -328,7 +328,8 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		'',
 		'-i'+processingVars['inputPath'],
 		'-d'+objectDir,
-		'-L'+processingVars['packageLogDir']
+		'-L'+processingVars['packageLogDir'],
+		'-m'
 		]
 	event = 'replication'
 	outcome = 'migrate file to SIP at {}'.format(objectDir)
