@@ -799,6 +799,7 @@ def is_av(inputPath):
 					# insert test for only dpx contents
 					status, failedDirs = test_sequence_reel_dir(inputPath)
 					if status == True:
+						print('THIS IS AN IMAGE SEQUENCE!')
 						return 'DPX'
 					else:
 						print(
@@ -821,6 +822,7 @@ def is_av(inputPath):
 				# run a different test
 				_is_dpx_av = is_dpx_sequence(inputPath)
 				if _is_dpx_av:
+					print('THIS IS AN IMAGE SEQUENCE!')
 					return 'DPX'
 			else:
 				return None
@@ -834,16 +836,15 @@ def test_sequence_reel_dir(reelPath):
 	'''
 	failedDirs = []
 	failures = 0
-	with os.scandir(reelPath) as scan:
-		for item in scan:
-			if item.is_dir():
-				# print(item.path)
-				_is_dpx_av = is_dpx_sequence(item.path)
-				if not _is_dpx_av:
-					failedDirs.append(item.path)
-					failures += 1
-				else:
-					pass
+	for item in os.scandir(reelPath):
+		if item.is_dir():
+			# print(item.path)
+			_is_dpx_av = is_dpx_sequence(item.path)
+			if not _is_dpx_av:
+				failedDirs.append(item.path)
+				failures += 1
+			else:
+				pass
 	if failures > 0:
 		return False, failedDirs
 	else:
@@ -1107,37 +1108,33 @@ def parse_sequence_parent(inputPath):
 		* framerate = embedded by scanner in DPX files
 	'''
 	sequenceScanner.main(inputPath)
-	with os.scandir(inputPath) as whatApath:
-		for entry in whatApath:
-			if entry.name.endswith('.wav'):
-				audioPath = entry.path
-			else:
-				audioPath = None
-			if entry.is_dir():
-				# should be a single DPX dir with only dpx files in it
-				filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
-				# with os.scandir(entry.path) as scan:
-					# file0 = next(scan).path
-				# print(file0)
-				# print("x "*100)
+	# with os.scandir(inputPath) as whatApath:
+	for entry in os.scandir(inputPath):
+		if entry.name.endswith('.wav'):
+			audioPath = entry.path
+		else:
+			audioPath = None
+		if entry.is_dir():
+			# should be a single DPX dir with only dpx files in it
+			filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
+			# print(file0)
+			# print("x "*100)
 
 	try:
 		framerate = get_framerate(file0)
 		# print(framerate)
 	except:
 		framerate = None
-	# print(file0)
-	# match = re.search(r'(.*)(\d{7})(\..+)',file0)
-	# fileBase = match.group(1)
-	# startNumber = match.group(2)
-	# numberOfDigits = len(startNumber)
-	# extension = match.group(3)
-	# filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+
 	return audioPath,filePattern,startNumber,framerate
 
 def parse_sequence_folder(dpxPath):
-	with os.scandir(dpxPath) as scan:
-		file0 = next(scan).path
+	files = []
+	scan = os.scandir(dpxPath)
+	for entry in scan:
+		files.append(entry.path)
+	files.sort()
+	file0 = files[0]
 	match = re.search(r'(.*)(\d{7})(\..+)',file0)
 	fileBase = match.group(1)
 	startNumber = match.group(2)
