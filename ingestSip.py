@@ -294,10 +294,35 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
+def updateInputPath(processingVars,ingestLogBoilerplate):
+	'''
+	change the input path to reflect the object in the SIP
+	rather than the input object
+	'''
+	objectDir = processingVars['packageObjectDir']
+	inputDir = os.path.dirname(processingVars['inputPath'])
+	print
+	for _dict in processingVars,ingestLogBoilerplate:
+		for key, value in _dict.items():
+			print(value)
+			# if isinstance(value,str):
+			if isinstance(value,str) and inputDir in value:
+				_dict[key] = value.replace(inputDir,objectDir)
+
+	print(processingVars)
+	print("* "*50)
+	print(ingestLogBoilerplate)
+	# sys.exit()
+	return processingVars,ingestLogBoilerplate
+
+
 def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
+	print(processingVars)
+	print(ingestLogBoilerplate)
+	# sys.exit()
 	objectDir = processingVars['packageObjectDir']
 	sys.argv = [
 		'',
@@ -321,6 +346,13 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		status
 		)
 	processingVars['caller'] = None
+	if not status == 'FAIL':
+		processingVars,ingestLogBoilerplate = updateInputPath(
+			processingVars,
+			ingestLogBoilerplate
+			)
+
+	return processingVars,ingestLogBoilerplate
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 	inputFile = processingVars['inputPath']
@@ -901,16 +933,19 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 			# hashes dict should look like {'filename':'md5hash'}
 			if _object in list(knownObjects.keys()):
 				processingVars['componentObjectData'][_object]['md5hash'] = _hash
-			for key,value in knownObjects.items():
-				if _object == key:
-					processingVars['filename'] = _object
-					pymmFunctions.insert_fixity(
-						processingVars,
-						eventID,
-						messageDigestAlgorithm = "md5",
-						messageDigestHashValue = _hash,
-						messageDigestSource=objectManifestPath
-						)
+				for key,value in knownObjects.items():
+					if _object == key:
+						processingVars['filename'] = _object
+						pymmFunctions.insert_fixity(
+							processingVars,
+							eventID,
+							messageDigestAlgorithm = "md5",
+							messageDigestHashValue = _hash,
+							messageDigestSource=objectManifestPath
+							)
+			else:
+				pass
+
 	return processingVars
 
 def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
@@ -1227,7 +1262,10 @@ def main():
 			processingVars
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_input_file(processingVars,ingestLogBoilerplate)
+		processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+			processingVars,
+			ingestLogBoilerplate
+			)
 		add_pbcore_instantiation(
 			processingVars,
 			ingestLogBoilerplate,
@@ -1267,7 +1305,9 @@ def main():
 				)
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			move_input_file(processingVars,ingestLogBoilerplate)
+			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+				processingVars,ingestLogBoilerplate
+				)
 			add_pbcore_instantiation(
 				processingVars,
 				ingestLogBoilerplate,
@@ -1354,7 +1394,9 @@ def main():
 					objectCategory='intellectual entity',
 					objectCategoryDetail='preservation master image sequence'
 					)
-			move_input_file(processingVars,ingestLogBoilerplate)
+			processingVars,ingestLogBoilerplate = move_input_file(
+				processingVars,ingestLogBoilerplate
+				)
 			get_file_metadata(ingestLogBoilerplate,processingVars)
 			pymmFunctions.pymm_log(
 				processingVars,
