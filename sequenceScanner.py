@@ -45,38 +45,37 @@ def scan_dir(inputPath):
 					os.rmdir(path)
 	# start looking for inappropriate/unrecorgnized folders
 	problems = []
-	with os.scandir(inputPath) as thePath:
-		# scan the top level
-		dirs = []
-		outcome = None
-		for entry in thePath:
-			# summon all the subdirectories for judgement
-			if entry.is_dir():
-				dirs.append(entry.path)
-		if len(dirs) > 0:
-			if (len(dirs) == 1) and (os.path.basename(dirs[0]).lower() != 'dpx'):
-				# if there is only one subdir and it isn't DPX, shit it out
-				problems = dirs
-				return False,problems
+	dirs = []
+	outcome = None
+	for entry in os.scandir(inputPath):
+		# cast the fiery circle,
+		# summon all the subdirectories for judgement before my wrath
+		if entry.is_dir():
+			dirs.append(entry.path)
+	if len(dirs) > 0:
+		if (len(dirs) == 1) and (os.path.basename(dirs[0]).lower() != 'dpx'):
+			# if there is only one subdir and it isn't DPX, shit it out
+			problems = dirs
+			return False,problems
 
-			elif len(dirs) > 1:
-				baddies = []
-				for _dir in dirs:
-					for root,subs,_ in os.walk(_dir):
-						# grab any non-dpx dirs to return
-						things = [os.path.join(root,sub) for sub in subs if sub.lower() != 'dpx']
-						for thing in things:
-							baddies.append(thing)
-				if baddies != []:
-					# there shouldn't be anything other than dpx folders at this level
-					outcome = False
-					for baddie in baddies:
-						problems.append(baddie)
-				else:
-					print("DPX dirs are ok")
-					outcome = True
+		elif len(dirs) > 1:
+			baddies = []
+			for _dir in dirs:
+				for root,subs,_ in os.walk(_dir):
+					# grab any non-dpx dirs to return
+					things = [os.path.join(root,sub) for sub in subs if sub.lower() != 'dpx']
+					for thing in things:
+						baddies.append(thing)
+			if baddies != []:
+				# there shouldn't be anything other than dpx folders at this level
+				outcome = False
+				for baddie in baddies:
+					problems.append(baddie)
 			else:
+				print("DPX dirs are ok")
 				outcome = True
+		else:
+			outcome = True
 
 	return outcome,problems
 
@@ -100,10 +99,11 @@ def check_complexity(inputPath):
 	# should be valid, so if there's any subdir other than dpx, 
 	# we can assume that it is a multi-reel scan input
 	complexity = 'single reel dpx'
-	with os.scandir(inputPath) as contents:
-		for item in contents:
-			if item.is_dir() and item.name.lower() != 'dpx':
-				complexity = 'multi-reel dpx'
+	for item in os.scandir(inputPath):
+		if item.is_dir() and item.name.lower() != 'dpx':
+			complexity = 'multi-reel dpx'
+		else:
+			pass
 
 	return complexity
 
