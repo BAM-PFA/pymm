@@ -484,7 +484,7 @@ def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 
 	return rsPackageDelivery
 
-def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
+def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=None):
 	'''
 	Make derivatives based on options declared in config...
 	'''
@@ -531,6 +531,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 					]
 		if rsPackageDelivery != '':
 			sysargs.append('-r'+rsPackageDelivery)
+		if isSequence:
+			sysargs.append('-s')
 		sys.argv = 	sysargs
 		
 		deliveredDeriv = makeDerivs.main()
@@ -1320,11 +1322,11 @@ def main():
 			objectCategoryDetail='film scanner output reel'
 			)
 		avStatus = check_av_status(
-				inputPath,
-				interactiveMode,
-				ingestLogBoilerplate,
-				processingVars
-				)
+			inputPath,
+			interactiveMode,
+			ingestLogBoilerplate,
+			processingVars
+			)
 		for element in source_list:
 			print(element)
 			if os.path.isfile(element):
@@ -1340,9 +1342,9 @@ def main():
 			elif os.path.isdir(element):
 				# set filename to be the 
 				ingestLogBoilerplate['filename'] =\
+					ingestLogBoilerplate['inputPath'] =\
 					processingVars['filename'] =\
-					processingVars['inputPath']=\
-					ingestLogBoilerplate['inputPath'] = element
+					processingVars['inputPath'] = element
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
 					objectCategory='intellectual entity',
@@ -1355,8 +1357,33 @@ def main():
 				ingestLogBoilerplate,
 				"Preservation master"
 				)
-		print(processingVars)
-		print(ingestLogBoilerplate)
+		## RESET VARS @FIXME: THIS IS NOT CORRECT: KEY ERROR IN LOGGING
+		## DUE TO PROCVARS.FILENAME MISMATCH
+		# Traceback (most recent call last):
+		#   File "ingestSip.py", line 1598, in <module>
+		#     main()
+		#   File "ingestSip.py", line 1369, in main
+		#     isSequence=True
+		#   File "ingestSip.py", line 554, in make_derivs
+		#     status
+		#   File "/Users/michael/Github/pymm/pymmFunctions.py", line 263, in log_event
+		#     status
+		#   File "/Users/michael/projects/pymm/pymmFunctions.py", line 512, in insert_event
+		#     objectID = processingVars['componentObjectData'][theObject]['databaseID']
+		# KeyError: '/Users/michael/Desktop/academy-leader_12345/academy-leader_12345_r01of02'
+		ingestLogBoilerplate['filename'] =\
+			ingestLogBoilerplate['inputPath'] =\
+			processingVars['filename'] =\
+			processingVars['inputPath'] = inputPath
+		# print(ingestLogBoilerplate,processingVars)
+		accessPath = make_derivs(
+			ingestLogBoilerplate,
+			processingVars,
+			rsPackage=None,
+			isSequence=True
+			)
+		# print(processingVars)
+		# print(ingestLogBoilerplate)
 		sys.exit()
 
 	# elif inputType == 'single-reel dpx':

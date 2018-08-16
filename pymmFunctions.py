@@ -816,6 +816,8 @@ def is_av(inputPath):
 				# 			)
 				# 		return False
 			elif _is_dpx == None:
+				# if we are dealing with an actual sequence folder,
+				# run a different test
 				_is_dpx_av = is_dpx_sequence(inputPath)
 				if _is_dpx_av:
 					return 'DPX'

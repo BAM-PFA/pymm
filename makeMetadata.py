@@ -284,28 +284,30 @@ def make_frame_md5(inputPath,metadataDir):
 			print(output.stderr.decode())
 
 	elif av == 'DPX':
-		filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
-		frameMd5Command = [
-			'ffmpeg',
-			'-start_number',startNumber,
-			'-i',filePattern,
-			'-f','framemd5',
-			frameMd5Filepath
-			]
-		output = subprocess.Popen(
-			frameMd5Command,
-			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE
-			)
-		try:
-			out,err = output.communicate()
-			if err:
-				# this output is captured in stderr for some reason
-				print("FRAME MD5 CHA CHA CHA")
-				# print(err.decode('utf-8'))
-			returnValue = frameMd5Filepath
-		except:
-			print(out.decode())
+		pass
+		# filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
+		# frameMd5Command = [
+		# 	'ffmpeg',
+		# 	'-start_number',startNumber,
+		# 	'-i',filePattern,
+		# 	'-f','framemd5',
+		# 	frameMd5Filepath
+		# 	]
+		# print(' '.join(frameMd5Command))
+		# output = subprocess.Popen(
+		# 	frameMd5Command,
+		# 	stdout=subprocess.PIPE,
+		# 	stderr=subprocess.PIPE
+		# 	)
+		# try:
+		# 	out,err = output.communicate()
+		# 	if err:
+		# 		# this output is captured in stderr for some reason
+		# 		print("FRAME MD5 CHA CHA CHA")
+		# 		# print(err.decode('utf-8'))
+		# 	returnValue = frameMd5Filepath
+		# except:
+		# 	print(out.decode())
 
 	return returnValue
 
