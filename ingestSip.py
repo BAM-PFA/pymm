@@ -253,10 +253,12 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 			else:
 				print("\nPROCEEDING... WARNING!\n")
 	else:
-		# THIS IS NOT CORRECT: 
-		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
-		outcome = "{} is a(n) {} file, way to go.".format(
-			ingestLogBoilerplate['filename'],
+		if ingestLogBoilerplate['filename'] == '':
+			theObject = processingVars['inputName']
+		else:
+			theObject = ingestLogBoilerplate['filename']
+		outcome = "{} is a(n) {} object, way to go.".format(
+			theObject,
 			AV
 			)
 		status = "OK"
@@ -889,6 +891,7 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 	return precheckPass
 
 def report_SIP_fixity(processingVars,objectManifestPath,eventID):
+	# parser returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
 	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
 	knownObjects = processingVars['componentObjectData']
 	if not parsed == True:
@@ -896,7 +899,8 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 	else:
 		for _object, _hash in hashes.items():
 			# hashes dict should look like {'filename':'md5hash'}
-			processingVars['componentObjectData'][_object]['md5hash'] = _hash
+			if _object in list(knownObjects.keys()):
+				processingVars['componentObjectData'][_object]['md5hash'] = _hash
 			for key,value in knownObjects.items():
 				if _object == key:
 					processingVars['filename'] = _object
@@ -1340,7 +1344,7 @@ def main():
 					objectCategoryDetail='preservation master audio'
 					)
 			elif os.path.isdir(element):
-				# set filename to be the 
+				# set filename to be the element path
 				ingestLogBoilerplate['filename'] =\
 					ingestLogBoilerplate['inputPath'] =\
 					processingVars['filename'] =\
@@ -1350,30 +1354,22 @@ def main():
 					objectCategory='intellectual entity',
 					objectCategoryDetail='preservation master image sequence'
 					)
-			# move_input_file(processingVars,ingestLogBoilerplate)
+			move_input_file(processingVars,ingestLogBoilerplate)
 			get_file_metadata(ingestLogBoilerplate,processingVars)
+			pymmFunctions.pymm_log(
+				processingVars,
+				event = 'metadata extraction',
+				outcome = 'calculate input file technical metadata',
+				status = 'OK'
+				)
 			add_pbcore_instantiation(
 				processingVars,
 				ingestLogBoilerplate,
 				"Preservation master"
 				)
-		## RESET VARS @FIXME: THIS IS NOT CORRECT: KEY ERROR IN LOGGING
-		## DUE TO PROCVARS.FILENAME MISMATCH
-		# Traceback (most recent call last):
-		#   File "ingestSip.py", line 1598, in <module>
-		#     main()
-		#   File "ingestSip.py", line 1369, in main
-		#     isSequence=True
-		#   File "ingestSip.py", line 554, in make_derivs
-		#     status
-		#   File "/Users/michael/Github/pymm/pymmFunctions.py", line 263, in log_event
-		#     status
-		#   File "/Users/michael/projects/pymm/pymmFunctions.py", line 512, in insert_event
-		#     objectID = processingVars['componentObjectData'][theObject]['databaseID']
-		# KeyError: '/Users/michael/Desktop/academy-leader_12345/academy-leader_12345_r01of02'
 		ingestLogBoilerplate['filename'] =\
-			ingestLogBoilerplate['inputPath'] =\
-			processingVars['filename'] =\
+			processingVars['filename'] = ''
+		ingestLogBoilerplate['inputPath'] =\
 			processingVars['inputPath'] = inputPath
 		# print(ingestLogBoilerplate,processingVars)
 		accessPath = make_derivs(
@@ -1382,39 +1378,7 @@ def main():
 			rsPackage=None,
 			isSequence=True
 			)
-		# print(processingVars)
-		# print(ingestLogBoilerplate)
-		sys.exit()
 
-	# elif inputType == 'single-reel dpx':
-	# 	processingVars = pymmFunctions.insert_object(
-	# 		processingVars,
-	# 		objectCategory = 'file'
-	# 		)
-	# 	# check that input file is actually a/v
-	# 	# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-	# 	avStatus = check_av_status(
-	# 		inputPath,
-	# 		interactiveMode,
-	# 		ingestLogBoilerplate,
-	# 		processingVars
-	# 		)
-	# 	# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-	# 	move_input_file(processingVars,ingestLogBoilerplate)
-	# 	add_pbcore_instantiation(
-	# 		processingVars,
-	# 		ingestLogBoilerplate,
-	# 		"Preservation master"
-	# 		)
-
-	# 	get_file_metadata(ingestLogBoilerplate,processingVars)
-	# 	pymmFunctions.pymm_log(
-	# 		processingVars,
-	# 		event = 'metadata extraction',
-	# 		outcome = 'calculate input file technical metadata',
-	# 		status = 'OK'
-	# 		)
-	# 	accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

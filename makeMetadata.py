@@ -285,6 +285,15 @@ def make_frame_md5(inputPath,metadataDir):
 
 	elif av == 'DPX':
 		pass
+		'''
+		OK: FOOD FOR THOUGHT: 
+			IT TAKES EFFING FOREVER TO CALCULATE FRAMEMD5 VALUES FOR A DPX
+			SEQUENCE. SLIGHTLY LONGER THAN THE HASHDEEP MANIFEST THAT WILL 
+			BE CREATED LATER. SO... SKIP FRAMEMD5 FOR DPX? SINCE WE ARE ALREADY
+			CALCULATING A HASH MANIFEST LATER ON?
+			MAYBE LATER GET A FUNCTION TO PARSE A HASH MANIFEST FOR THE FOLDER AND 
+			TURN IT INTO A 
+		'''
 		# filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
 		# frameMd5Command = [
 		# 	'ffmpeg',

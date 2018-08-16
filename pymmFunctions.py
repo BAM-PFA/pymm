@@ -668,6 +668,7 @@ def insert_fixity(\
 def parse_object_manifest(manifestPath):
 	'''
 	parse an object manifest to grab md5 hashes for db reporting
+	returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
 	'''
 	parsed = False
 	data = []
@@ -1332,6 +1333,15 @@ def remove_hidden_system_files(inputPath):
 def get_desktop():
 	desktop = os.path.expanduser("~/Desktop")
 	return desktop
+
+def get_filesystem_id(path):
+	'''
+	input a path and return the filesystem id
+	* use to compare filesystem identities for `mv` vs `rsync` 
+		when running moveNcopy
+	'''
+	fs_id = os.stat(path).st_dev
+	return fs_id
 
 #
 # SYSTEM / ENVIRONMENT STUFF
