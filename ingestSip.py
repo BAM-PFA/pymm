@@ -294,7 +294,7 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-def updateInputPath(processingVars,ingestLogBoilerplate):
+def update_input_path(processingVars,ingestLogBoilerplate):
 	'''
 	change the input path to reflect the object in the SIP
 	rather than the input object
@@ -320,8 +320,8 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
-	print(processingVars)
-	print(ingestLogBoilerplate)
+	# print(processingVars)
+	# print(ingestLogBoilerplate)
 	# sys.exit()
 	objectDir = processingVars['packageObjectDir']
 	sys.argv = [
@@ -348,7 +348,7 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		)
 	processingVars['caller'] = None
 	if not status == 'FAIL':
-		processingVars,ingestLogBoilerplate = updateInputPath(
+		processingVars,ingestLogBoilerplate = update_input_path(
 			processingVars,
 			ingestLogBoilerplate
 			)
@@ -356,16 +356,16 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	return processingVars,ingestLogBoilerplate
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
-	inputFile = processingVars['inputPath']
-	if not inputFile == processingVars['filename']:
-		filename = os.path.basename(inputFile)
+	if processingVars['filename'] == '':
+		inputObject = os.path.basename(processingVars['inputPath'])
 	else:
-		# this is an exception for DPX folders
-		filename = inputFile
+		inputObject = processingVars['filename']
 
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
-		processingVars['packageMetadataObjects']
+		processingVars['packageMetadataObjects'],
+		_JSON=None,
+		altFileName=inputObject
 		)
 	if mediainfo:
 		event = 'metadata extraction'
@@ -380,7 +380,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			status='OK'
 			)
 		processingVars['caller'] = None
-		processingVars['componentObjectData'][filename]['mediainfoPath'] = mediainfo
+		processingVars['componentObjectData'][inputObject]['mediainfoPath'] = mediainfo
 	
 	if not _type == 'derivative':
 	# don't bother calculating frame md5 for derivs....
@@ -1372,32 +1372,37 @@ def main():
 			ingestLogBoilerplate,
 			processingVars
 			)
-		for element in source_list:
-			print(element)
-			if os.path.isfile(element):
-				ingestLogBoilerplate['filename'] = os.path.basename(element)
-				processingVars['filename'] = os.path.basename(element)
+		for _object in source_list:
+			# print(_object)
+			# sys.exit()
+			if os.path.isfile(_object):
+				ingestLogBoilerplate['filename'] = os.path.basename(_object)
+				processingVars['filename'] = os.path.basename(_object)
 				processingVars['inputPath']=\
-					ingestLogBoilerplate['inputPath'] = element
+					ingestLogBoilerplate['inputPath'] = _object
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
 					objectCategory='file',
 					objectCategoryDetail='preservation master audio'
 					)
-			elif os.path.isdir(element):
-				# set filename to be the element path
+			elif os.path.isdir(_object):
+				# set filename to be the _object path
+				ingestLogBoilerplate['inputPath'] =\
+					processingVars['inputPath'] = _object
 				ingestLogBoilerplate['filename'] =\
-					ingestLogBoilerplate['inputPath'] =\
-					processingVars['filename'] =\
-					processingVars['inputPath'] = element
+					processingVars['filename'] = "{}_{}".format(
+						canonicalName,
+						os.path.basename(_object)
+						)
+				# print(processingVars)
+				# print(ingestLogBoilerplate)
+				# sys.exit()
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
 					objectCategory='intellectual entity',
 					objectCategoryDetail='preservation master image sequence'
 					)
-			processingVars,ingestLogBoilerplate = move_input_file(
-				processingVars,ingestLogBoilerplate
-				)
+
 			get_file_metadata(ingestLogBoilerplate,processingVars)
 			pymmFunctions.pymm_log(
 				processingVars,
@@ -1414,7 +1419,11 @@ def main():
 			processingVars['filename'] = ''
 		ingestLogBoilerplate['inputPath'] =\
 			processingVars['inputPath'] = inputPath
-		# print(ingestLogBoilerplate,processingVars)
+		processingVars,ingestLogBoilerplate = move_input_file(
+				processingVars,ingestLogBoilerplate
+				)
+		print(ingestLogBoilerplate,processingVars)
+		# sys.exit()
 		accessPath = make_derivs(
 			ingestLogBoilerplate,
 			processingVars,

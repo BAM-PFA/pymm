@@ -17,8 +17,13 @@ import sys
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputPath,destination,_JSON=False):
-	basename = pymmFunctions.get_base(inputPath)
+def get_mediainfo_report(inputPath,destination,_JSON=None,altFileName=None):
+	# handle an exception for the way 
+	# DPX folders are named in processingVars
+	if altFileName:
+		basename = altFileName
+	else:
+		basename = pymmFunctions.get_base(inputPath)
 	# write mediainfo output to a logfile if the destination is a directory ..
 	if os.path.isdir(destination):
 		if _JSON:
