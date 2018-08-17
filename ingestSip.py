@@ -165,7 +165,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
-	print(processingVars)
+	# print(processingVars)
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -309,9 +309,9 @@ def update_input_path(processingVars,ingestLogBoilerplate):
 			if isinstance(value,str) and inputDir in value:
 				_dict[key] = value.replace(inputDir,objectDir)
 
-	print(processingVars)
-	print("* "*50)
-	print(ingestLogBoilerplate)
+	# print(processingVars)
+	# print("* "*50)
+	# print(ingestLogBoilerplate)
 	# sys.exit()
 	return processingVars,ingestLogBoilerplate
 
@@ -320,7 +320,7 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
-	# print(processingVars)
+	print(processingVars)
 	# print(ingestLogBoilerplate)
 	# sys.exit()
 	objectDir = processingVars['packageObjectDir']
@@ -602,6 +602,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 		processingVars['filename'] = pymmFunctions.get_base(value)
 		
 		if os.path.isfile(value):
+			print(value)
+			sys.exit()
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
 				objectCategory='file',
@@ -1358,23 +1360,19 @@ def main():
 					accessPath
 					)
 
-	elif inputType == 'single reel dpx': #,'multi-reel dpx'):
-		# print(processingVars)
-		# print(ingestLogBoilerplate)
+	elif inputType == 'single reel dpx':
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
 			objectCategory='intellectual entity',
 			objectCategoryDetail='film scanner output reel'
 			)
-		avStatus = check_av_status(
-			inputPath,
-			interactiveMode,
-			ingestLogBoilerplate,
-			processingVars
-			)
+		# avStatus = check_av_status(
+		# 	inputPath,
+		# 	interactiveMode,
+		# 	ingestLogBoilerplate,
+		# 	processingVars
+		# 	)
 		for _object in source_list:
-			# print(_object)
-			# sys.exit()
 			if os.path.isfile(_object):
 				ingestLogBoilerplate['filename'] = os.path.basename(_object)
 				processingVars['filename'] = os.path.basename(_object)
@@ -1394,9 +1392,6 @@ def main():
 						canonicalName,
 						os.path.basename(_object)
 						)
-				# print(processingVars)
-				# print(ingestLogBoilerplate)
-				# sys.exit()
 				processingVars = pymmFunctions.insert_object(
 					processingVars,
 					objectCategory='intellectual entity',
@@ -1422,14 +1417,113 @@ def main():
 		processingVars,ingestLogBoilerplate = move_input_file(
 				processingVars,ingestLogBoilerplate
 				)
-		print(ingestLogBoilerplate,processingVars)
-		# sys.exit()
+		# print(ingestLogBoilerplate,processingVars)
 		accessPath = make_derivs(
 			ingestLogBoilerplate,
 			processingVars,
 			rsPackage=None,
 			isSequence=True
 			)
+
+	elif inputType == 'multi-reel dpx':
+		masterList = source_list
+		# print(processingVars)
+		for reel in masterList:
+			# print(reel)
+			# sys.exit()
+			ingestLogBoilerplate['inputPath'] =\
+				processingVars['inputPath'] = reel
+			processingVars['inputName'] = os.path.basename(reel)
+			reel_list = pymmFunctions.list_files(reel)
+
+			# print(reel_list)
+			# sys.exit() 
+			processingVars = pymmFunctions.insert_object(
+				processingVars,
+				objectCategory='intellectual entity',
+				objectCategoryDetail='film scanner output reel'
+				)
+			# print(processingVars)
+			for _object in reel_list:
+				# print(_object)
+				# sys.exit()
+				if os.path.isfile(_object):
+					ingestLogBoilerplate['filename'] = os.path.basename(_object)
+					processingVars['filename'] = os.path.basename(_object)
+					processingVars['inputPath']=\
+						ingestLogBoilerplate['inputPath'] = _object
+					processingVars = pymmFunctions.insert_object(
+						processingVars,
+						objectCategory='file',
+						objectCategoryDetail='preservation master audio'
+						)
+				elif os.path.isdir(_object):
+					# set filename to be the _object path
+					ingestLogBoilerplate['inputPath'] =\
+						processingVars['inputPath'] = _object
+					ingestLogBoilerplate['filename'] =\
+						processingVars['filename'] = "{}_{}".format(
+							canonicalName,
+							os.path.basename(_object)
+							)
+					processingVars = pymmFunctions.insert_object(
+						processingVars,
+						objectCategory='intellectual entity',
+						objectCategoryDetail='preservation master image sequence'
+						)
+
+				get_file_metadata(ingestLogBoilerplate,processingVars)
+				pymmFunctions.pymm_log(
+					processingVars,
+					event = 'metadata extraction',
+					outcome = 'calculate input file technical metadata',
+					status = 'OK'
+					)
+				add_pbcore_instantiation(
+					processingVars,
+					ingestLogBoilerplate,
+					"Preservation master"
+					)
+			ingestLogBoilerplate['filename'] =\
+				processingVars['filename'] = ''
+			ingestLogBoilerplate['inputPath'] =\
+				processingVars['inputPath'] = reel
+			processingVars,ingestLogBoilerplate = move_input_file(
+					processingVars,ingestLogBoilerplate
+					)
+
+			print(processingVars)
+			print("& "*50)
+			accessPath = make_derivs(
+				ingestLogBoilerplate,
+				processingVars,
+				rsPackage=None,
+				isSequence=True
+				)
+			print(ingestLogBoilerplate)
+		sys.exit()
+		if concatChoice == True:
+			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
+			SIPaccessPath = os.path.join(
+				processingVars['packageObjectDir'],
+				'resourcespace'
+				)
+			concatPath = concat_access_files(
+				SIPaccessPath,
+				ingestUUID,
+				canonicalName,
+				'mp4',
+				ingestLogBoilerplate,
+				processingVars
+				)
+			if os.path.exists(concatPath):
+				deliver_concat_access(
+					concatPath,
+					accessPath
+					)
+
+		# sys.exit()
+
 
 	### END ACTUAL STUFF DOING ###
 	##############################
