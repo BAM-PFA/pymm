@@ -451,7 +451,12 @@ def add_pbcore_md5_location(processingVars):
 
 def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 	_file = processingVars['inputPath']
-	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
+	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
+
+		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
+		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
+	else:
+		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 	# print(pbcoreReport)
 	descriptiveJSONpath = processingVars['objectBAMPFAjson']
 	pbcoreFile = processingVars['pbcore']
@@ -602,9 +607,6 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 		processingVars['filename'] = pymmFunctions.get_base(value)
 		
 		if os.path.isfile(value):
-			print(value)
-			print(" ~ "*100)
-			# sys.exit()
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
 				objectCategory='file',
@@ -1498,12 +1500,12 @@ def main():
 
 			print(processingVars)
 			print("& "*50)
-			accessPath = make_derivs(
-				ingestLogBoilerplate,
-				processingVars,
-				rsPackage=None,
-				isSequence=True
-				)
+			# accessPath = make_derivs(
+			# 	ingestLogBoilerplate,
+			# 	processingVars,
+			# 	rsPackage=None,
+			# 	isSequence=True
+			# 	)
 			print(ingestLogBoilerplate)
 		# sys.exit()
 		if concatChoice == True:
@@ -1525,10 +1527,7 @@ def main():
 					concatPath,
 					accessPath
 					)
-
-		# sys.exit()
-
-
+	sys.exit()
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

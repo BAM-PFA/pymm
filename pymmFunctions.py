@@ -807,16 +807,7 @@ def is_av(inputPath):
 							'problem directories: {}'.format(failedDirs)
 							)
 						return False
-				# elif details == 'multi-reel dpx':
-				# 	status, failedDirs = test_sequence_reel_dir(inputPath)
-				# 	if status == True:
-				# 		return 'DPX'
-				# 	else:
-				# 		print(
-				# 			'False: check out this list of '
-				# 			'problem directories: {}'.format(failedDirs)
-				# 			)
-				# 		return False
+
 			elif _is_dpx == None:
 				# if we are dealing with an actual sequence folder,
 				# run a different test
@@ -1129,6 +1120,12 @@ def parse_sequence_parent(inputPath):
 	return audioPath,filePattern,startNumber,framerate
 
 def parse_sequence_folder(dpxPath):
+	'''
+	Grab some information needed for ffmpeg transcoding of an image sequence:
+		* the /path/plus/file_%6d.dpx type pattern needed for ffmpeg
+		* the starting number of the sequence
+		* the /path/to/first/file in the sequence
+	'''
 	files = []
 	scan = os.scandir(dpxPath)
 	for entry in scan:
