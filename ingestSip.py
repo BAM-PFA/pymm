@@ -603,7 +603,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 		
 		if os.path.isfile(value):
 			print(value)
-			sys.exit()
+			print(" ~ "*100)
+			# sys.exit()
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
 				objectCategory='file',
@@ -1431,6 +1432,9 @@ def main():
 		for reel in masterList:
 			# print(reel)
 			# sys.exit()
+			# clear out any preexisting filename value
+			ingestLogBoilerplate['filename'] =\
+				processingVars['filename'] = ''
 			ingestLogBoilerplate['inputPath'] =\
 				processingVars['inputPath'] = reel
 			processingVars['inputName'] = os.path.basename(reel)
@@ -1463,7 +1467,7 @@ def main():
 						processingVars['inputPath'] = _object
 					ingestLogBoilerplate['filename'] =\
 						processingVars['filename'] = "{}_{}".format(
-							canonicalName,
+							processingVars['inputName'],
 							os.path.basename(_object)
 							)
 					processingVars = pymmFunctions.insert_object(
@@ -1501,7 +1505,7 @@ def main():
 				isSequence=True
 				)
 			print(ingestLogBoilerplate)
-		sys.exit()
+		# sys.exit()
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
 			SIPaccessPath = os.path.join(
