@@ -38,6 +38,7 @@ def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
 		audioPath,filePattern,startNumber,framerate = pymmFunctions.parse_sequence_parent(inputPath)
+		# print(audioPath)
 		inputOptions = [
 			'-start_number',startNumber,
 			'-i',filePattern

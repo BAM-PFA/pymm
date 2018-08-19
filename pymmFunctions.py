@@ -1099,21 +1099,18 @@ def parse_sequence_parent(inputPath):
 		* framerate = embedded by scanner in DPX files
 	'''
 	sequenceScanner.main(inputPath)
-	# with os.scandir(inputPath) as whatApath:
 	for entry in os.scandir(inputPath):
-		if entry.name.endswith('.wav'):
-			audioPath = entry.path
-		else:
-			audioPath = None
-		if entry.is_dir():
+		if entry.is_file():
+			if entry.name.endswith('.wav'):
+				audioPath = entry.path
+			else:
+				audioPath = None
+		elif entry.is_dir():
 			# should be a single DPX dir with only dpx files in it
 			filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
-			# print(file0)
-			# print("x "*100)
 
 	try:
 		framerate = get_framerate(file0)
-		# print(framerate)
 	except:
 		framerate = None
 
