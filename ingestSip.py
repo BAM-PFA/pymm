@@ -539,7 +539,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
 	rsPackageDelivery = make_rs_package(
-		processingVars['inputName'],
+		processingVars['canonicalName'],
 		rsPackage,
 		resourcespace_deliver
 		)
@@ -1097,6 +1097,7 @@ def main():
 		'ingestUUID':ingestUUID,
 		'filename':filename,
 		'inputName':inputName,
+		'canonicalName':canonicalName,
 		'makeProres':makeProres,
 		'packageOutputDir':packageOutputDir,
 		'packageObjectDir':packageObjectDir,
@@ -1430,10 +1431,7 @@ def main():
 
 	elif inputType == 'multi-reel dpx':
 		masterList = source_list
-		# print(processingVars)
 		for reel in masterList:
-			# print(reel)
-			# sys.exit()
 			# clear out any preexisting filename value
 			ingestLogBoilerplate['filename'] =\
 				processingVars['filename'] = ''
@@ -1442,20 +1440,15 @@ def main():
 			processingVars['inputName'] = os.path.basename(reel)
 			reel_list = pymmFunctions.list_files(reel)
 
-			# print(reel_list)
-			# sys.exit() 
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
 				objectCategory='intellectual entity',
 				objectCategoryDetail='film scanner output reel'
 				)
-			# print(processingVars)
 			for _object in reel_list:
-				# print(_object)
-				# sys.exit()
 				if os.path.isfile(_object):
-					ingestLogBoilerplate['filename'] = os.path.basename(_object)
-					processingVars['filename'] = os.path.basename(_object)
+					ingestLogBoilerplate['filename'] =\
+						processingVars['filename'] = os.path.basename(_object)
 					processingVars['inputPath']=\
 						ingestLogBoilerplate['inputPath'] = _object
 					processingVars = pymmFunctions.insert_object(
@@ -1498,16 +1491,13 @@ def main():
 					processingVars,ingestLogBoilerplate
 					)
 
-			print(processingVars)
-			print("& "*50)
-			# accessPath = make_derivs(
-			# 	ingestLogBoilerplate,
-			# 	processingVars,
-			# 	rsPackage=None,
-			# 	isSequence=True
-			# 	)
+			accessPath = make_derivs(
+				ingestLogBoilerplate,
+				processingVars,
+				rsPackage=True,
+				isSequence=True
+				)
 			print(ingestLogBoilerplate)
-		# sys.exit()
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
 			SIPaccessPath = os.path.join(
@@ -1527,7 +1517,6 @@ def main():
 					concatPath,
 					accessPath
 					)
-	sys.exit()
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

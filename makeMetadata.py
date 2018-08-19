@@ -69,7 +69,7 @@ def get_mediainfo_pbcore(inputPath):
 		stdout=subprocess.PIPE
 		)
 	pbcore = call.communicate()[0]
-	print(pbcore)
+	# print(pbcore)
 	return pbcore 
 
 def get_track_profiles(mediainfoDict):
