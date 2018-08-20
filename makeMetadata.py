@@ -299,6 +299,9 @@ def make_frame_md5(inputPath,metadataDir):
 			CALCULATING A HASH MANIFEST LATER ON?
 			MAYBE LATER GET A FUNCTION TO PARSE A HASH MANIFEST FOR THE FOLDER AND 
 			TURN IT INTO A 
+
+		ACTUALLY ON THE SOUPED UP LINUX SERVER THIS IS REALLY FAST. 
+		SO MAYBE RUN A BENCH MARK AND IF THE SYSTEM CAN HANDLE IT RUN THIS FUNCTION
 		'''
 		# filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
 		# frameMd5Command = [

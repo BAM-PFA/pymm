@@ -165,7 +165,6 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
-	# print(processingVars)
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -173,14 +172,8 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 		'-c'+canonicalName,
 		'-w'+wrapper
 		]
-	# try:
-		# concattedAccessFile is either a path to the file
-		# or a list of problems with the concatenation.
 	success = False
 	concattedAccessFile,success = concatFiles.main()
-	# except:
-	# 	success = False
-	# 	print("couldn't concat files")
 
 	origFilename = processingVars['filename']
 	if not success == False:
@@ -219,8 +212,6 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	return concattedAccessFile
 
 def deliver_concat_access(concatPath,accessPath):
-	print(concatPath)
-	print(accessPath)
 	try:
 		shutil.copy2(concatPath,accessPath)
 		return True
@@ -301,18 +292,12 @@ def update_input_path(processingVars,ingestLogBoilerplate):
 	'''
 	objectDir = processingVars['packageObjectDir']
 	inputDir = os.path.dirname(processingVars['inputPath'])
-	print
 	for _dict in processingVars,ingestLogBoilerplate:
 		for key, value in _dict.items():
-			print(value)
 			# if isinstance(value,str):
 			if isinstance(value,str) and inputDir in value:
 				_dict[key] = value.replace(inputDir,objectDir)
 
-	# print(processingVars)
-	# print("* "*50)
-	# print(ingestLogBoilerplate)
-	# sys.exit()
 	return processingVars,ingestLogBoilerplate
 
 
@@ -320,9 +305,6 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
-	print(processingVars)
-	# print(ingestLogBoilerplate)
-	# sys.exit()
 	objectDir = processingVars['packageObjectDir']
 	sys.argv = [
 		'',
@@ -388,7 +370,6 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			processingVars['inputPath'],
 			processingVars['packageMetadataObjects']
 			)
-		print(frameMD5)
 		if frameMD5 != False:
 			event = 'message digest calculation'
 			outcome = ("frameMD5 report for input file "
@@ -457,7 +438,6 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	else:
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
-	# print(pbcoreReport)
 	descriptiveJSONpath = processingVars['objectBAMPFAjson']
 	pbcoreFile = processingVars['pbcore']
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
@@ -514,7 +494,7 @@ def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 					os.mkdir(rsPackageDelivery)
 					# add a trailing slash for rsync
 					rsPackageDelivery = os.path.join(rsPackageDelivery,'')
-					print(rsPackageDelivery)
+					# print(rsPackageDelivery)
 				except OSError as e:
 					print("OOPS: {}".format(e))
 		except:
@@ -677,7 +657,6 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 		status = "OK"
 		)
 	processingVars['caller'] = None
-	# print(processingVars)
 
 	return stagedSIP
 
@@ -692,7 +671,6 @@ def uuid_logfile(ingestLogBoilerplate,_uuid):
 	newpath = logpath.replace(logbase,newbase)
 	os.rename(logpath,newpath)
 	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
-	# print(ingestLogBoilerplate)
 
 	return ingestLogBoilerplate
 
@@ -729,8 +707,6 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 	ingestUUID = processingVars['ingestUUID']
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
 	# update the existing filepaths in processingVars
-	# print("o "*100)
-	# print(processingVars)
 	processingVars = update_tempID(processingVars)
 	# update the log filepath
 	ingestLogBoilerplate = uuid_logfile(ingestLogBoilerplate,ingestUUID)
@@ -832,10 +808,10 @@ def do_cleanup(\
 	reason\
 	):
 	if cleanupStrategy == True and packageVerified == True:
-		print("LET'S CLEEEEEAN!")
+		print("Things seem copacetic so let's remove the originals.")
 		pymmFunctions.cleanup_package(processingVars,inputPath,reason)
 	else:
-		print("BUH-BYE")
+		print("Ending, quitting, bye bye.")
 
 def directory_precheck(ingestLogBoilerplate,processingVars):
 	'''
@@ -917,8 +893,6 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 		# sequenceScanner checks for DPX folder structure compliance
 		# and whether it is a single or multi-reel scan
 		result,details = sequenceScanner.main(inputPath)
-		# print("This is not currently supported. Exiting!")
-		# precheckPass = (False,'subdirectories in input')
 		if result != True:
 			precheckPass = (False,"Problems! See: {}".format(details))
 		else:
@@ -1137,7 +1111,6 @@ def main():
 		'inputPath':inputPath,
 		'ingestUUID':ingestUUID
 		}
-	print(ingestLogBoilerplate)
 	# insert a database record for this SIP as an 'intellectual entity'
 	origFilename = processingVars['filename']
 	processingVars['filename'] = ingestUUID
@@ -1421,7 +1394,6 @@ def main():
 		processingVars,ingestLogBoilerplate = move_input_file(
 				processingVars,ingestLogBoilerplate
 				)
-		# print(ingestLogBoilerplate,processingVars)
 		accessPath = make_derivs(
 			ingestLogBoilerplate,
 			processingVars,
@@ -1497,7 +1469,6 @@ def main():
 				rsPackage=True,
 				isSequence=True
 				)
-			print(ingestLogBoilerplate)
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
 			SIPaccessPath = os.path.join(
@@ -1697,8 +1668,6 @@ def main():
 		outcome = 'Submission Information Package verified and staged',
 		status = 'ENDING'
 		)
-	print(processingVars)
-
 	
 	if ingestResults['status'] == True:
 		print("####\nEVERYTHING WENT GREAT! "
