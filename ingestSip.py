@@ -27,6 +27,7 @@ import makeDerivs
 import moveNcopy
 import makeMetadata
 import pymmFunctions
+import sequenceScanner
 
 # read in from the config file
 config = pymmFunctions.read_config()
@@ -164,7 +165,7 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
-	print(processingVars)
+	# print(processingVars)
 	sys.argv = [
 		'',
 		'-i'+inputPath,
@@ -193,7 +194,8 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 		processingVars['filename'] = os.path.basename(concattedAccessFile)
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
-			'file'
+			objectCategory='file',
+			objectCategoryDetail='concatenated access file'
 			)
 	else:
 		status = "FAIL"
@@ -228,15 +230,16 @@ def deliver_concat_access(concatPath,accessPath):
 
 def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVars):
 	'''
-	Check whether or not a file is recognized as an a/v file.
+	Check whether or not a file is recognized as an a/v object.
 	If it isn't and user declares interactive mode,
 		ask whether to continue, otherwise quit.
 	'''
+	avStatus = False
 	event = 'format identification'
 	processingVars['caller'] = 'pymmFunctions.is_av()'
 	AV = pymmFunctions.is_av(inputPath)
 	if not AV:
-		outcome = "WARNING: {} is not recognized as an a/v file.".format(
+		outcome = "WARNING: {} is not recognized as an a/v object.".format(
 			ingestLogBoilerplate['filename']
 			)
 		status = "WARNING"
@@ -250,13 +253,16 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 			else:
 				print("\nPROCEEDING... WARNING!\n")
 	else:
-		# THIS IS NOT CORRECT: 
-		# THIS NEEDS AN _IS_AV TEST HERE @FIXME
-		outcome = "{} is a(n) {} file, way to go.".format(
-			ingestLogBoilerplate['filename'],
+		if ingestLogBoilerplate['filename'] == '':
+			theObject = processingVars['inputName']
+		else:
+			theObject = ingestLogBoilerplate['filename']
+		outcome = "{} is a(n) {} object, way to go.".format(
+			theObject,
 			AV
 			)
 		status = "OK"
+		avStatus = True
 	pymmFunctions.log_event(
 		processingVars,
 		ingestLogBoilerplate,
@@ -264,7 +270,8 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 		outcome,
 		status
 		)
-	processingVars['caller'] = None
+	# processingVars['caller'] = None
+	return avStatus
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
@@ -287,16 +294,42 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
+def update_input_path(processingVars,ingestLogBoilerplate):
+	'''
+	change the input path to reflect the object in the SIP
+	rather than the input object
+	'''
+	objectDir = processingVars['packageObjectDir']
+	inputDir = os.path.dirname(processingVars['inputPath'])
+	print
+	for _dict in processingVars,ingestLogBoilerplate:
+		for key, value in _dict.items():
+			print(value)
+			# if isinstance(value,str):
+			if isinstance(value,str) and inputDir in value:
+				_dict[key] = value.replace(inputDir,objectDir)
+
+	# print(processingVars)
+	# print("* "*50)
+	# print(ingestLogBoilerplate)
+	# sys.exit()
+	return processingVars,ingestLogBoilerplate
+
+
 def move_input_file(processingVars,ingestLogBoilerplate):
 	'''
 	Put the input file into the package object dir.
 	'''
+	print(processingVars)
+	# print(ingestLogBoilerplate)
+	# sys.exit()
 	objectDir = processingVars['packageObjectDir']
 	sys.argv = [
 		'',
 		'-i'+processingVars['inputPath'],
 		'-d'+objectDir,
-		'-L'+processingVars['packageLogDir']
+		'-L'+processingVars['packageLogDir'],
+		'-m'
 		]
 	event = 'replication'
 	outcome = 'migrate file to SIP at {}'.format(objectDir)
@@ -314,38 +347,25 @@ def move_input_file(processingVars,ingestLogBoilerplate):
 		status
 		)
 	processingVars['caller'] = None
+	if not status == 'FAIL':
+		processingVars,ingestLogBoilerplate = update_input_path(
+			processingVars,
+			ingestLogBoilerplate
+			)
+
+	return processingVars,ingestLogBoilerplate
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
-	# there's a calculation of the file hash here
-	# that really should be left to the object manifest
-	# to avoid excess processing drain
-	# @fixme
-	inputFile = processingVars['inputPath']
-	filename = os.path.basename(inputFile)
-	# if _type == 'derivative':
-	# 	inputFileMD5 = makeMetadata.hash_file(inputFile)
-
-	# processingVars['caller'] = 'Python3 hashlib'
-	# eventID = pymmFunctions.short_log(
-	# 	processingVars,
-	# 	ingestLogBoilerplate,
-	# 	event = 'message digest calculation',
-	# 	outcome = "The input file MD5 hash is: {}".format(inputFileMD5),
-	# 	status = "OK"
-	# 	)
-
-	# pymmFunctions.insert_fixity(
-	# 	processingVars,
-	# 	eventID,
-	# 	messageDigestAlgorithm = "md5",
-	# 	messageDigestHashValue = inputFileMD5,
-	# 	eventDateTime = None
-	# 	)
-	# processingVars['caller'] = None
+	if processingVars['filename'] == '':
+		inputObject = os.path.basename(processingVars['inputPath'])
+	else:
+		inputObject = processingVars['filename']
 
 	mediainfo = makeMetadata.get_mediainfo_report(
 		processingVars['inputPath'],
-		processingVars['packageMetadataObjects']
+		processingVars['packageMetadataObjects'],
+		_JSON=None,
+		altFileName=inputObject
 		)
 	if mediainfo:
 		event = 'metadata extraction'
@@ -360,7 +380,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			status='OK'
 			)
 		processingVars['caller'] = None
-		processingVars['componentObjectData'][filename]['mediainfoPath'] = mediainfo
+		processingVars['componentObjectData'][inputObject]['mediainfoPath'] = mediainfo
 	
 	if not _type == 'derivative':
 	# don't bother calculating frame md5 for derivs....
@@ -368,6 +388,7 @@ def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 			processingVars['inputPath'],
 			processingVars['packageMetadataObjects']
 			)
+		print(frameMD5)
 		if frameMD5 != False:
 			event = 'message digest calculation'
 			outcome = ("frameMD5 report for input file "
@@ -430,7 +451,12 @@ def add_pbcore_md5_location(processingVars):
 
 def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 	_file = processingVars['inputPath']
-	pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
+	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
+
+		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
+		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
+	else:
+		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 	# print(pbcoreReport)
 	descriptiveJSONpath = processingVars['objectBAMPFAjson']
 	pbcoreFile = processingVars['pbcore']
@@ -498,7 +524,7 @@ def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 
 	return rsPackageDelivery
 
-def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
+def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=None):
 	'''
 	Make derivatives based on options declared in config...
 	'''
@@ -513,7 +539,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
 	rsPackageDelivery = make_rs_package(
-		processingVars['inputName'],
+		processingVars['canonicalName'],
 		rsPackage,
 		resourcespace_deliver
 		)
@@ -545,6 +571,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 					]
 		if rsPackageDelivery != '':
 			sysargs.append('-r'+rsPackageDelivery)
+		if isSequence:
+			sysargs.append('-s')
 		sys.argv = 	sysargs
 		
 		deliveredDeriv = makeDerivs.main()
@@ -581,7 +609,8 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None):
 		if os.path.isfile(value):
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
-				'file'
+				objectCategory='file',
+				objectCategoryDetail='access file'
 				)
 			get_file_metadata(\
 				ingestLogBoilerplate,\
@@ -815,16 +844,16 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 	- check for subdirectories
 	'''
 	precheckPass = (True,'')
-
+	inputPath = ingestLogBoilerplate['inputPath']
 	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
-	### DESTROY DESTROY DESTROY DEST ###
+	### DESTROY!! DESTROY!! DESTROY! ###
 
 	removedFiles = pymmFunctions.remove_hidden_system_files(
-		ingestLogBoilerplate['inputPath']
+		inputPath
 		)
 	source_list = pymmFunctions.list_files(
-		ingestLogBoilerplate['inputPath']
+		inputPath
 		)
 	removeFailures = []
 	status = "OK"
@@ -885,12 +914,22 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 			print("\nYou have subdirectory(ies) in your input:"
 				"\n({})\n".format(_object))
 	if subs > 0:
-		print("This is not currently supported. Exiting!")
-		precheckPass = (False,'subdirectories in input')
+		# sequenceScanner checks for DPX folder structure compliance
+		# and whether it is a single or multi-reel scan
+		result,details = sequenceScanner.main(inputPath)
+		# print("This is not currently supported. Exiting!")
+		# precheckPass = (False,'subdirectories in input')
+		if result != True:
+			precheckPass = (False,"Problems! See: {}".format(details))
+		else:
+			precheckPass = (True,details)
+	else:
+		precheckPass = (True,'discrete files')
 
 	return precheckPass
 
 def report_SIP_fixity(processingVars,objectManifestPath,eventID):
+	# parser returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
 	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
 	knownObjects = processingVars['componentObjectData']
 	if not parsed == True:
@@ -898,17 +937,21 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 	else:
 		for _object, _hash in hashes.items():
 			# hashes dict should look like {'filename':'md5hash'}
-			processingVars['componentObjectData'][_object]['md5hash'] = _hash
-			for key,value in knownObjects.items():
-				if _object == key:
-					processingVars['filename'] = _object
-					pymmFunctions.insert_fixity(
-						processingVars,
-						eventID,
-						messageDigestAlgorithm = "md5",
-						messageDigestHashValue = _hash,
-						messageDigestSource=objectManifestPath
-						)
+			if _object in list(knownObjects.keys()):
+				processingVars['componentObjectData'][_object]['md5hash'] = _hash
+				for key,value in knownObjects.items():
+					if _object == key:
+						processingVars['filename'] = _object
+						pymmFunctions.insert_fixity(
+							processingVars,
+							eventID,
+							messageDigestAlgorithm = "md5",
+							messageDigestHashValue = _hash,
+							messageDigestSource=objectManifestPath
+							)
+			else:
+				pass
+
 	return processingVars
 
 def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
@@ -1054,6 +1097,7 @@ def main():
 		'ingestUUID':ingestUUID,
 		'filename':filename,
 		'inputName':inputName,
+		'canonicalName':canonicalName,
 		'makeProres':makeProres,
 		'packageOutputDir':packageOutputDir,
 		'packageObjectDir':packageObjectDir,
@@ -1093,12 +1137,14 @@ def main():
 		'inputPath':inputPath,
 		'ingestUUID':ingestUUID
 		}
+	print(ingestLogBoilerplate)
 	# insert a database record for this SIP as an 'intellectual entity'
 	origFilename = processingVars['filename']
 	processingVars['filename'] = ingestUUID
 	processingVars = pymmFunctions.insert_object(
 		processingVars,
-		'intellectual entity'
+		objectCategory='intellectual entity',
+		objectCategoryDetail='Archival Information Package'
 		)
 	# tell the various logs that we are starting
 	processingVars['caller'] = 'ingestSIP.main()'
@@ -1116,9 +1162,12 @@ def main():
 	if interactiveMode:
 		reset_cleanup_choice()
 
-	# RUN A PRECHECK ON DIRECTORY INPUTS
+	### RUN A PRECHECK ON DIRECTORY INPUTS
+	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
+	### DPX INPUT.
 	if inputType == 'dir':
-		precheckPass,precheckFailReason = directory_precheck(
+		# precheckDetails == dir type to be set later
+		precheckPass,precheckDetails = directory_precheck(
 			ingestLogBoilerplate,
 			processingVars
 			)
@@ -1127,17 +1176,19 @@ def main():
 				processingVars,
 				packageOutputDir,
 				"ABORTING",
-				precheckFailReason
+				precheckDetails
 				)
-			ingestResults['abortReason'] = precheckFailReason
+			ingestResults['abortReason'] = precheckDetails
 			print(ingestResults)
 			return ingestResults
-		else:
+		elif precheckPass == True:
 			source_list = pymmFunctions.list_files(inputPath)
+			# set inputType to 'discrete files','single reel dpx','multi-reel dpx'
+			inputType = precheckDetails
 
-	# create a PBCore XML file and send any existing BAMPFA metadata JSON
-	# to the object metadata directory.
-	# We will add instantiation data later during ingest
+	### Create a PBCore XML file and send any existing BAMPFA metadata JSON
+	### 	to the object metadata directory.
+	### 	We will add instantiation data later during ingest
 	pbcoreXML = pbcore.PBCoreDocument()
 	# NOTE TO SELF: 
 	# REALLY I SHOULD SEPARATE THE BAMPFA COLLECTION JSON
@@ -1201,10 +1252,13 @@ def main():
 	###############
 	## DO STUFF! ##
 	###############
+	
+	### SINGLE-FILE INPUT ###
 	if inputType == 'file':
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
-			objectCategory = 'file'
+			objectCategory = 'file',
+			objectCategoryDetail='preservation master'
 			)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
@@ -1215,7 +1269,10 @@ def main():
 			processingVars
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_input_file(processingVars,ingestLogBoilerplate)
+		processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+			processingVars,
+			ingestLogBoilerplate
+			)
 		add_pbcore_instantiation(
 			processingVars,
 			ingestLogBoilerplate,
@@ -1231,11 +1288,8 @@ def main():
 			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
 
-	elif inputType == 'dir':
-		# processingVars = pymmFunctions.insert_object(
-		# 	processingVars,
-		# 	objectCategory = 'intellectual entity'
-		# 	)
+	### MULTIPLE, DISCRETE AV FILES INPUT ###
+	elif inputType == 'discrete files':
 		for _file in source_list:			
 			# set processing variables per file 
 			ingestLogBoilerplate['filename'] = os.path.basename(_file)
@@ -1244,12 +1298,13 @@ def main():
 				ingestLogBoilerplate['inputPath'] = _file
 			processingVars = pymmFunctions.insert_object(
 				processingVars,
-				objectCategory = 'file'
+				objectCategory = 'file',
+				objectCategoryDetail='preservation master'
 				)
 			#######################
 			# check that input file is actually a/v
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-			check_av_status(
+			avStatus = check_av_status(
 				_file,
 				interactiveMode,
 				ingestLogBoilerplate,
@@ -1257,7 +1312,9 @@ def main():
 				)
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			move_input_file(processingVars,ingestLogBoilerplate)
+			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+				processingVars,ingestLogBoilerplate
+				)
 			add_pbcore_instantiation(
 				processingVars,
 				ingestLogBoilerplate,
@@ -1287,6 +1344,160 @@ def main():
 			processingVars['inputName'] =\
 			ingestLogBoilerplate['inputPath'] = inputPath
 
+		if concatChoice == True:
+			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
+			SIPaccessPath = os.path.join(
+				processingVars['packageObjectDir'],
+				'resourcespace'
+				)
+			concatPath = concat_access_files(
+				SIPaccessPath,
+				ingestUUID,
+				canonicalName,
+				'mp4',
+				ingestLogBoilerplate,
+				processingVars
+				)
+			if os.path.exists(concatPath):
+				deliver_concat_access(
+					concatPath,
+					accessPath
+					)
+
+	elif inputType == 'single reel dpx':
+		processingVars = pymmFunctions.insert_object(
+			processingVars,
+			objectCategory='intellectual entity',
+			objectCategoryDetail='film scanner output reel'
+			)
+		# avStatus = check_av_status(
+		# 	inputPath,
+		# 	interactiveMode,
+		# 	ingestLogBoilerplate,
+		# 	processingVars
+		# 	)
+		for _object in source_list:
+			if os.path.isfile(_object):
+				ingestLogBoilerplate['filename'] = os.path.basename(_object)
+				processingVars['filename'] = os.path.basename(_object)
+				processingVars['inputPath']=\
+					ingestLogBoilerplate['inputPath'] = _object
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='file',
+					objectCategoryDetail='preservation master audio'
+					)
+			elif os.path.isdir(_object):
+				# set filename to be the _object path
+				ingestLogBoilerplate['inputPath'] =\
+					processingVars['inputPath'] = _object
+				ingestLogBoilerplate['filename'] =\
+					processingVars['filename'] = "{}_{}".format(
+						canonicalName,
+						os.path.basename(_object)
+						)
+				processingVars = pymmFunctions.insert_object(
+					processingVars,
+					objectCategory='intellectual entity',
+					objectCategoryDetail='preservation master image sequence'
+					)
+
+			get_file_metadata(ingestLogBoilerplate,processingVars)
+			pymmFunctions.pymm_log(
+				processingVars,
+				event = 'metadata extraction',
+				outcome = 'calculate input file technical metadata',
+				status = 'OK'
+				)
+			add_pbcore_instantiation(
+				processingVars,
+				ingestLogBoilerplate,
+				"Preservation master"
+				)
+		ingestLogBoilerplate['filename'] =\
+			processingVars['filename'] = ''
+		ingestLogBoilerplate['inputPath'] =\
+			processingVars['inputPath'] = inputPath
+		processingVars,ingestLogBoilerplate = move_input_file(
+				processingVars,ingestLogBoilerplate
+				)
+		# print(ingestLogBoilerplate,processingVars)
+		accessPath = make_derivs(
+			ingestLogBoilerplate,
+			processingVars,
+			rsPackage=None,
+			isSequence=True
+			)
+
+	elif inputType == 'multi-reel dpx':
+		masterList = source_list
+		for reel in masterList:
+			# clear out any preexisting filename value
+			ingestLogBoilerplate['filename'] =\
+				processingVars['filename'] = ''
+			ingestLogBoilerplate['inputPath'] =\
+				processingVars['inputPath'] = reel
+			processingVars['inputName'] = os.path.basename(reel)
+			reel_list = pymmFunctions.list_files(reel)
+
+			processingVars = pymmFunctions.insert_object(
+				processingVars,
+				objectCategory='intellectual entity',
+				objectCategoryDetail='film scanner output reel'
+				)
+			for _object in reel_list:
+				if os.path.isfile(_object):
+					ingestLogBoilerplate['filename'] =\
+						processingVars['filename'] = os.path.basename(_object)
+					processingVars['inputPath']=\
+						ingestLogBoilerplate['inputPath'] = _object
+					processingVars = pymmFunctions.insert_object(
+						processingVars,
+						objectCategory='file',
+						objectCategoryDetail='preservation master audio'
+						)
+				elif os.path.isdir(_object):
+					# set filename to be the _object path
+					ingestLogBoilerplate['inputPath'] =\
+						processingVars['inputPath'] = _object
+					ingestLogBoilerplate['filename'] =\
+						processingVars['filename'] = "{}_{}".format(
+							processingVars['inputName'],
+							os.path.basename(_object)
+							)
+					processingVars = pymmFunctions.insert_object(
+						processingVars,
+						objectCategory='intellectual entity',
+						objectCategoryDetail='preservation master image sequence'
+						)
+
+				get_file_metadata(ingestLogBoilerplate,processingVars)
+				pymmFunctions.pymm_log(
+					processingVars,
+					event = 'metadata extraction',
+					outcome = 'calculate input file technical metadata',
+					status = 'OK'
+					)
+				add_pbcore_instantiation(
+					processingVars,
+					ingestLogBoilerplate,
+					"Preservation master"
+					)
+			ingestLogBoilerplate['filename'] =\
+				processingVars['filename'] = ''
+			ingestLogBoilerplate['inputPath'] =\
+				processingVars['inputPath'] = reel
+			processingVars,ingestLogBoilerplate = move_input_file(
+					processingVars,ingestLogBoilerplate
+					)
+
+			accessPath = make_derivs(
+				ingestLogBoilerplate,
+				processingVars,
+				rsPackage=True,
+				isSequence=True
+				)
+			print(ingestLogBoilerplate)
 		if concatChoice == True:
 			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
 			SIPaccessPath = os.path.join(

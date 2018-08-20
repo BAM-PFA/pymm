@@ -72,38 +72,22 @@ def move_n_verify_sip(
 	print(verify)
 	return destSIP,safe
 
-def copy_file(inputPath,rsyncLogPath,destination):
+def mv_object(inputPath,destination):
 	'''
-	call rsync on an input file
+	call mv on an object... 
 	'''
-	destFilepath = os.path.join(destination,pymmFunctions.get_base(inputPath))
-	if not rsyncLogPath in ('',None):
-		rsyncCommand = [
-			'rsync','-rtvPih',
-			'--log-file={}'.format(rsyncLogPath),
-			inputPath,
-			destination
-			]
+	command = [
+		'mv','-f',
+		inputPath,
+		destination
+		]
+	out = subprocess.run(command,stdout=subprocess.PIPE)
+	if out.returncode == 0:
+		return True
 	else:
-		rsyncCommand = [
-			'rsync','-rtvPih',
-			inputPath,
-			destination
-			]		
-	# print(rsyncCommand)
-	if pymmFunctions.get_system() in ('mac','linux'):
-		try:
-			subprocess.check_call(rsyncCommand,stderr=subprocess.PIPE)
-			return True
-		except subprocess.CalledProcessError as error:
-			print("rsync failed?")
-			print (error)
-			return error
-	else:
-		print('go get a mac, my man.')
-	return False
+		return False
 
-def copy_dir(inputDir,rsyncLogPath,destination):
+def rsync_object(inputDir,rsyncLogPath,destination):
 	'''
 	call rsync on an input dir
 	'''
@@ -179,12 +163,17 @@ def set_args():
 		'-L','--logDir',
 		help='set a directory for the rsync log to live in'
 		)
-
 	parser.add_argument(
 		'-s','--movingSIP',
 		action='store_true',
 		default=False,
 		help='run move_n_verify_sip on input'
+		)
+	parser.add_argument(
+		'-m','--useMV',
+		action='store_true',
+		default=False,
+		help='try to use `mv` instead of rsync on the same filesystem'
 		)
 
 	return parser.parse_args()
@@ -200,9 +189,25 @@ def main():
 	destination = args.destination
 	loglevel = args.loglevel
 	logDir = args.logDir
+	useMV = args.useMV
 	now = pymmFunctions.timestamp('now')
 	# Quit if there are required variables missing
 	missingArgs = 0
+
+	try:
+		# see if the input/destination are on the same filesystem
+		# if so, we will use mv rather than rsync for efficiency
+		inputFS = pymmFunctions.get_filesystem_id(inputPath)
+		destFS = pymmFunctions.get_filesystem_id(destination)
+		print(inputFS,destFS)
+		if inputFS == destFS:
+			print("HEYYYY")
+			sameFilesystem = True
+		else:
+			sameFilesystem = False
+	except:
+		sameFilesystem = False
+
 	for _arg in requiredArgs:
 		if getattr(args,_arg) == None:
 			print("CONFIGURATION PROBLEM:\n"
@@ -243,12 +248,18 @@ def main():
 			# add trailing slash for rsync destination directory
 			if not destination[-1] == '/':
 				destination = destination+'/'
-			copy_dir(inputPath,rsyncLogPath,destination)
+			if not sameFilesystem == True:
+				rsync_object(inputPath,rsyncLogPath,destination)
+			else:
+				mv_object(inputPath,destination)
 		elif dir_or_file == 'file':
-			copy_file(inputPath,rsyncLogPath,destination)
+			if not sameFilesystem == True or useMV == False:
+				rsync_object(inputPath,rsyncLogPath,destination)
+			else:
+				mv_object(inputPath,destination)
 		else:
 			print("o_O what is going on here? you up to something?")
-			sys.exit()
+			# sys.exit()
 		
 	else:
 		stagedSIPpath,safe = move_n_verify_sip(inputPath,destination)

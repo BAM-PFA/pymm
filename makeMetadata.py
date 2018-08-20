@@ -17,8 +17,13 @@ import sys
 # local modules:
 import pymmFunctions
 
-def get_mediainfo_report(inputPath,destination,_JSON=False):
-	basename = pymmFunctions.get_base(inputPath)
+def get_mediainfo_report(inputPath,destination,_JSON=None,altFileName=None):
+	# handle an exception for the way 
+	# DPX folders are named in processingVars
+	if altFileName:
+		basename = altFileName
+	else:
+		basename = pymmFunctions.get_base(inputPath)
 	# write mediainfo output to a logfile if the destination is a directory ..
 	if os.path.isdir(destination):
 		if _JSON:
@@ -64,6 +69,7 @@ def get_mediainfo_pbcore(inputPath):
 		stdout=subprocess.PIPE
 		)
 	pbcore = call.communicate()[0]
+	# print(pbcore)
 	return pbcore 
 
 def get_track_profiles(mediainfoDict):
@@ -232,6 +238,7 @@ def hashdeep_audit(inputPath,manifestPath,_type=None):
 
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
+	print(inputPath)
 	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
 	frameMd5Filepath = os.path.join(metadataDir,md5File)
 	av = pymmFunctions.is_av(inputPath)
@@ -273,13 +280,49 @@ def make_frame_md5(inputPath,metadataDir):
 			frameMd5Filepath
 			]
 		output = subprocess.run(frameMd5Command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		# print(output.returncode)
 		try:
-			if output.stdout.decode() not in ('',None): 
+			if output.returncode == 0: 
 				# print(output)
 				print("FRAME MD5 CHA CHA CHA")
 				returnValue = frameMd5Filepath
 		except:
 			print(output.stderr.decode())
+
+	elif av == 'DPX':
+		pass
+		'''
+		OK: FOOD FOR THOUGHT: 
+			IT TAKES EFFING FOREVER TO CALCULATE FRAMEMD5 VALUES FOR A DPX
+			SEQUENCE. SLIGHTLY LONGER THAN THE HASHDEEP MANIFEST THAT WILL 
+			BE CREATED LATER. SO... SKIP FRAMEMD5 FOR DPX? SINCE WE ARE ALREADY
+			CALCULATING A HASH MANIFEST LATER ON?
+			MAYBE LATER GET A FUNCTION TO PARSE A HASH MANIFEST FOR THE FOLDER AND 
+			TURN IT INTO A 
+		'''
+		# filePattern,startNumber,file0 = pymmFunctions.parse_sequence_folder(inputPath)
+		# frameMd5Command = [
+		# 	'ffmpeg',
+		# 	'-start_number',startNumber,
+		# 	'-i',filePattern,
+		# 	'-f','framemd5',
+		# 	frameMd5Filepath
+		# 	]
+		# print(' '.join(frameMd5Command))
+		# output = subprocess.Popen(
+		# 	frameMd5Command,
+		# 	stdout=subprocess.PIPE,
+		# 	stderr=subprocess.PIPE
+		# 	)
+		# try:
+		# 	out,err = output.communicate()
+		# 	if err:
+		# 		# this output is captured in stderr for some reason
+		# 		print("FRAME MD5 CHA CHA CHA")
+		# 		# print(err.decode('utf-8'))
+		# 	returnValue = frameMd5Filepath
+		# except:
+		# 	print(out.decode())
 
 	return returnValue
 

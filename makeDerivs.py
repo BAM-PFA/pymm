@@ -3,11 +3,13 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 # local modules:
 import moveNcopy
 import pymmFunctions
+import sequenceScanner
 
 config = pymmFunctions.read_config()
 
@@ -17,7 +19,7 @@ defaultVideoAccessOptions = [
 	"-c:v","libx264",
 	"-bufsize","1835k",
 	"-f","mp4",
-	"-crf","25",
+	"-crf","23",
 	"-maxrate","8760k",
 	"-c:a","aac",
 	"-ac","2",
@@ -32,13 +34,29 @@ defaultAudioAccessOptions = [
 	]
 
 # SET FFMPEG INPUT OPTIONS
-def set_input_options(derivType,inputPath,ffmpegLogDir=None):
-	inputOptions = ['-i']
-	inputOptions.append(inputPath)
+def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
+	if isSequence:
+		# get variables needed to process a derivative from a dpx sequence
+		audioPath,filePattern,startNumber,framerate = pymmFunctions.parse_sequence_parent(inputPath)
+		# print(audioPath)
+		inputOptions = [
+			'-start_number',startNumber,
+			'-i',filePattern
+			]
+		if framerate:
+			inputOptions.extend(['-r',framerate])
+		if audioPath:
+			inputOptions.extend(
+				['-i',audioPath]
+				)
+	else:
+		audioPath = None
+		inputOptions = ['-i',inputPath]
+
 	if ffmpegLogDir:
 		inputOptions.append('-report')
 	
-	return inputOptions
+	return inputOptions,audioPath
 
 def set_middle_options(derivType,inputType):
 	'''
@@ -49,10 +67,11 @@ def set_middle_options(derivType,inputType):
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
-		if inputType == 'VIDEO':
+		if inputType in ('VIDEO','sequence'):
 			middleOptions = json.loads(config['ffmpeg']['resourcespace_video_opts'])
 		elif inputType == 'AUDIO':
 			middleOptions = json.loads(config['ffmpeg']['resourcespace_audio_opts'])
+
 		# test/set a default proxy command for FFMPEG call
 		if middleOptions == ['a','b','c']:
 			if inputType == 'VIDEO':
@@ -96,7 +115,7 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 		except:
 			print("couldn't make a dir at "+derivDeliv)
 	if derivType == 'resourcespace':
-		if inputType == 'VIDEO':
+		if inputType in ('VIDEO','sequence'):
 			ext = 'mp4'
 			outputOptions.extend(strict)
 		elif inputType == 'AUDIO':
@@ -123,15 +142,17 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 
 def set_args():
 	parser = argparse.ArgumentParser(
-		description='make derivatives of an input a/v file'
+		description='make derivatives of an input a/v file or an image sequence'
 		)
 	parser.add_argument(
 		'-i','--inputPath',
-		help='path of input file'
+		required=True,
+		help='path of input material'
 		)
 	parser.add_argument(
 		'-d','--derivType',
 		choices=['resourcespace','proresHQ'],
+		default='resourcespace',
 		help='choose a derivative type to output'
 		)
 	parser.add_argument(
@@ -144,7 +165,12 @@ def set_args():
 		)
 	parser.add_argument(
 		'-r','--rspaceMulti',
-		help='set directory for multi-file resourcespace object'
+		help='set directory for multi-part resourcespace object'
+		)
+	parser.add_argument(
+		'-s','--isSequence',
+		action='store_true',
+		help='flag if the input is an image sequence'
 		)
 
 	return parser.parse_args()
@@ -190,16 +216,21 @@ def main():
 	derivType = args.derivType
 	logDir = args.logDir
 	rsMulti = args.rspaceMulti
+	isSequence = args.isSequence
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
 
-	inputType = pymmFunctions.is_av(inputPath)	
+	if not isSequence:
+		inputType = pymmFunctions.is_av(inputPath)
+	else:
+		inputType = 'sequence'
 	ffmpegArgs = []
-	inputOptions = set_input_options(
+	inputOptions,audioPath = set_input_options(
 		derivType,
 		inputPath,
-		logDir
+		logDir,
+		isSequence
 		)
 	middleOptions = set_middle_options(derivType,inputType)
 	outputOptions = set_output_options(
@@ -211,7 +242,7 @@ def main():
 	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	# print(ffmpegArgs)
+	print(' '.join(ffmpegArgs))
 	output = subprocess.Popen(
 		ffmpegArgs,
 		stdout=subprocess.PIPE,

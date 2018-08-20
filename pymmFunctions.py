@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import shutil
@@ -24,7 +25,9 @@ import time
 import Levenshtein
 # local modules:
 import dbReporters
+import makeMetadata
 import MySQLqueries
+import sequenceScanner
 
 ################################################################
 # 
@@ -454,7 +457,7 @@ def do_query(connection,sql,*args):
 	cursor = connection.query(sql,*args)
 	return cursor
 
-def insert_object(processingVars,objectCategory):
+def insert_object(processingVars,objectCategory,objectCategoryDetail):
 	operator = processingVars['operator']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
@@ -465,7 +468,8 @@ def insert_object(processingVars,objectCategory):
 		objectInsert = dbReporters.ObjectInsert(
 				operator,
 				theObject,
-				objectCategory
+				objectCategory,
+				objectCategoryDetail
 				)
 		try:
 			# report the details to the db
@@ -490,6 +494,8 @@ def insert_object(processingVars,objectCategory):
 	# set the object category in component object data
 	processingVars['componentObjectData'][theObject]\
 		['objectCategory'] = objectCategory
+	processingVars['componentObjectData'][theObject]\
+		['objectCategoryDetail'] = objectCategoryDetail
 
 	return processingVars
 
@@ -539,6 +545,7 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 	for _object,chars in processingVars['componentObjectData'].items():
 		data = processingVars['componentObjectData'][_object]
 		category = data['objectCategory']
+		categoryDetail = data['objectCategoryDetail']
 		if category == 'file':
 			try:
 				mediainfoPath = data['mediainfoPath']
@@ -555,7 +562,8 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 				del objectCharsInsert
 			except:
 				pass
-		elif category == 'intellectual entity':
+		elif category == 'intellectual entity'\
+			and categoryDetail == 'Archival Information Package':
 			try:
 				objID = data['databaseID']
 				pbcorePath = processingVars['pbcore']
@@ -660,6 +668,7 @@ def insert_fixity(\
 def parse_object_manifest(manifestPath):
 	'''
 	parse an object manifest to grab md5 hashes for db reporting
+	returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
 	'''
 	parsed = False
 	data = []
@@ -763,23 +772,110 @@ def is_audio(inputPath):
 		return False
 
 def is_av(inputPath):
+	'''
+	run tests for video, then audio, then DPX seq, then give up.
+	@FIXME - this should return a more verbose/useful
+		explanation of failed tests.
+		Currently the expected return value os Boolean when is_av() is called. 
+	'''
 	_is_video = is_video(inputPath)
-	if not _is_video:
-		_is_audio = is_audio(inputPath)
-		if not _is_audio:
-			print("THIS DOES NOT SMELL LIKE AN AV FILE SO WHY ARE WE EVEN HERE?")
-			return False
-		else:
-			return 'AUDIO'
-	else:
+	_is_audio = False
+	_is_dpx = False
+	_is_dpx_av = False
+	if _is_video == True:
 		return 'VIDEO'
+	else:
+		_is_audio = is_audio(inputPath)
+		if _is_audio:
+			return 'AUDIO'
+		else:
+			try:
+				_is_dpx,details = sequenceScanner.main(inputPath)
+			except:
+				print('error scanning a sequence directory')
+				return False
+			if _is_dpx:
+				if details in ('single reel dpx','multi-reel dpx'):
+					# insert test for only dpx contents
+					status, failedDirs = test_sequence_reel_dir(inputPath)
+					if status == True:
+						print('THIS IS AN IMAGE SEQUENCE!')
+						return 'DPX'
+					else:
+						print(
+							'ERROR: check out this list of '
+							'problem directories: {}'.format(failedDirs)
+							)
+						return False
+
+			elif _is_dpx == None:
+				# if we are dealing with an actual sequence folder,
+				# run a different test
+				_is_dpx_av = is_dpx_sequence(inputPath)
+				if _is_dpx_av:
+					print('THIS IS AN IMAGE SEQUENCE!')
+					return 'DPX'
+			else:
+				return None
+
+def test_sequence_reel_dir(reelPath):
+	'''
+	Take a directory that should contain only a wav file
+	and a corresponding directory with an image sequence in it.
+	If there's a problem with one or more of the directories return
+	it/them in a list.
+	'''
+	failedDirs = []
+	failures = 0
+	for item in os.scandir(reelPath):
+		if item.is_dir():
+			# print(item.path)
+			_is_dpx_av = is_dpx_sequence(item.path)
+			if not _is_dpx_av:
+				failedDirs.append(item.path)
+				failures += 1
+			else:
+				pass
+	if failures > 0:
+		return False, failedDirs
+	else:
+		return True, failedDirs
+
+# def gen_dict_extract(key, var):
+# 	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
+# 	# will try this to see if there is more than one General track in a DPX mediainfo report. 
+
+# 	# if there is, it means there's more than a dpx sequence in the folder and it should be remedied before being processed.
+#     if hasattr(var,'iteritems'):
+#         for k, v in var.iteritems():
+#             if k == key:
+#                 yield v
+#             if isinstance(v, dict):
+#                 for result in gen_dict_extract(key, v):
+#                     yield result
+#             elif isinstance(v, list):
+#                 for d in v:
+#                     for result in gen_dict_extract(key, d):
+                        # yield result
 
 def is_dpx_sequence(inputPath):
-	# MAYBE USE A CHECK FOR DPX INPUT TO DETERMINE A CERTAIN OUTPUT
-	# AUTOMATICALLY? 
-	if os.path.isdir(inputPath):
-		for root,dirs,files in os.walk(inputPath):
-			print("WELL SELL ME A PICKLE AND CALL ME SALLY")
+	'''
+	run mediainfo on the 'dpx' folder
+	if there's anything other than dpx files in there
+	the result will not parse as json and it indicates
+	noncompliance with expected structure
+	(PS-this is a hack)
+	'''
+	_is_dpx_av = False
+	try:
+		mediainfo = makeMetadata.get_mediainfo_report(inputPath,'',_JSON=True)
+		mediainfo = json.loads(mediainfo)
+	except:
+		_is_dpx_av = False
+	if mediainfo:
+		_is_dpx_av = True
+
+	return _is_dpx_av
 
 def check_policy(ingestType,inputPath):
 	print('do policy check stuff')
@@ -977,6 +1073,71 @@ def get_mediainfo_value(inputPath,_type,fieldName):
 
 	return value
 
+def get_framerate(inputPath):
+	'''
+	get the framerate from a video file
+	'''
+	framerate = get_mediainfo_value(
+		inputPath,
+		'Video',
+		'FrameRate'
+		)
+	return framerate
+
+def parse_sequence_parent(inputPath):
+	'''
+	input path should only ever be:
+	title_acc#_barcode_reel#/
+		dpx/
+			title_acc#_barcode_reel#_sequence#.dpx
+		[optionaltitle_acc#_barcode_reel#.wav]
+
+	this function returns a few variables:
+		* audioPath = path to an audio file (should be .wav in all our cases)
+		* filePattern = pattern for ffmpeg to parse
+		* startNumber = first sequence number
+		* framerate = embedded by scanner in DPX files
+	'''
+	sequenceScanner.main(inputPath)
+	for entry in os.scandir(inputPath):
+		if entry.is_file():
+			if entry.name.endswith('.wav'):
+				audioPath = entry.path
+			else:
+				audioPath = None
+		elif entry.is_dir():
+			# should be a single DPX dir with only dpx files in it
+			filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
+
+	try:
+		framerate = get_framerate(file0)
+	except:
+		framerate = None
+
+	return audioPath,filePattern,startNumber,framerate
+
+def parse_sequence_folder(dpxPath):
+	'''
+	Grab some information needed for ffmpeg transcoding of an image sequence:
+		* the /path/plus/file_%6d.dpx type pattern needed for ffmpeg
+		* the starting number of the sequence
+		* the /path/to/first/file in the sequence
+	'''
+	files = []
+	scan = os.scandir(dpxPath)
+	for entry in scan:
+		files.append(entry.path)
+	files.sort()
+	file0 = files[0]
+	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	fileBase = match.group(1)
+	startNumber = match.group(2)
+	numberOfDigits = len(startNumber)
+	extension = match.group(3)
+	filePattern = "{}%0{}d{}".format(fileBase,numberOfDigits,extension)
+	# print(filePattern,startNumber,file0)
+	return filePattern,startNumber,file0
+
 #
 # END FILE CHECK STUFF 
 #
@@ -1127,26 +1288,51 @@ def recursive_chmod(path,mode=0o777):
 
 def remove_hidden_system_files(inputPath):
 	removed = []
+	dont_remove = ['.git','.tmp.drivedownload']
 	for root,dirs,files in os.walk(inputPath):
 		for f in os.listdir(root):
 			if f.startswith('.'):
-					target = os.path.join(root,f)
-					removed.append(target)
-					os.remove(target)
-					print("removed a system file at {}".format(target))
+				# weird list comprehension to make sure not to delete
+				# files accidentally - checks for .git/gitignore 
+				# and Drive hidden files; can add to list!!
+				if not any(
+					[x for x in f if (f in dont_remove) or (
+						[x for x in dont_remove if x in f]
+						)
+					]
+					):
+						target = os.path.join(root,f)
+						os.remove(target)
+						removed.append(target)
+						print("removed a system file at {}".format(target))
 		for _dir in dirs:
 			for f in os.listdir(os.path.join(root,_dir)):
 				if f.startswith('.'):
-					target = os.path.join(root,_dir,f)
-					removed.append(target)
-					os.remove(target)
-					print("removed a system file at {}".format(target))
+					if not any(
+					[x for x in f if (f in dont_remove) or (
+						[x for x in dont_remove if x in f]
+						)
+					]
+					):
+						target = os.path.join(root,_dir,f)
+						removed.append(target)
+						os.remove(target)
+						print("removed a system file at {}".format(target))
 
 	return removed
 
 def get_desktop():
 	desktop = os.path.expanduser("~/Desktop")
 	return desktop
+
+def get_filesystem_id(path):
+	'''
+	input a path and return the filesystem id
+	* use to compare filesystem identities for `mv` vs `rsync` 
+		when running moveNcopy
+	'''
+	fs_id = os.stat(path).st_dev
+	return fs_id
 
 #
 # SYSTEM / ENVIRONMENT STUFF
