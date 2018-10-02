@@ -355,7 +355,8 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
 		'-i','--inputPath',
-		help='path of input file'
+		help='path of input file',
+		required=True
 		)
 	parser.add_argument(
 		'-m','--mediainfo',
@@ -381,6 +382,16 @@ def main():
 		'-d','--destination',
 		help='set destination for output metadata files'
 		)
+	parser.add_argument(
+		'-v','--getValue',
+		help='declare a valid MediaInfo raw tag to get it.'\
+			'REQUIRES you to declare a stream type!'
+		)
+	parser.add_argument(
+		'-t','--valueType',
+		help='declare a valid stream type from which to grab a value.',
+		choices=['General','Audio','Video']
+		)
 	args = parser.parse_args()
 	
 	inputPath = args.inputPath
@@ -389,17 +400,19 @@ def main():
 	_pbcore = args.pbcore
 	mediainfo_report = args.mediainfo
 	getJSON = args.getJSON
+	value = args.getValue
+	valueType = args.valueType
 
 	if not inputPath:
 		print("\n\nHEY THERE, YOU NEED TO SET AN INPUT FILE "
 			"TO RUN THIS SCRIPT ON.\rNOW EXITING")
 		sys.exit()
 	if not destination:
-		print('''
-			YOU DIDN'T TELL ME WHERE TO PUT THE OUTPUT OF THIS SCRIPT,
-			SO WE'LL PUT ANY SIDECAR FILES IN THE 
-			SAME DIRECTORY AS YOUR INPUT FILE.
-			''')
+		# print('''
+		# 	YOU DIDN'T TELL ME WHERE TO PUT THE OUTPUT OF THIS SCRIPT,
+		# 	SO WE'LL PUT ANY SIDECAR FILES IN THE 
+		# 	SAME DIRECTORY AS YOUR INPUT FILE.
+		# 	''')
 		destination = os.path.dirname(os.path.abspath(inputPath))
 	if mediainfo_report:
 		get_mediainfo_report(inputPath,destination,getJSON)
@@ -416,6 +429,20 @@ def main():
 			'wb'
 			) as xmlFile:
 			xmlFile.write(xml)
+	if value:
+		if not valueType:
+			print("YOU NEED TO DECLARE A STREAM TYPE:"\
+					"Audio, General, or Video"
+				)
+			sys.exit()
+		else:
+			theValue = pymmFunctions.get_mediainfo_value(
+				inputPath,
+				valueType,
+				value
+			)
+			print(theValue)
+			return theValue		
 
 if __name__ == '__main__':
 	main()
