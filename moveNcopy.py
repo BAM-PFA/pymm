@@ -55,7 +55,8 @@ def move_n_verify_sip(
 
 	verify = makeMetadata.hashdeep_audit(
 		destSIP,
-		destManifest
+		destManifest,
+		'SIP'
 		)
 	if verify == True:
 		safe = True
