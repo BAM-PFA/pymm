@@ -38,10 +38,26 @@ def set_args():
 	return parser.parse_args()
 
 def parse_it(ltoSchemaPath):
+	# set a namespace for EXSLT regex support
+	ns = {"re": "http://exslt.org/regular-expressions"}
+	# init a contents dict
 	contents = {'ltoID':'','objects':{}}
-	# this XPATH expression gets the files that are direct children
+
+	# this XPATH expression gets the names of files that are direct children
 	# of the `objects` directory in the AIP. i.e., just the master files
 	xpathMasters = '//directory[name="objects" and ../../name!="metadata"]/contents/file/name'
+	# get the containing folder for a single DPX reel
+	# this looks for a subfolder called "dpx"
+	# use a regex to account for Dpx DPX dpx forms for the dpx subfolder
+	xpathDPX = (
+		'//directory[name="objects" and'
+		' ../../name!="metadata"]/contents/directory['\
+				'(contents/directory/name[re:match(text(),"^dpx$",i)]) or '
+				'(contents/directory/contents/directory/name[re:match(text(),"dpx",i)])'\
+			']/name'
+		)
+	# get all the frames under a DPX folder
+	xpathDPXframes = '../contents/directory[(name[re:match(text(),"dpx",i)])]/contents/file/length/text()'
 	# this gets the directory names above each file
 	# we can get this b/c the actual etree Element node is returned
 	# (not just the filename string)
@@ -55,14 +71,51 @@ def parse_it(ltoSchemaPath):
 
 	tree = etree.parse(ltoSchemaPath)
 	contents['ltoID'] = str(tree.xpath(xpathLTOid)[0])
+	
 	files = tree.xpath(xpathMasters)
+
+	# print([x.text for x in files])
 	for item in files:
 		filename = str(item.text)
-		# init a subdict for each item
+		# init a subdict for each item element
 		contents['objects'][filename] = {}
-		contents['objects'][filename]['path'] = str('/'.join(item.xpath(xpathFilepath)))
-		contents['objects'][filename]['size'] = str(item.xpath(xpathFilesize)[0])
-		contents['objects'][filename]['modified'] = str(item.xpath(xpathModifyTime)[0])
+		contents['objects'][filename]['path'] = \
+			str('/'.join(item.xpath(xpathFilepath)))+"/"+filename
+		contents['objects'][filename]['size'] = \
+			str(item.xpath(xpathFilesize)[0])
+		contents['objects'][filename]['modified'] = \
+			str(item.xpath(xpathModifyTime)[0])
+
+	dpxReels = tree.xpath(xpathDPX,namespaces=ns)
+	for item in dpxReels:
+		# get the <name> tag for any associated wav files
+		WAVs = item.xpath('../contents/file/name[contains(text(),".wav")]')
+		# if any are found, do stuff:
+		for wav in WAVs:
+			print(WAVs[0].text)
+			# add each WAV file to the contents dict
+			filename = str(wav.text)
+			contents['objects'][filename] = {}
+			contents['objects'][filename]['path'] = \
+				str('/'.join(wav.xpath(xpathFilepath)))+"/"+filename
+			contents['objects'][filename]['size'] = \
+				str(wav.xpath(xpathFilesize)[0])
+			contents['objects'][filename]['modified'] = \
+				str(item.xpath(xpathModifyTime)[0])
+
+		reelname = str(item.text)
+		print(reelname)
+		contents['objects'][reelname] = {}
+		contents['objects'][reelname]['path'] = \
+			str('/'.join(item.xpath(xpathFilepath)))+"/"+reelname
+		contents['objects'][reelname]['modified'] = \
+			str(item.xpath(xpathModifyTime)[0])
+		# get the size in bytes of each frame
+		framelengths = item.xpath(xpathDPXframes,namespaces=ns)
+		reelTotalSize = 0
+		for frame in framelengths:
+			reelTotalSize += int(frame)
+		contents['objects'][reelname]['size'] = reelTotalSize
 
 	return contents
 
