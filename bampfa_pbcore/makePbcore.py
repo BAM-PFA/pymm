@@ -248,7 +248,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 	metadata = descriptiveJSON[asset]['metadata']
 	descMetadataFields = []
 	for key,value in metadata.items():
-		if value != "":
+		if value not in ("",None,"None","null"):
 			# we only want the fieds with values
 			descMetadataFields.append(key)
 
