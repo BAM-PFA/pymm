@@ -713,25 +713,23 @@ def parse_pbcore_xml(pbcoreFile):
 # FILE CHECK STUFF
 #
 def is_video(inputPath):
-	# THIS WILL RETURN TRUE IF FILE IS VIDEO BECAUSE
-	# YOU ARE TELLING FFPROBE TO LOOK FOR VIDEO STREAM
-	# WITH INDEX=0, AND IF v:0 DOES NOT EXIST,
-	# ISPO FACTO, YOU DON'T HAVE A RECOGNIZED VIDEO FILE.
+	# Look for a video stream with codec_type == 'video'
 	ffprobe = [
 		'ffprobe',
 		'-i',inputPath,
-		'-v','error',
+		# '-v','error',
 		'-print_format','json',
 		'-show_streams',
-		'-select_streams','v:0'
+		'-select_streams','v'
 		]
 	try:
 		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
 		out = probe.stdout.decode('utf-8')
 		output = json.loads(out)
+		# print(output)
 		try:
-			indexValue = output['streams'][0]['index']
-			if indexValue == 0:
+			codec_type = output['streams'][0]['codec_type']
+			if codec_type == 'video':
 				return True
 		except:
 			return False
@@ -742,30 +740,26 @@ def is_video(inputPath):
 def is_audio(inputPath):
 	print("THIS ISN'T A VIDEO FILE\n"
 		'maybe this is an audio file?')
-	# DO THE SAME AS ABOVE BUT '-select_streams a:0'
-	# ... HOPEFULLY IF v:0 DOESN'T EXIST BUT a:0 DOES,
-	# YOU HAVE AN AUDIO FILE ON YOUR HANDS. WILL HAVE
-	# TO CONFIRM... COULD THIS RETURN TRUE IF v:0 IS BROKEN/CORRUPT?
+	# DO THE SAME AS ABOVE BUT codec_type == 'audio'
 	ffprobe = [
 		'ffprobe',
 		'-i',inputPath,
-		'-v','error',
 		'-print_format','json',
 		'-show_streams',
-		'-select_streams','a:0'
+		'-select_streams','a'
 		]
 	try:
 		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
 		out = probe.stdout.decode('utf-8')
 		output = json.loads(out)
 		try:
-			indexValue = output['streams'][0]['index']
-			if indexValue == 0:
+			codec_type = output['streams'][0]['codec_type']
+			if codec_type == 'audio':
 				print("This appears to be an audio file!")
 				return True
 		except:
 			print("THIS DOESN'T SMELL LIKE AN AUDIO FILE EITHER")
-			print(output)
+			# print(output)
 			return False
 	except:
 		print("INVALID FILE INPUT, NOT AUDIO EITHER")
@@ -840,23 +834,6 @@ def test_sequence_reel_dir(reelPath):
 		return False, failedDirs
 	else:
 		return True, failedDirs
-
-# def gen_dict_extract(key, var):
-# 	# taken from https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-python-dictionaries-and-lists
-# 	# will try this to see if there is more than one General track in a DPX mediainfo report. 
-
-# 	# if there is, it means there's more than a dpx sequence in the folder and it should be remedied before being processed.
-#     if hasattr(var,'iteritems'):
-#         for k, v in var.iteritems():
-#             if k == key:
-#                 yield v
-#             if isinstance(v, dict):
-#                 for result in gen_dict_extract(key, v):
-#                     yield result
-#             elif isinstance(v, list):
-#                 for d in v:
-#                     for result in gen_dict_extract(key, d):
-                        # yield result
 
 def is_dpx_sequence(inputPath):
 	'''
