@@ -4,19 +4,22 @@
 - [Installation](#installation)
 - [Usage](#usage)
 
-This is a Work In Progress Python 3 port of [mediamicroservices](https://github.com/mediamicroservices/mm). Or at least it started that way. It also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. A lot has been changed to be less institutionally specific. And of course there's a lot added back to be institutionally specific to BAMPFA.
+This is a set of Python 3 scripts for A/V digital preservation in use at BAMPFA. It is based on [mediamicroservices](https://github.com/mediamicroservices/mm) developed by Dave Rice and many collaborators at CUNY-TV, and also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. A lot has been changed to be less institutionally specific, but I have a lot of suff that is institutionally specific to BAMPFA.
 
 Tested on Mac (El Capitan and Sierra), and on Ubuntu 16.04....
 
-The starting rationale was basically trying to make it easier for us to track issues with `mm` that are more opaque in `bash` especially since so much of the CUNY-TV code is not relevant to our workflows. Also, since we were [using](https://github.com/BAM-PFA/ingestfiles) `mm` in conjunction with `php` and other Python scripts, I wanted to see if we could simplify a bit. In the words of a really helpful Stack Overflow commenter:
+The rationale for creating a Python version of `mm` was to make it easier for us to track issues with `mm` that are more opaque in `bash` especially since so much of the CUNY-TV code is not relevant to our workflows. Also, since we were at first using `mm` in conjunction with `php` and other Python scripts, I wanted to see if we could strip down the core functionality a bit. In the words of a really helpful Stack Overflow commenter:
 
 > If I may put forward a piece of my personal opinion, having a chain of php -> python -> bash is the worst coding style one can ever met, you may want to rewrite it into single langue so it will be easier to track down further issues at least.
 
 Thanks little buddy.
 
+
+`pymm` is now embedded as part of a Flask webapp, [edith](https://github.com/BAM-PFA/edith), being used at BAMPFA for digital preservation.
+
 ## Dependencies
 ### Nonstandard python libraries:
-* python-levenshtein
+* python-levenshtein 
 * lxml
 
 ### DB modules dependencies: 
@@ -61,9 +64,9 @@ To use `ingestSip.py` without setting up config options, you can use the `-a / -
 I have tried to keep the microservice structure of `mm` as much as possible, though, and conceivably we can use any of the scripts (or their functions) to perform various tasks (for example creating a mezzanine file or maybe making checksums for later verification).
 
 ### PBCore 
-There's also an option to create a PBCore compliant (mostly) XML file that contains technical metadata generated from `mediainfo` and optionally can add descriptive metadata and details about a source physical asset like a tape or film. This is drawn from our FileMaker collection management database. Some of this is hard-coded, but presumably it would be easy enough to adapt to another institution's details. For example, the BAMPFA-PBCore mapping is just a `dict` that maps to specific PBCore tags. 
+There's also an option to create a PBCore compliant (mostly) XML file that contains technical metadata generated from `mediainfo` and optionally can add descriptive metadata and details about a source physical asset like a tape or film drawn from our FileMaker collection management database. The PBCore XML file can also hold work-level descriptive metadata that can be supplied by a user.
 
-A near-future goal is to add mappings for other user-supplied descriptive metadata in JSON.
+Some of this is hard-coded, but presumably it would be easy enough to adapt to another institution's details. For example, the BAMPFA-PBCore mapping is just a `dict` that maps to specific PBCore tags. 
 
 ### Some more details on flow
 * User gives the filepath of an input file or dir

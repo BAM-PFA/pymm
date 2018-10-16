@@ -353,22 +353,12 @@ PBCORE_MAP = {
 			}
 		}
 	},
-	"BAMPFA_FIELD":{
-		"PBCORE_ELEMENT":{
-			"LEVEL":"WORK_OR_INSTANTIATION",
-			"ATTRIBUTE":"DEFAULT_VALUE",
-			"TEXT":"Null",
-			"SUBELEMENTS":{
-				"PBCORE_FIELD":{
-					"ATTRIBUTE":"DEFAULT_VALUE",
-					"TEXT":"Null"
-				}
-			},
-			"SIBLING_FIELD":{
-				"PBCORE_FIELD":{
-					"ATTRIBUTE":"DEFAULT_VALUE"
-				}
-			}
+	"frameRateTRTdetails":{
+		"essenceTrackFrameRate":{
+			"LEVEL":"INSTANTIATION",
+			"unitsOfMeasure":"fps",
+			"TEXT":"value",
+			"TRACK":"Video"
 		}
 	},
 	"BAMPFA_FIELD":{
