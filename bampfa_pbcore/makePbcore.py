@@ -302,6 +302,25 @@ def add_physical_elements(self,descriptiveJSONpath):
 						)
 				if existingEssenceTrack != []:
 					insertionTarget = existingEssenceTrack[0]
+				else:
+					# add an <instantiationEssenceTrack> tag
+					essenceTrack = add_SubElement(
+						self,
+						physicalInstantiation,
+						'instantiationEssenceTrack',
+						attrib={},
+						_text=None,
+						nsmap=self.NS_MAP
+					)
+					add_SubElement(
+						self,
+						essenceTrack,
+						'essenceTrackType',
+						attrib={},
+						_text=track,
+						nsmap=self.NS_MAP
+					)
+					insertionTarget = essenceTrack
 
 			if mappedPbcore["TEXT"] == "value":
 				'''
@@ -316,25 +335,6 @@ def add_physical_elements(self,descriptiveJSONpath):
 					_text=mdValue,
 					nsmap=self.NS_MAP
 					)
-
-				# if level == "WORK":
-				# 	add_SubElement(
-				# 		self,
-				# 		self.descriptionRoot,
-				# 		mappingTarget,
-				# 		attrib=mappingAttribs,
-				# 		_text=mdValue,
-				# 		nsmap=self.NS_MAP
-				# 		)
-				# else:
-				# 	add_SubElement(
-				# 		self,
-				# 		physicalInstantiation,
-				# 		mappingTarget,
-				# 		attrib=mappingAttribs,
-				# 		_text=mdValue,
-				# 		nsmap=self.NS_MAP
-				# 		)
 
 			else:
 				'''
@@ -352,15 +352,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 					nsmap=self.NS_MAP
 					)
 				add_pbcore_subelements(self,top,mappedSubelements,mdValue)
-				# else:
-				# 	top = add_SubElement(
-				# 		self,
-				# 		physicalInstantiation,
-				# 		mappingTarget,
-				# 		attrib=mappingAttribs,
-				# 		nsmap=self.NS_MAP
-				# 		)
-				# 	add_pbcore_subelements(self,top,mappedSubelements,mdValue)
+
 	return True
 
 def to_string(self):
