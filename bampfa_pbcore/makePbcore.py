@@ -39,7 +39,7 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 		except:
 			print('not a valid xml input ... probably?')
 			sys.exit()
-	
+
 	instantiation = add_SubElement(
 		self,
 		self.descriptionRoot,
@@ -300,7 +300,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 						trackXpath,
 						namespaces=self.XPATH_NS_MAP
 						)
-				if existingVideoTrack != []:
+				if existingEssenceTrack != []:
 					insertionTarget = existingEssenceTrack[0]
 
 			if mappedPbcore["TEXT"] == "value":
