@@ -236,7 +236,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 		'pbcoreInstantiation',
 		nsmap=self.NS_MAP
 		)
-	
+
 	comment = ET.Comment("Physical/Original Asset")
 	physicalInstantiation.insert(0,comment)
 	descriptiveJSON = json.load(open(descriptiveJSONpath))
@@ -268,8 +268,8 @@ def add_physical_elements(self,descriptiveJSONpath):
 			if level == "WORK":
 				insertionTarget = self.descriptionRoot
 			elif level == "INSTANTIATION":
-				insertionTarget == physicalInstantiation
-			
+				insertionTarget = physicalInstantiation
+
 			# set any attributes if applicable
 			if "ATTRIBUTES" in mappedPbcore:
 				mappingAttribs = mappedPbcore["ATTRIBUTES"]
@@ -346,7 +346,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 				# if level == "WORK":
 				top = add_SubElement(
 					self,
-					insertionTarget
+					insertionTarget,
 					mappingTarget,
 					attrib=mappingAttribs,
 					nsmap=self.NS_MAP
