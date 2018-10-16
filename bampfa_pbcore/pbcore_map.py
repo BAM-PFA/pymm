@@ -370,7 +370,7 @@ PBCORE_MAP = {
 			"LEVEL":"INSTANTIATION",
 			"ATTRIBUTES":{
 				"unitsOfMeasure":"fps"
-			},ATTRIBUTE
+			},
 			"TEXT":"value",
 			"TRACK":"Video"
 		}
@@ -460,6 +460,7 @@ PBCORE_MAP = {
 			},
 			"TEXT":"value"
 		}
+	},
 	"digitizer":{
 		"instantiationAnnotation":{
 			"LEVEL":"INSTANTIATION",
@@ -502,7 +503,7 @@ PBCORE_MAP = {
 				},
 				"creatorRole":{
 					"ATTRIBUTES":{
-						"source":"PBCore creatorRole/contributorRole"
+						"source":"PBCore creatorRole/contributorRole",
 						"ref":"http://metadataregistry.org/concept/show/id/9654.html"
 					},
 					"TEXT":"Speaker"
