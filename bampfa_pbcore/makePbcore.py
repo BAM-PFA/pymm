@@ -284,17 +284,19 @@ def add_physical_elements(self,descriptiveJSONpath):
 				track = mappedPbcore["TRACK"]
 				# XPATH to find an existing essence track
 				trackXpath = (
-					"//p:pbcoreInstantiation\
-					[comment()='Physical/Original Asset']/\
-					p:instantiationEssenceTrack[\
-					p:essenceTrackType[text()='{}'\
-					]]".format(track)
+					"//pbcoreInstantiation"\
+					"[comment()='Physical/Original Asset']/"\
+					"instantiationEssenceTrack["\
+					"essenceTrackType[text()='{}'"\
+					"]]".format(track)
 					)
+				print(trackXpath)
 				if track == "Video":
 					existingEssenceTrack = physicalInstantiation.xpath(
 						trackXpath,
 						namespaces=self.XPATH_NS_MAP
 						)
+					print(existingEssenceTrack)
 				elif track == 'Audio':
 					existingEssenceTrack = physicalInstantiation.xpath(
 						trackXpath,
