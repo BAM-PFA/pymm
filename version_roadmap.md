@@ -14,11 +14,17 @@ Basic functions of [mediamicroservices](https://github.com/mediamicroservices/mm
 * Add audio ingest
 
 ## Version 0.3.0
-
+Release 2018/08/19
 * Add DPX ingest
 
 ## Version 0.4.0
-* Add lto schema contents at file level to PREMIS db
+Release 2018/10/16
+* Add LTFS schema contents at object level to PREMIS db
+* Add descriptive metadata fields to pbCore map
+* Random fixes
+
+## v0.4.1
+* Fix ordering of PBcore XML fields
 
 ## Version 0.5.0
 * Refactor ingestSip
