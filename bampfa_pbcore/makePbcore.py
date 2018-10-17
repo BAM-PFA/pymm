@@ -219,7 +219,7 @@ def add_pbcore_subelements(self,top,mappedSubelements,mdValue):
 def add_physical_elements(self,descriptiveJSONpath):
 	'''
 	load metadata json file in specific format,
-	drawn from BAMPFA CMS:
+	drawn from BAMPFA CMS and user-input form:
 	{assetpath:{
 		metadata:{
 			field1:value1,

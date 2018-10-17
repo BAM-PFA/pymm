@@ -496,9 +496,6 @@ PBCORE_MAP = {
 			"TEXT":"",
 			"SUBELEMENTS":{
 				"creator":{
-					"ATTRIBUTES":{
-						"ATTRIBUTE":"DEFAULT_VALUE"
-					},
 					"TEXT":"value"
 				},
 				"creatorRole":{
