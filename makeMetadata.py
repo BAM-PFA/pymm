@@ -97,27 +97,36 @@ def get_track_profiles(mediainfoDict):
 		'@type', 'ID', 'Codec_ID', 'Duration', 'Stream_size', 
 		'Language', 'Encoded_date', 'Tagged_date'
 		]
-	try:
-		videoTrackProfile = mediainfoDict['media']['track'][1]
-		# print("!! "*100)
-		# print(videoTrackProfile)
+	# `tracks` should be a list of track dicts
+	tracks = mediainfoDict['media']['track']
+	# print(tracks)
+	videoTrackProfile = None
+	audioTrackProfile = None
+	for track in tracks:
+		# print(track)
+		if track['@type'] == 'Video':
+			videoTrackProfile = track
+		elif track['@type'] == 'Audio':
+			audioTrackProfile = track
+
+	if videoTrackProfile:
 		for attr in videoAttribsToDiscard:
 			videoTrackProfile.pop(attr,None)
-	except:
+	else:
 		problems += 1
 		print("mediainfo problem: "
 			"either there is no video track or you got some issues")
-	try:	
-		audioTrackProfile = mediainfoDict['MediaInfo']['media']['track'][2]
+	if audioTrackProfile:
 		for attr in audioAttribsToDiscard:
 			audioTrackProfile.pop(attr,None)
-	except:
+	else:
 		problems += 1
 		print("mediainfo problem: "
 			"either there is no audio track or you got some issues")
+
 	if problems == 0:
 		return json.dumps(videoTrackProfile),json.dumps(audioTrackProfile)
-	else:	
+	else:
 		print("there might be problems")
 		if videoTrackProfile:
 			return json.dumps(videoTrackProfile),"{}"
