@@ -560,7 +560,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 
 		event = 'migration'
 		processingVars['caller'] = processingVars['ffmpeg']
-		if os.path.exists(deliveredDeriv):
+		if pymmFunctions.is_av(deliveredDeriv):
 			outcome = 'create access copy at {}'.format(deliveredDeriv)
 			status = 'OK'
 		else:
