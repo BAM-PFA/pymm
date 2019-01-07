@@ -480,7 +480,7 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 
 def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 	'''
-	If the ingest input is a dir of files, put all the _lrp access files
+	If the ingest input is a dir of files, put all the `*_access` files
 	into a folder named for the object
 	'''
 	rsPackageDelivery = ''

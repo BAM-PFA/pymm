@@ -125,7 +125,7 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 			print("FUCK EVERYTHING: ERROR GETTING THE FILE TYPE.")
 		outputFilePath = os.path.join(
 			derivDeliv,
-			baseMinusExtension+'_lrp.'+ext
+			baseMinusExtension+'_access.'+ext
 			)
 		outputOptions.append(outputFilePath)
 	elif derivType == 'proresHQ':
