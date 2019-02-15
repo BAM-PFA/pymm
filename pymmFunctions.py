@@ -1085,11 +1085,16 @@ def parse_sequence_parent(inputPath):
 		elif entry.is_dir():
 			# should be a single DPX dir with only dpx files in it
 			filePattern,startNumber,file0 = parse_sequence_folder(entry.path)
-
 	try:
 		framerate = get_framerate(file0)
 	except:
 		framerate = None
+
+	# try/except test to catch no audio path in silent DPX scans
+	try:
+		audioPath = audioPath
+	except:
+		audioPath = None
 
 	return audioPath,filePattern,startNumber,framerate
 
