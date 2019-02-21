@@ -91,7 +91,7 @@ def get_track_profiles(mediainfoDict):
 		'Format_settings__GOP', 'Codec_ID', 'Codec_ID_Info', 'Duration', 
 		'Scan_type', 'Bits__Pixel_Frame_', 'StreamSize', 'Language', 
 		'Tagged_date', 'Encoded_date', 'BitRate_Mode', 'BitRate', 
-		'FrameCount', 'BufferSize'
+		'FrameCount', 'BufferSize','Delay'
 		]
 	audioAttribsToDiscard = [
 		'@type', 'ID', 'Codec_ID', 'Duration', 'Stream_size', 
