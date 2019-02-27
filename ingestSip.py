@@ -1231,7 +1231,7 @@ def main():
 			processingVars
 			)
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+		processingVars,ingestLogBoilerplate = move_input_file(
 			processingVars,
 			ingestLogBoilerplate
 			)

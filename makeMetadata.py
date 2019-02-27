@@ -79,8 +79,6 @@ def get_track_profiles(mediainfoDict):
 
 	Discard attributes that are not necessary but keep relevant attributes
 	that we want to compare between files. Prob can discard even more?
-	Hard coded now to look for track[1] (video) and track[2] (audio),
-	so presumably if there are additional tracks things will get screwy. 
 	'''
 	problems = 0
 	if isinstance(mediainfoDict,str):
