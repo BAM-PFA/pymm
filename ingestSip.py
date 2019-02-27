@@ -262,7 +262,7 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 		status
 		)
 	# processingVars['caller'] = None
-	return avStatus
+	return avStatus, AV
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 	'''
@@ -1159,23 +1159,12 @@ def main():
 			# set inputType to 'discrete files','single reel dpx','multi-reel dpx'
 			inputType = precheckDetails
 
-	### Create a PBCore XML file and send any existing BAMPFA metadata JSON
+	### Create a PBCore XML file and send any existing descriptive metadata JSON
 	### 	to the object metadata directory.
 	### 	We will add instantiation data later during ingest
 	pbcoreXML = pbcore.PBCoreDocument()
-	# NOTE TO SELF: 
-	# REALLY I SHOULD SEPARATE THE BAMPFA COLLECTION JSON
-	# FROM WHATEVER THE USER-DEFINED/CREATED DESCRIPTIVE METADATA JSON 
-	# THAT WILL EVENTUALLY EXIST.
-	# SO, 
-	# if objectBAMPFAjson != None:
-	#	do stuff
-	# elif descriptiveJSON != None:
-	#	do stuff
-	# else:
-	# 	do stuff
 	if objectBAMPFAjson != None:
-		# move it
+		# if it exists, move it
 		copy = shutil.copy2(
 			objectBAMPFAjson,
 			processingVars['packageMetadataDir']
@@ -1235,7 +1224,7 @@ def main():
 			)
 		# check that input file is actually a/v
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-		avStatus = check_av_status(
+		avStatus, AV = check_av_status(
 			inputPath,
 			interactiveMode,
 			ingestLogBoilerplate,
@@ -1277,7 +1266,7 @@ def main():
 			#######################
 			# check that input file is actually a/v
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-			avStatus = check_av_status(
+			avStatus, AV = check_av_status(
 				_file,
 				interactiveMode,
 				ingestLogBoilerplate,
@@ -1323,11 +1312,20 @@ def main():
 				processingVars['packageObjectDir'],
 				'resourcespace'
 				)
+			# choose the concatenation wrapper depending on the input type
+			if AV == 'VIDEO':
+				wrapper = 'mp4'
+			elif AV == 'AUDIO':
+				wrapper = 'mp3'
+			else:
+				# this should never be anything other than
+				# AUDIO or VIDEO, but just in case...
+				wrapper = 'mp4' 
 			concatPath = concat_access_files(
 				SIPaccessPath,
 				ingestUUID,
 				canonicalName,
-				'mp4',
+				wrapper,
 				ingestLogBoilerplate,
 				processingVars
 				)
