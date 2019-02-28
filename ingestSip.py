@@ -437,7 +437,7 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	else:
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
-	descriptiveJSONpath = processingVars['objectBAMPFAjson']
+	descriptiveJSONpath = processingVars['objectJSON']
 	pbcoreFile = processingVars['pbcore']
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
 
@@ -950,7 +950,7 @@ def main():
 	args = set_args()
 	inputPath = args.inputPath
 	operator = args.operator
-	objectBAMPFAjson = args.metadataJSON
+	objectJSON = args.metadataJSON
 	database_reporting = args.database_reporting
 	ingestType = args.ingestType
 	makeProres = args.makeProres
@@ -958,16 +958,16 @@ def main():
 	cleanupStrategy = args.cleanup_originals
 	interactiveMode = args.interactiveMode
 	overrideOutdir = args.outdir_ingestsip
-	overrideAipdir = args.aip_staging
+	overrideAIPdir = args.aip_staging
 	overrideRS = args.resourcespace_deliver
-	if None in (overrideOutdir,overrideAipdir,overrideRS):
+	if None in (overrideOutdir,overrideAIPdir,overrideRS):
 		# if any of the outdirs is empty check for config settings
 		pymmFunctions.check_missing_ingest_paths(config)
 		aip_staging = config['paths']['aip_staging']
 		resourcespace_deliver = config['paths']['resourcespace_deliver']
 		outdir_ingestsip = config['paths']['outdir_ingestsip']
 	else:
-		aip_staging = overrideAipdir
+		aip_staging = overrideAIPdir
 		resourcespace_deliver = overrideRS
 		outdir_ingestsip = overrideOutdir
 	# make a uuid for the ingest
@@ -1043,7 +1043,6 @@ def main():
 
 	# get database details
 	if database_reporting != False:
-		pymmDB = config['database settings']['pymm_db']
 		if not operator in config['database users']:
 			print(
 				"{} is not a valid user in the pymm database."
@@ -1064,7 +1063,7 @@ def main():
 	processingVars = {
 		'operator':operator,
 		'inputPath':inputPath,
-		'objectBAMPFAjson':objectBAMPFAjson,
+		'objectJSON':objectJSON,
 		'pbcore':'',
 		'tempID':tempID,
 		'ingestType':ingestType,
@@ -1163,17 +1162,17 @@ def main():
 	### 	to the object metadata directory.
 	### 	We will add instantiation data later during ingest
 	pbcoreXML = pbcore.PBCoreDocument()
-	if objectBAMPFAjson != None:
+	if objectJSON != None:
 		# if it exists, move it
 		copy = shutil.copy2(
-			objectBAMPFAjson,
+			objectJSON,
 			processingVars['packageMetadataDir']
 			)
 		# reset var to new path
-		processingVars['objectBAMPFAjson'] = os.path.abspath(copy)
+		processingVars['objectJSON'] = os.path.abspath(copy)
 		makePbcore.add_physical_elements(
 			pbcoreXML,
-			processingVars['objectBAMPFAjson']
+			processingVars['objectJSON']
 			)
 		pbcoreFile = makePbcore.xml_to_file(
 			pbcoreXML,
