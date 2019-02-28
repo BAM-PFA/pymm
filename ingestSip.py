@@ -140,7 +140,7 @@ def prep_package(tempID,outdir_ingestsip):
 
 	return packageDirs
 
-def sniff_input(inputPath,ingestUUID):#,concatChoice):
+def sniff_input(inputPath):
 	'''
 	Check whether the input path from command line is a directory
 	or single file. 
@@ -149,13 +149,10 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 	'''
 	inputType = pymmFunctions.dir_or_file(inputPath)
 	if inputType == 'dir':
-		# ADD FUNC TO CLEAN OUT SYSTEM FILES
 		# filename sanity check
 		goodNames = pymmFunctions.check_for_outliers(inputPath)
 		if goodNames:
 			print("input is a directory")
-			# if concatChoice == True:
-				# try_concat(inputPath,ingestUUID)
 		else:
 			return False
 	
@@ -992,7 +989,7 @@ def main():
 		'ingestUUID':''
 		}
 	# sniff whether the input is a file or directory
-	inputType = sniff_input(inputPath,ingestUUID)
+	inputType = sniff_input(inputPath)
 	if not inputType:
 		print(ingestResults)
 		return ingestResults
