@@ -140,7 +140,7 @@ def prep_package(tempID,outdir_ingestsip):
 
 	return packageDirs
 
-def sniff_input(inputPath,ingestUUID):#,concatChoice):
+def sniff_input(inputPath):
 	'''
 	Check whether the input path from command line is a directory
 	or single file. 
@@ -991,7 +991,11 @@ def main():
 		'ingestUUID':''
 		}
 	# sniff whether the input is a file or directory
+<<<<<<< HEAD
 	inputType,warning = sniff_input(inputPath,ingestUUID)
+=======
+	inputType = sniff_input(inputPath)
+>>>>>>> ingestClasses - more experiments on structure
 	if not inputType:
 		ingestResults['abortReason'] = warning
 		print(ingestResults)
