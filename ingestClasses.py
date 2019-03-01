@@ -106,9 +106,13 @@ class InputObject:
 			print("input is a single file")
 		return inputType
 
-class Ingest:
+class Ingest(ProcessArguments,InputObject):
 	"""An object representing a single ingest process"""
-	def __init__(self):
+	# add in all the other variables, these will be inherited classes
+	def __init__(self,
+		operator,
+		inputPath
+		):
 		# # CORE ATTRIBUTES
 		# self.inputPath = inputPath
 		self.ingestUUID = str(uuid.uuid4())
@@ -120,20 +124,9 @@ class Ingest:
 			'ingestUUID':self.ingestUUID
 			}
 
-		# ATTRIBUTES DEPENDENT UPON PROCESSING ARGUMENTS
-		#   these will get defined after ProcessArguments is instantiated
-		#
-		# This will later be a ProcessArguments obj
-		self.processingArgs = None 
-
-		self.packageOutputDir = None
-		self.packageObjectDir = None
-		self.packageMetadataDir = None
-		self.packageMetadataObjects = None
-		self.packageLogDir = None
-
-		# ATTRIBUTES DEPENDENT UPON THE INGESTED OBJECT
-		#   These will get defined once the Object exists
+		# maybe this is the right direction?
+		ProcessArguments.__init__(self,operator)
+		InputObject.__init__(self,inputPath)
 
 
 
