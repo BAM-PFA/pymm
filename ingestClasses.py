@@ -42,7 +42,7 @@ class ProcessArguments:
 		):
 		# GLOBAL CONFIG (this is ConfigParser object, callable as a dict)
 		self.config = pymmFunctions.read_config()
-		
+
 		# INPUT ARGUMENTS (FROM CLI)
 		self.operator = operator
 		self.objectJSON = objectJSON
@@ -84,6 +84,11 @@ class InputObject:
 			self.filename = ''
 			self.inputName = canonicalName
 
+		# ASSIGNED / MUTABLE DURING PROCESSING
+		self.componentObjectData = {}
+		self.currentFilename = None
+		pbcoreXML = pbcore.PBCoreDocument()
+
 	def sniff_input(self,inputPath):
 		'''
 		Check whether the input path from command line is a directory
@@ -108,8 +113,20 @@ class Ingest:
 	"""An object representing a single ingest process"""
 	def __init__(self,ProcessArguments,InputObject):
 		# # CORE ATTRIBUTES
-		# self.inputPath = inputPath
 		self.ingestUUID = str(uuid.uuid4())
+		# These objects must be fully initialized before getting passed here
+		self.ProcessArguments = ProcessArguments
+		self.InputObject = InputObject
+
+		# SIP ATTRIBUTES
+		self.packageOutputDir,\
+		self.packageObjectDir,\
+		self.packageMetadataDir,\
+		self.packageMetadataObjects,\
+		self.packageLogDir = self.prep_package(
+			InputObject.tempID,
+			self.ProcessArguments.outdir_ingestsip
+			)
 
 		# LOGGING ATTRIBUTES
 		self.ingestResults = {
@@ -117,7 +134,44 @@ class Ingest:
 			'abortReason':'',
 			'ingestUUID':self.ingestUUID
 			}
-		self.ProcessArguments = ProcessArguments
-		self.InputObject = InputObject
+
+		# VARIABLES ASSIGNED DURING PROCESSING
+		self.caller = None
+
+	def prep_package(self,tempID,outdir_ingestsip):
+		'''
+		Create a directory structure for a SIP
+		'''
+		packageOutputDir = os.path.join(outdir_ingestsip,tempID)
+		packageObjectDir = os.path.join(packageOutputDir,'objects')
+		packageMetadataDir = os.path.join(packageOutputDir,'metadata')
+		packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
+		packageLogDir = os.path.join(packageMetadataDir,'logs')
+		packageDirs = [
+			packageOutputDir,
+			packageObjectDir,
+			packageMetadataDir,
+			packageMetadataObjects,
+			packageLogDir
+			]
+		
+		# ... SEE IF THE TOP DIR EXISTS ...
+		if os.path.isdir(packageOutputDir):
+			print('''
+				It looks like {} was already ingested.
+				If you want to replace the existing package please delete the package at
+				{}
+				and then try again.
+				'''.format(tempID,packageOutputDir))
+			return False
+
+		# ... AND IF NOT, MAKE THEM ALL
+		for directory in packageDirs:
+			os.mkdir(directory)
+
+		return packageDirs
+
+
+
 
 		
