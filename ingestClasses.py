@@ -29,17 +29,20 @@ class ProcessArguments:
 	"""Defines the variables and so on that exist during an ingest."""
 	def __init__(
 		self,
-		operator,
-		objectJSON,
-		databaseReporting,
-		ingestType,
-		makeProres,
-		concatChoice,
-		cleanupStrategy,
-		overrideOutdir,
-		overrideAIPdir,
-		overrideRS,
+		operator=None,
+		objectJSON=None,
+		databaseReporting=None,
+		ingestType=None,
+		makeProres=None,
+		concatChoice=None,
+		cleanupStrategy=None,
+		overrideOutdir=None,
+		overrideAIPdir=None,
+		overrideRS=None,
 		):
+		# GLOBAL CONFIG (this is ConfigParser object, callable as a dict)
+		self.config = pymmFunctions.read_config()
+		
 		# INPUT ARGUMENTS (FROM CLI)
 		self.operator = operator
 		self.objectJSON = objectJSON
@@ -48,23 +51,17 @@ class ProcessArguments:
 		self.makeProres = makeProres
 		self.concatChoice = concatChoice
 		self.cleanupStrategy = cleanupStrategy
-		self.overrideOutdir = overrideOutdir
-		self.overrideAIPdir = overrideAIPdir
-		self.overrideRS = overrideRS
 
-		if None in (self.overrideOutdir,self.overrideAIPdir,self.overrideRS):
+		if None in (overrideOutdir,overrideAIPdir,overrideRS):
 			# if any of the outdirs is empty check for config settings
 			pymmFunctions.check_missing_ingest_paths(self.config)
 			self.aip_staging = self.config['paths']['aip_staging']
 			self.resourcespace_deliver = self.config['paths']['resourcespace_deliver']
-			self.outdir_ingestsip = config['paths']['outdir_ingestsip']
+			self.outdir_ingestsip = self.config['paths']['outdir_ingestsip']
 		else:
-			self.aip_staging = self.overrideAIPdir
-			self.resourcespace_deliver = self.overrideRS
-			self.outdir_ingestsip = self.overrideOutdir
-
-		# GLOBAL CONFIG (this is ConfigParser object, callable as a dict)
-		self.config = pymmFunctions.read_config()
+			self.aip_staging = overrideAIPdir
+			self.resourcespace_deliver = overrideRS
+			self.outdir_ingestsip = overrideOutdir
 
 		# ENVIRONMENT VARIABLES
 		self.computer = pymmFunctions.get_node_name()
@@ -79,6 +76,7 @@ class InputObject:
 		self.tempID = pymmFunctions.get_temp_id(inputPath)
 
 		self.inputType = self.sniff_input(self.inputPath)
+
 		self.canonicalName = os.path.basename(self.inputPath)
 		if self.inputType == 'file':
 			self.filename = self.inputName = self.canonicalName
@@ -106,13 +104,9 @@ class InputObject:
 			print("input is a single file")
 		return inputType
 
-class Ingest(ProcessArguments,InputObject):
+class Ingest:
 	"""An object representing a single ingest process"""
-	# add in all the other variables, these will be inherited classes
-	def __init__(self,
-		operator,
-		inputPath
-		):
+	def __init__(self,ProcessArguments,InputObject):
 		# # CORE ATTRIBUTES
 		# self.inputPath = inputPath
 		self.ingestUUID = str(uuid.uuid4())
@@ -123,15 +117,7 @@ class Ingest(ProcessArguments,InputObject):
 			'abortReason':'',
 			'ingestUUID':self.ingestUUID
 			}
-
-		# maybe this is the right direction?
-		ProcessArguments.__init__(self,operator)
-		InputObject.__init__(self,inputPath)
-
-
-
-
-
-
+		self.ProcessArguments = ProcessArguments
+		self.InputObject = InputObject
 
 		
