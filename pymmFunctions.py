@@ -915,7 +915,7 @@ def check_dir_filename_distances(directory):
 	for name in names:
 		distance = Levenshtein.distance(median,name)
 		# print(distance)
-		if distance > 10:
+		if distance > 15:
 			outliers += 1
 			outlierList.append(name)
 
