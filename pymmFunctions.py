@@ -926,17 +926,23 @@ def check_for_outliers(inputPath):
 	Use distance check function to approve/deny
 	viability of directory ingest.
 	'''
+	goodNames = True
 	outliers, outlierList = check_dir_filename_distances(inputPath)
 	if outliers > 0: 
-		print(
-			"Hey, there are {} files that seem like they might not belong"
-			" in the input directory.\n".format(str(outliers)))
-		print("Here's a list of them:\n"
-			+'\n'.join(outlierList)
+		outlierListString = '\n'.join(outlierList)
+		warning = (
+			"Hey, there are {} files that seem like they might not belong"\
+			" in the input directory. If you think this is incorrect, check"\
+			" the filenames below. Maybe make them more consistent.\n"\
+			"Here's a list of possible outliers:\n{}".format(
+				str(outliers),
+				outlierListString
+				)
 			)
-		return False
+		goodNames = False
 	else:
-		return True
+		warning = None
+	return goodNames,warning
 
 def list_files(_input):
 	'''

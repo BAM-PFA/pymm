@@ -148,20 +148,19 @@ def sniff_input(inputPath,ingestUUID):#,concatChoice):
 	make sense together or if there are any outliers.
 	'''
 	inputType = pymmFunctions.dir_or_file(inputPath)
+	warning = None
 	if inputType == 'dir':
-		# ADD FUNC TO CLEAN OUT SYSTEM FILES
 		# filename sanity check
-		goodNames = pymmFunctions.check_for_outliers(inputPath)
+		goodNames, warning = pymmFunctions.check_for_outliers(inputPath)
 		if goodNames:
 			print("input is a directory")
-			# if concatChoice == True:
-				# try_concat(inputPath,ingestUUID)
 		else:
-			return False
+			inputType = False
+			print(warning)
 	
 	else:
 		print("input is a single file")
-	return inputType
+	return inputType,warning
 
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
@@ -992,8 +991,9 @@ def main():
 		'ingestUUID':''
 		}
 	# sniff whether the input is a file or directory
-	inputType = sniff_input(inputPath,ingestUUID)
+	inputType,warning = sniff_input(inputPath,ingestUUID)
 	if not inputType:
+		ingestResults['abortReason'] = warning
 		print(ingestResults)
 		return ingestResults
 	try:
