@@ -344,21 +344,6 @@ def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 		status
 		)
 
-def reset_cleanup_choice():
-	'''
-	If using interactive mode ask whether or not to remove files when done.
-	'''
-	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if pymmFunctions.boolean_answer(cleanupStrategy):
-		cleanupStrategy = True
-	else:
-		cleanupStrategy = False
-		print(
-			"Either you selected no or your answer didn't make sense"
-			"so we will just leave things where they are when we finish."
-			)
-	return cleanupStrategy
-
 def validate_SIP_structure(SIPpath):
 	'''
 	Check that all the top-level stuff expected in a package exists.

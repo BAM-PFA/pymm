@@ -29,7 +29,7 @@ class ProcessArguments:
 	"""Defines the variables and so on that exist during an ingest."""
 	def __init__(
 		self,
-		operator=None,
+		user=None,
 		objectJSON=None,
 		databaseReporting=None,
 		ingestType=None,
@@ -44,7 +44,7 @@ class ProcessArguments:
 		self.config = pymmFunctions.read_config()
 
 		# INPUT ARGUMENTS (FROM CLI)
-		self.operator = operator
+		self.user = user
 		self.objectJSON = objectJSON
 		self.databaseReporting = databaseReporting
 		self.ingestType = ingestType
@@ -63,20 +63,27 @@ class ProcessArguments:
 			self.resourcespace_deliver = overrideRS
 			self.outdir_ingestsip = overrideOutdir
 
+		######
 		# ENVIRONMENT VARIABLES
 		self.computer = pymmFunctions.get_node_name()
 		self.ffmpegVersion = 'ffmpeg ver.: '+\
 			pymmFunctions.get_ffmpeg_version()
 
+	def test_db_access(self,user)
+
 class InputObject:
 	"""Defines an object to be ingested"""
 	def __init__(self,inputPath):
+		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
 		self.tempID = pymmFunctions.get_temp_id(inputPath)
 
 		self.inputType = self.sniff_input(self.inputPath)
 
+		# this is the "canonical name" of an object, either the 
+		# filename of a single file or the dirname, which should
+		# encompass the whole work/package being ingested.
 		self.canonicalName = os.path.basename(self.inputPath)
 		if self.inputType == 'file':
 			self.filename = self.inputName = self.canonicalName
@@ -84,10 +91,11 @@ class InputObject:
 			self.filename = ''
 			self.inputName = canonicalName
 
+		######
 		# ASSIGNED / MUTABLE DURING PROCESSING
 		self.componentObjectData = {}
 		self.currentFilename = None
-		pbcoreXML = pbcore.PBCoreDocument()
+		self.pbcoreXML = pbcore.PBCoreDocument()
 
 	def sniff_input(self,inputPath):
 		'''
@@ -112,12 +120,14 @@ class InputObject:
 class Ingest:
 	"""An object representing a single ingest process"""
 	def __init__(self,ProcessArguments,InputObject):
-		# # CORE ATTRIBUTES
+		######
+		# CORE ATTRIBUTES
 		self.ingestUUID = str(uuid.uuid4())
 		# These objects must be fully initialized before getting passed here
 		self.ProcessArguments = ProcessArguments
 		self.InputObject = InputObject
 
+		######
 		# SIP ATTRIBUTES
 		self.packageOutputDir,\
 		self.packageObjectDir,\
@@ -128,13 +138,16 @@ class Ingest:
 			self.ProcessArguments.outdir_ingestsip
 			)
 
+		######
 		# LOGGING ATTRIBUTES
 		self.ingestResults = {
 			'status':False,
 			'abortReason':'',
 			'ingestUUID':self.ingestUUID
 			}
+		self.
 
+		######
 		# VARIABLES ASSIGNED DURING PROCESSING
 		self.caller = None
 
