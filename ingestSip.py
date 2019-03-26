@@ -1023,7 +1023,25 @@ def main():
 	# 	'ingestUUID':ingestUUID
 	# 	}
 	CurrentIngest.start_ingestLog()
+	# sys.exit()
+	# tell the various logs that we are starting
+	CurrentIngest.caller = 'ingestSIP.main()'
+	CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
+	# processingVars['caller'] = 'ingestSIP.main()'
+	loggers.log_event(
+		CurrentIngest,
+		event = 'ingestion start',
+		outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
+		status = 'STARTING'
+		)
 	sys.exit()
+	# pymmFunctions.log_event(
+	# 	processingVars,
+	# 	ingestLogBoilerplate,
+	# 	event = 'ingestion start',
+	# 	outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
+	# 	status = 'STARTING'
+	# 	)
 	# insert a database record for this SIP as an 'intellectual entity'
 	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
 	# origFilename = processingVars['filename']
@@ -1033,15 +1051,7 @@ def main():
 		objectCategory='intellectual entity',
 		objectCategoryDetail='Archival Information Package'
 		)
-	# tell the various logs that we are starting
-	processingVars['caller'] = 'ingestSIP.main()'
-	pymmFunctions.log_event(
-		processingVars,
-		ingestLogBoilerplate,
-		event = 'ingestion start',
-		outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
-		status = 'STARTING'
-		)
+	
 	# reset variables
 	processingVars['caller'] = None
 

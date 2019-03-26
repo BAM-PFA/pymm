@@ -105,12 +105,11 @@ class InputObject:
 			self.filename = self.inputName = self.canonicalName
 		elif self.inputType == 'dir':
 			self.filename = ''
-			self.inputName = canonicalName
+			self.inputName = self.canonicalName
 
 		######
 		# ASSIGNED / MUTABLE DURING PROCESSING
 		self.componentObjectData = {}
-		self.currentFilename = None
 		self.pbcoreXML = pbcore.PBCoreDocument()
 
 	def sniff_input(self,inputPath):
@@ -142,6 +141,7 @@ class Ingest:
 		# These objects must be fully initialized before getting passed here
 		self.ProcessArguments = ProcessArguments
 		self.InputObject = InputObject
+		self.systemInfo = pymmFunctions.system_info()
 
 		######
 		# SIP ATTRIBUTES
