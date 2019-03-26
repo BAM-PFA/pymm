@@ -442,7 +442,7 @@ def do_query(connection,sql,*args):
 	cursor = connection.query(sql,*args)
 	return cursor
 
-def insert_object(processingVars,objectCategory,objectCategoryDetail):
+def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 	operator = processingVars['operator']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
@@ -483,6 +483,48 @@ def insert_object(processingVars,objectCategory,objectCategoryDetail):
 		['objectCategoryDetail'] = objectCategoryDetail
 
 	return processingVars
+
+# def insert_object(processingVars,objectCategory,objectCategoryDetail):
+# 	operator = processingVars['operator']
+# 	if processingVars['filename'] in ('',None):
+# 		theObject = processingVars['inputName']
+# 	else:
+# 		theObject = processingVars['filename']
+# 	if processingVars['database_reporting'] == True:
+# 		# init an insertion instance
+# 		objectInsert = dbReporters.ObjectInsert(
+# 				operator,
+# 				theObject,
+# 				objectCategory,
+# 				objectCategoryDetail
+# 				)
+# 		try:
+# 			# report the details to the db
+# 			objectIdentifierValueID = objectInsert.report_to_db()
+# 			del objectInsert
+# 		except:
+# 			print("CAN'T MAKE DB CONNECTION")
+# 			pymm_log(
+# 				processingVars,
+# 				event = "connect to database",
+# 				outcome = "NO DATABASE CONNECTION!!!",
+# 				status = "WARNING"
+# 				)
+# 			processingVars['database_reporting'] = False
+# 	else:
+# 		objectIdentifierValueID = None
+# 	# update the processingVars with the unique db ID of the object
+# 	processingVars['componentObjectData'][theObject] = {}
+# 	processingVars['componentObjectData'][theObject]['databaseID'] = str(
+# 		objectIdentifierValueID
+# 		)
+# 	# set the object category in component object data
+# 	processingVars['componentObjectData'][theObject]\
+# 		['objectCategory'] = objectCategory
+# 	processingVars['componentObjectData'][theObject]\
+# 		['objectCategoryDetail'] = objectCategoryDetail
+
+# 	return processingVars
 
 def insert_event(processingVars,eventType,outcome,status):
 	if processingVars['filename'] in ('',None):

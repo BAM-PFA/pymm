@@ -40,9 +40,11 @@ class ProcessArguments:
 		overrideAIPdir=None,
 		overrideRS=None,
 		):
+		#######
 		# GLOBAL CONFIG (this is ConfigParser object, callable as a dict)
 		self.config = pymmFunctions.read_config()
 
+		#######
 		# INPUT ARGUMENTS (FROM CLI)
 		self.user = user
 		self.objectJSON = objectJSON
@@ -63,13 +65,27 @@ class ProcessArguments:
 			self.resourcespace_deliver = overrideRS
 			self.outdir_ingestsip = overrideOutdir
 
-		######
+		self.databaseReporting = self.test_db_access(self.user)
+		
+		#######
 		# ENVIRONMENT VARIABLES
 		self.computer = pymmFunctions.get_node_name()
 		self.ffmpegVersion = 'ffmpeg ver.: '+\
 			pymmFunctions.get_ffmpeg_version()
 
-	def test_db_access(self,user)
+	def test_db_access(self,user):
+		if self.databaseReporting:
+			if not user in self.config['database users']:
+				print(
+					"{} is not a valid user in the pymm database."
+					"".format(user)
+				)
+				return False
+			else:
+				return True
+		else:
+			return False
+
 
 class InputObject:
 	"""Defines an object to be ingested"""
@@ -129,14 +145,11 @@ class Ingest:
 
 		######
 		# SIP ATTRIBUTES
-		self.packageOutputDir,\
-		self.packageObjectDir,\
-		self.packageMetadataDir,\
-		self.packageMetadataObjects,\
-		self.packageLogDir = self.prep_package(
-			InputObject.tempID,
-			self.ProcessArguments.outdir_ingestsip
-			)
+		self.packageOutputDir = None
+		self.packageObjectDir = None
+		self.packageMetadataDir = None
+		self.packageMetadataObjects = None
+		self.packageLogDir = None
 
 		######
 		# LOGGING ATTRIBUTES
@@ -145,44 +158,57 @@ class Ingest:
 			'abortReason':'',
 			'ingestUUID':self.ingestUUID
 			}
-		self.
+		self.ingestLogPath = None
+		
 
 		######
 		# VARIABLES ASSIGNED DURING PROCESSING
 		self.caller = None
+		self.currentTargetObject = None
 
 	def prep_package(self,tempID,outdir_ingestsip):
 		'''
 		Create a directory structure for a SIP
 		'''
-		packageOutputDir = os.path.join(outdir_ingestsip,tempID)
-		packageObjectDir = os.path.join(packageOutputDir,'objects')
-		packageMetadataDir = os.path.join(packageOutputDir,'metadata')
-		packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
-		packageLogDir = os.path.join(packageMetadataDir,'logs')
+		self.packageOutputDir = os.path.join(outdir_ingestsip,tempID)
+		self.packageObjectDir = os.path.join(self.packageOutputDir,'objects')
+		self.packageMetadataDir = os.path.join(self.packageOutputDir,'metadata')
+		self.packageMetadataObjects = os.path.join(self.packageMetadataDir,'objects')
+		self.packageLogDir = os.path.join(self.packageMetadataDir,'logs')
 		packageDirs = [
-			packageOutputDir,
-			packageObjectDir,
-			packageMetadataDir,
-			packageMetadataObjects,
-			packageLogDir
-			]
+			self.packageOutputDir,
+			self.packageObjectDir,
+			self.packageMetadataDir,
+			self.packageMetadataObjects,
+			self.packageLogDir
+		]
 		
 		# ... SEE IF THE TOP DIR EXISTS ...
-		if os.path.isdir(packageOutputDir):
-			print('''
-				It looks like {} was already ingested.
-				If you want to replace the existing package please delete the package at
-				{}
-				and then try again.
-				'''.format(tempID,packageOutputDir))
+		if os.path.isdir(self.packageOutputDir):
+			print("It looks like {} was already ingested. "\
+				"If you want to replace the existing package "\
+				"please delete the package at\n{}\nand then try again."\
+				"".format(self.InputObject.canonicalName,self.packageOutputDir))
+			self.ingestResults['abortReason'] = "package previously ingested, remove manually"
 			return False
 
 		# ... AND IF NOT, MAKE THEM ALL
-		for directory in packageDirs:
-			os.mkdir(directory)
+		else:
+			for directory in packageDirs:
+				os.mkdir(directory)
 
-		return packageDirs
+		return True
+
+	def start_ingestLog(self):
+		self.ingestLogPath = os.path.join(
+			self.packageLogDir,
+			'{}_{}_ingestfile-log.txt'.format(
+				self.InputObject.tempID,
+				pymmFunctions.timestamp('now')
+				)
+			)
+		with open(self.ingestLogPath,'x') as ingestLog:
+			print('Laying a log at '+self.ingestLogPath)
 
 
 
