@@ -15,7 +15,7 @@ def check_pymm_log_exists():
 	# sys.exit()
 	opener = (
 		((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
-		'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
+		'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+pymmFunctions.today+'\n'+((("#"*75)+'\n')*2)+'\n'
 		)
 
 	if not os.path.isfile(pymmLogPath):
@@ -47,36 +47,31 @@ def check_pymm_log_exists():
 	else:
 		pass
 
-def ingest_log(\
-	event,\
-	outcome,\
-	status,\
-	ingestLogPath,\
-	tempID,\
-	inputName,\
-	filename,\
-	operator,\
-	inputPath,\
-	ingestUUID\
-	):
-	stamp = timestamp("iso8601")
+def ingest_log(CurrentIngest,event,outcome,status):
+	stamp = pymmFunctions.timestamp("iso8601")
+
+	canonicalName = CurrentIngest.InputObject.canonicalName
+	inputPath = CurrentIngest.InputObject.inputPath
+	tempID = CurrentIngest.InputObject.tempID
+	user = CurrentIngest.ProcessArguments.user
+	filename = CurrentIngest.InputObject.filename
+	ingestLogPath = CurrentIngest.ingestLogPath
+
 
 	if event == "ingestion start":
 		stamp = ("#"*50)+"\n\n"+stamp+"\n\n"
-		systemInfo = system_info()
-		workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestsip"],
-			tempID
-			)
+		systemInfo = CurrentIngest.systemInfo
+		workingDir = CurrentIngest.ProcessArguments.outdir_ingestsip
+		ingestUUID = CurrentIngest.ingestUUID
 		stuffToLog = [
 			stamp,
 			"Event Type: ingestion start\n",
-			"Object Canonical Name: {}\n".format(inputName),
+			"Object Canonical Name: {}\n".format(canonicalName),
 			"Object Input Filepath: {}\n".format(inputPath),
 			"Object Temp ID: {}\n".format(tempID),
 			"Ingest UUID: {}\n".format(ingestUUID),
 			"Ingest Working Directory: {}\n".format(workingDir),
-			"Operator: {}\n".format(operator),
+			"Operator: {}\n".format(user),
 			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
 			("#"*50)
 			]
@@ -90,8 +85,8 @@ def ingest_log(\
 			"Status: {} | ".format(status),
 			"Event Type: {} | ".format(event),
 			"Event Outcome: {} | ".format(outcome),
-			"Operator: {} | ".format(operator),
-			"Object Canonical Name: {} | ".format(inputName)
+			"Operator: {} | ".format(user),
+			"Object Canonical Name: {} | ".format(canonicalName)
 			]
 		if filename not in ("",None):
 			name = "Object Filename: {} | ".format(filename)
@@ -104,27 +99,25 @@ def ingest_log(\
 			ingestLog.write(item)
 		ingestLog.write("\n\n")
 
-def pymm_log(processingVars,event,outcome,status):
+def pymm_log(CurrentIngest,event,outcome,status):
 	check_pymm_log_exists()
-	# open a local instance of config here in case 
-	# it has changed since importing this file
-	pymmConfig = read_config()
-	pymmConfig = read_config()
+	pymmConfig = pymmFunctions.read_config()
 	pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
 	pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
-	stamp = timestamp('iso8601')
-	systemInfo = system_info()
-	objectRootPath = processingVars['inputPath']
-	objectName = processingVars['inputName']
-	operator = processingVars['operator']
-	ingestUUID = processingVars['ingestUUID']
-	tempID = get_temp_id(objectRootPath)
-	workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestsip"],
-			tempID
-			)
+	stamp = pymmFunctions.timestamp('iso8601')
+	systemInfo = CurrentIngest.systemInfo
+
+	objectRootPath = CurrentIngest.InputObject.inputPath
+	canonicalName = CurrentIngest.InputObject.canonicalName
+	
+	user = CurrentIngest.ProcessArguments.user
+	ingestUUID = CurrentIngest.ingestUUID
+	tempID = CurrentIngest.InputObject.tempID
+	workingDir = CurrentIngest.ProcessArguments.outdir_ingestsip
+
 	prefix = ''
 	suffix = '\n'
+	# I think basename gets updated depending on what is getting logged... ? @fixme
 	basename = os.path.basename(objectRootPath)
 	if status == 'STARTING':
 		prefix = ('&'*50)+'\n\n'
@@ -132,10 +125,10 @@ def pymm_log(processingVars,event,outcome,status):
 			prefix,
 			stamp,
 			"\nEvent type: Ingestion start\n",
-			"Object canonical name: {}\n".format(objectName),
+			"Object canonical name: {}\n".format(canonicalName),
 			"Object filepath: {}\n".format(objectRootPath),
 			"Ingest UUID: {}\n".format(ingestUUID),
-			"Operator: {}\n".format(operator),
+			"Operator: {}\n".format(user),
 			"Ingest working directory: {}\n".format(workingDir),
 			"\n### SYSTEM INFO: ### \n{}".format(systemInfo),
 			suffix
@@ -165,30 +158,31 @@ def pymm_log(processingVars,event,outcome,status):
 		for item in stuffToLog:
 			log.write(item)
 
-def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
+def log_event(CurrentIngest,event,outcome,status):
 	'''
 	log an event to all logs: database, system log, ingest log
 	'''
 	pymm_log(
-		processingVars,
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
 	ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-	eventID = insert_event(
-		processingVars,
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
+	# eventID = insert_event(
+	# 	CurrentIngest,
+	# 	event,
+	# 	outcome,
+	# 	status
+	# 	)
 
-	return eventID
+	# return eventID
+	return True
 
 def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 	'''
@@ -256,7 +250,7 @@ def do_query(connection,sql,*args):
 	return cursor
 
 def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
-	operator = processingVars['operator']
+	user = processingVars['user']
 	if processingVars['filename'] in ('',None):
 		theObject = processingVars['inputName']
 	else:
@@ -264,7 +258,7 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 	if processingVars['database_reporting'] == True:
 		# init an insertion instance
 		objectInsert = dbReporters.ObjectInsert(
-				operator,
+				user,
 				theObject,
 				objectCategory,
 				objectCategoryDetail
@@ -297,7 +291,8 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 
 	return processingVars
 
-def insert_event(processingVars,eventType,outcome,status):
+def insert_event(CurrentIngest,eventType,outcome,status):
+	filename = CurrentIngest.InputObject.filename
 	if processingVars['filename'] in ('',None):
 			theObject = processingVars['inputName']
 	else:
@@ -319,7 +314,7 @@ def insert_event(processingVars,eventType,outcome,status):
 			outcome,
 			callingAgent,
 			computer,
-			processingVars['operator'],
+			processingVars['user'],
 			eventID=None
 			)
 
@@ -339,7 +334,7 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 	'''
 	if processingVars['database_reporting'] != True:
 		return processingVars
-	user = processingVars['operator']
+	user = processingVars['user']
 	for _object,chars in processingVars['componentObjectData'].items():
 		data = processingVars['componentObjectData'][_object]
 		category = data['objectCategory']
@@ -434,7 +429,7 @@ def insert_fixity(\
 	if processingVars['database_reporting'] == True:
 		eventTimestamp = get_event_timestamp(
 			eventID,
-			processingVars['operator']
+			processingVars['user']
 			)
 
 		if not eventTimestamp:
@@ -443,7 +438,7 @@ def insert_fixity(\
 			eventDateTime = eventTimestamp
 
 		fixityInsert = dbReporters.FixityInsert(
-			processingVars['operator'],
+			processingVars['user'],
 			eventID,
 			objectID,
 			objectIDValue,
