@@ -23,6 +23,8 @@ import uuid
 from bampfa_pbcore import pbcore, makePbcore
 import concatFiles
 import dbReporters
+import ingestClasses
+import loggers
 import makeDerivs
 import moveNcopy
 import makeMetadata
@@ -40,7 +42,7 @@ def set_args():
 		required=True
 		)
 	parser.add_argument(
-		'-u','--operator',
+		'-u','--user',
 		help='name of the person doing the ingest',
 		required=True
 		)
@@ -922,18 +924,12 @@ def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
 			)
 		return processingVars
 
-# def stash_manifest(manifestPath):
-# 	'''
-# 	rename a manifest as _old_ and stash it in the metadata directory
-# 	(to be run before making a new/final hashdeep manifest)
-# 	'''
-
 def main():
 	#########################
 	#### SET INGEST ARGS ####
 	args = set_args()
 	inputPath = args.inputPath
-	operator = args.operator
+	user = args.user
 	objectJSON = args.metadataJSON
 	database_reporting = args.database_reporting
 	ingestType = args.ingestType
@@ -944,154 +940,96 @@ def main():
 	overrideAIPdir = args.aip_staging
 	overrideRS = args.resourcespace_deliver
 
+	# init some objects
+	CurrentProcess = ingestClasses.ProcessArguments(
+		user,
+		objectJSON,
+		database_reporting,
+		ingestType,
+		makeProres,
+		concatChoice,
+		cleanupStrategy,
+		overrideOutdir,
+		overrideAIPdir,
+		overrideRS
+		)
+	CurrentObject = ingestClasses.InputObject(inputPath)
+	CurrentIngest = ingestClasses.Ingest(CurrentProcess,CurrentObject)
 
-	if None in (overrideOutdir,overrideAIPdir,overrideRS):
-		# if any of the outdirs is empty check for config settings
-		pymmFunctions.check_missing_ingest_paths(config)
-		aip_staging = config['paths']['aip_staging']
-		resourcespace_deliver = config['paths']['resourcespace_deliver']
-		outdir_ingestsip = config['paths']['outdir_ingestsip']
-	else:
-		aip_staging = overrideAIPdir
-		resourcespace_deliver = overrideRS
-		outdir_ingestsip = overrideOutdir
-	# make a uuid for the ingest
-	ingestUUID = str(uuid.uuid4())
-	# make a temp ID based on input path for the ingested object
-	# this will get replaced by the ingest UUID during final package move
-	tempID = pymmFunctions.get_temp_id(inputPath)
 	#### END SET INGEST ARGS #### 
 	#############################
 
 	#############################
 	#### TEST / SET ENV VARS ####
-	# get the name of the local machine to record w/ PREMIS data
-	computer = pymmFunctions.get_node_name()
-	# get the version of ffmpeg in use
-	ffmpegVersion = 'ffmpeg ver.: '+pymmFunctions.get_ffmpeg_version()
-	# init a dict of outcomes to be returned
-	ingestResults = {
-		'status':False,
-		'abortReason':'',
-		'ingestUUID':''
-		}
-	# sniff whether the input is a file or directory
-	inputType = sniff_input(inputPath)
-	if not inputType:
-		print(ingestResults)
-		return ingestResults
-	try:
-		# create directory paths for ingest...
-		packageOutputDir,packageObjectDir,packageMetadataDir,\
-		packageMetadataObjects,packageLogDir = prep_package(tempID,outdir_ingestsip)
-	except:
-		ingestResults["abortReason"] = (
-			"package previously ingested, remove manually"
-			)
-		print(ingestResults)
-		return ingestResults
 
-	# check that required vars are declared & init other vars
-	requiredVars = ['inputPath','operator']
-	# Quit if there are required variables missing
-	missingVars = 0
-	missingVarsReport = ""
-	for flag in requiredVars:
-		if getattr(args,flag) == None:
-			problem = ('CONFIGURATION PROBLEM: YOU FORGOT TO SET {}.'\
-				'It is required. Try again, '\
-				'but set {} with the flag --{}'.format(flag)
-				)
-			missingVars += 1
-			missingVarsReport += "\n{}\n".format(problem)
-			print(problem)
-	if missingVars > 0:
-		ingestResults["abortReason"] = (
-			"ingestSip.py called with some flags missing."
-			)
-		pymmFunctions.pymm_log(
-			processingVars,
-			event = 'abort',
-			outcome = missingVarsReport,
-			status = 'ABORTING'
-			)
-		print(ingestResults)
-		return ingestResults
-
-	# get database details
-	if database_reporting != False:
-		if not operator in config['database users']:
-			print(
-				"{} is not a valid user in the pymm database."
-				"".format(operator)
-				)
-			database_reporting = False
-	# Set up a canonical name that will be passed to each log entry.
-	# For files it's the basename, for dirs it's the dir name.
-	if inputPath:
-		canonicalName = os.path.basename(inputPath)
-		if inputType == 'file':
-			filename = inputName = canonicalName
-		elif inputType == 'dir':
-			filename = ''
-			inputName = canonicalName
+	prepped = CurrentIngest.prep_package(
+		CurrentIngest.InputObject.tempID,
+		CurrentIngest.ProcessArguments.outdir_ingestsip
+		)
+	if not prepped:
+		print(CurrentIngest.ingestResults)
+		return CurrentIngest.ingestResults
+	print(CurrentIngest.ingestResults)
 
 	# set up a dict for processing variables to pass around
-	processingVars = {
-		'operator':operator,
-		'inputPath':inputPath,
-		'objectJSON':objectJSON,
-		'pbcore':'',
-		'tempID':tempID,
-		'ingestType':ingestType,
-		'ingestUUID':ingestUUID,
-		'filename':filename,
-		'inputName':inputName,
-		'canonicalName':canonicalName,
-		'makeProres':makeProres,
-		'packageOutputDir':packageOutputDir,
-		'packageObjectDir':packageObjectDir,
-		'packageMetadataDir':packageMetadataDir,
-		'packageMetadataObjects':packageMetadataObjects,
-		'packageLogDir':packageLogDir,
-		'aip_staging':aip_staging,
-		'outdir_ingestsip':outdir_ingestsip,
-		'resourcespace_deliver':resourcespace_deliver,
-		'componentObjectData':{},
-		'computer':computer,
-		'caller':None,
-		'database_reporting':database_reporting,
-		'ffmpeg':ffmpegVersion
-		}
+	# processingVars = {
+	# 	'user':user,
+	# 	'inputPath':inputPath,
+	# 	'objectJSON':objectJSON,
+	# 	'pbcore':'',
+	# 	'tempID':tempID,
+	# 	'ingestType':ingestType,
+	# 	'ingestUUID':ingestUUID,
+	# 	'filename':filename,
+	# 	'inputName':inputName,
+	# 	'canonicalName':canonicalName,
+	# 	'makeProres':makeProres,
+	# 	'packageOutputDir':packageOutputDir,
+	# 	'packageObjectDir':packageObjectDir,
+	# 	'packageMetadataDir':packageMetadataDir,
+	# 	'packageMetadataObjects':packageMetadataObjects,
+	# 	'packageLogDir':packageLogDir,
+	# 	'aip_staging':aip_staging,
+	# 	'outdir_ingestsip':outdir_ingestsip,
+	# 	'resourcespace_deliver':resourcespace_deliver,
+	# 	'componentObjectData':{},
+	# 	'computer':computer,
+	# 	'caller':None,
+	# 	'database_reporting':database_reporting,
+	# 	'ffmpeg':ffmpegVersion
+	# 	}
 	#### END TEST / SET ENV VARS ####
 	#################################
 
 	###########################
 	#### LOGGING / CLEANUP ####
 	# set up a log file for this ingest...
-	ingestLogPath = os.path.join(
-		packageLogDir,
-		'{}_{}_ingestfile-log.txt'.format(
-			tempID,
-			pymmFunctions.timestamp('now')
-			)
-		)
-	with open(ingestLogPath,'x') as ingestLog:
-		print('Laying a log at '+ingestLogPath)
-	ingestLogBoilerplate = {
-		'ingestLogPath':ingestLogPath,
-		'tempID':tempID,
-		'inputName':inputName,
-		'filename':filename,
-		'operator':operator,
-		'inputPath':inputPath,
-		'ingestUUID':ingestUUID
-		}
+	# ingestLogPath = os.path.join(
+	# 	packageLogDir,
+	# 	'{}_{}_ingestfile-log.txt'.format(
+	# 		tempID,
+	# 		pymmFunctions.timestamp('now')
+	# 		)
+	# 	)
+	# with open(ingestLogPath,'x') as ingestLog:
+	# 	print('Laying a log at '+ingestLogPath)
+	# ingestLogBoilerplate = {
+	# 	'ingestLogPath':ingestLogPath,
+	# 	'tempID':tempID,
+	# 	'inputName':inputName,
+	# 	'filename':filename,
+	# 	'user':user,
+	# 	'inputPath':inputPath,
+	# 	'ingestUUID':ingestUUID
+	# 	}
+	CurrentIngest.start_ingestLog()
+	sys.exit()
 	# insert a database record for this SIP as an 'intellectual entity'
-	origFilename = processingVars['filename']
-	processingVars['filename'] = ingestUUID
+	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
+	# origFilename = processingVars['filename']
+	# processingVars['filename'] = ingestUUID
 	processingVars = pymmFunctions.insert_object(
-		processingVars,
+		CurrentIngest,
 		objectCategory='intellectual entity',
 		objectCategoryDetail='Archival Information Package'
 		)
