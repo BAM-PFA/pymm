@@ -72,11 +72,6 @@ def set_args():
 		help='report preservation metadata/events to database'
 		)
 	parser.add_argument(
-		'-x','--interactiveMode',
-		action='store_true',
-		help='enter interactive mode for command line usage'
-		)
-	parser.add_argument(
 		'-z','--cleanup_originals',
 		action='store_true',
 		default=False,
@@ -218,11 +213,9 @@ def deliver_concat_access(concatPath,accessPath):
 		print('couldnt deliver the concat file')
 		return False
 
-def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVars):
+def check_av_status(inputPath,ingestLogBoilerplate,processingVars):
 	'''
 	Check whether or not a file is recognized as an a/v object.
-	If it isn't and user declares interactive mode,
-		ask whether to continue, otherwise quit.
 	'''
 	avStatus = False
 	event = 'format identification'
@@ -235,13 +228,6 @@ def check_av_status(inputPath,interactiveMode,ingestLogBoilerplate,processingVar
 		status = "WARNING"
 		print(outcome)
 
-		if interactiveMode:
-			stayOrGo = input("If you want to quit press 'q' and hit enter, otherwise press any other key:")
-			if stayOrGo == 'q':
-				# CLEANUP AND LOG THIS @fixme
-				sys.exit()
-			else:
-				print("\nPROCEEDING... WARNING!\n")
 	else:
 		if ingestLogBoilerplate['filename'] == '':
 			theObject = processingVars['inputName']
@@ -956,10 +942,11 @@ def main():
 	makeProres = args.makeProres
 	concatChoice = args.concatAccessFiles
 	cleanupStrategy = args.cleanup_originals
-	interactiveMode = args.interactiveMode
 	overrideOutdir = args.outdir_ingestsip
 	overrideAIPdir = args.aip_staging
 	overrideRS = args.resourcespace_deliver
+
+
 	if None in (overrideOutdir,overrideAIPdir,overrideRS):
 		# if any of the outdirs is empty check for config settings
 		pymmFunctions.check_missing_ingest_paths(config)
@@ -1013,37 +1000,30 @@ def main():
 
 	# check that required vars are declared & init other vars
 	requiredVars = ['inputPath','operator']
-	if interactiveMode == False:
-		# Quit if there are required variables missing
-		missingVars = 0
-		missingVarsReport = ""
-		for flag in requiredVars:
-			if getattr(args,flag) == None:
-				problem = ('''
-					CONFIGURATION PROBLEM:
-					YOU FORGOT TO SET '''+flag+'''. It is required.
-					Try again, but set '''+flag+''' with the flag --'''+flag
-					)
-				missingVars += 1
-				missingVarsReport += "\n{}\n".format(problem)
-				print(problem)
-		if missingVars > 0:
-			ingestResults["abortReason"] = (
-				"ingestSip.py called with some flags missing."
+	# Quit if there are required variables missing
+	missingVars = 0
+	missingVarsReport = ""
+	for flag in requiredVars:
+		if getattr(args,flag) == None:
+			problem = ('CONFIGURATION PROBLEM: YOU FORGOT TO SET {}.'\
+				'It is required. Try again, '\
+				'but set {} with the flag --{}'.format(flag)
 				)
-			pymmFunctions.pymm_log(
-				processingVars,
-				event = 'abort',
-				outcome = missingVarsReport,
-				status = 'ABORTING'
-				)
-			print(ingestResults)
-			return ingestResults
-	else:
-		# ask operator/input file
-		operator = input("Please enter your name: ")
-		inputPath = input("Please drag the file you want to ingest into this window___").rstrip()
-		inputPath = pymmFunctions.sanitize_dragged_linux_paths(inputPath)
+			missingVars += 1
+			missingVarsReport += "\n{}\n".format(problem)
+			print(problem)
+	if missingVars > 0:
+		ingestResults["abortReason"] = (
+			"ingestSip.py called with some flags missing."
+			)
+		pymmFunctions.pymm_log(
+			processingVars,
+			event = 'abort',
+			outcome = missingVarsReport,
+			status = 'ABORTING'
+			)
+		print(ingestResults)
+		return ingestResults
 
 	# get database details
 	if database_reporting != False:
@@ -1133,10 +1113,6 @@ def main():
 		)
 	# reset variables
 	processingVars['caller'] = None
-
-	# if interactive ask about cleanup
-	if interactiveMode:
-		reset_cleanup_choice()
 
 	### RUN A PRECHECK ON DIRECTORY INPUTS
 	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
@@ -1229,7 +1205,6 @@ def main():
 		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
 		avStatus, AV = check_av_status(
 			inputPath,
-			interactiveMode,
 			ingestLogBoilerplate,
 			processingVars
 			)
@@ -1271,7 +1246,6 @@ def main():
 			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
 			avStatus, AV = check_av_status(
 				_file,
-				interactiveMode,
 				ingestLogBoilerplate,
 				processingVars
 				)
@@ -1344,12 +1318,6 @@ def main():
 			objectCategory='intellectual entity',
 			objectCategoryDetail='film scanner output reel'
 			)
-		# avStatus = check_av_status(
-		# 	inputPath,
-		# 	interactiveMode,
-		# 	ingestLogBoilerplate,
-		# 	processingVars
-		# 	)
 		for _object in source_list:
 			if os.path.isfile(_object):
 				ingestLogBoilerplate['filename'] = os.path.basename(_object)
