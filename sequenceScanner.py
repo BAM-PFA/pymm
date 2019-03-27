@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+from pathlib import Path
 import sys
 
 import pymmFunctions
@@ -10,6 +11,9 @@ def scan_dir(inputPath):
 	'''
 	expected image sequence dir structure:
 	- title_accesssion#_barcode_r01of01/
+		documentation [optional]/
+			documentation.jpg
+			documentation.txt
 		dpx/
 			title_accesssion#_barcode_r01of01_0008600.dpx
 			title_accesssion#_barcode_r01of01_0008601.dpx
@@ -41,7 +45,7 @@ def scan_dir(inputPath):
 			if os.path.isdir(path):
 				contents = os.listdir(path)
 				if len(contents) == 0:
-					print("removing empty dir at "+path)
+					print("removing an empty folder at "+path)
 					os.rmdir(path)
 	# start looking for inappropriate/unrecorgnized folders
 	problems = []
@@ -53,26 +57,36 @@ def scan_dir(inputPath):
 		if entry.is_dir():
 			dirs.append(entry.path)
 	if len(dirs) > 0:
-		if (len(dirs) == 1) and (os.path.basename(dirs[0]).lower() != 'dpx'):
-			# if there is only one subdir and it isn't DPX, shit it out
-			problems = dirs
-			return False,problems
+		if len(dirs) == 1:
+			dirname = os.path.basename(dirs[0]).lower()
+			# if there is only one subdir and it isn't
+			# DPX or documentation, report it as a problem
+			if dirname not in ('dpx','documentation'):
+				problems = dirs
+				return False,problems
+			elif dirname == 'documentation':
+				# if the only subdir is documentation, return that
+				return True, 'documentation'
 
 		elif len(dirs) > 1:
 			baddies = []
 			for _dir in dirs:
 				for root,subs,_ in os.walk(_dir):
 					# grab any non-dpx dirs to return
-					things = [os.path.join(root,sub) for sub in subs if sub.lower() != 'dpx']
+					things = [
+						os.path.join(root,sub) for sub in subs \
+							if sub.lower() not in \
+							('dpx','documentation')
+						]
 					for thing in things:
 						baddies.append(thing)
 			if baddies != []:
-				# there shouldn't be anything other than dpx folders at this level
+				# there shouldn't be anything other than dpx or documentation folders at this level
 				outcome = False
 				for baddie in baddies:
 					problems.append(baddie)
 			else:
-				print("DPX dirs are ok")
+				print("Image sequence folders are ok")
 				outcome = True
 		else:
 			outcome = True
@@ -85,12 +99,14 @@ def check_formats(inputPath):
 	for root, dirs, files in os.walk(inputPath):
 		for _file in files:
 			if not _file.startswith('.'):
-				# print(_file)
-				filePath = os.path.abspath(_file)
+				filePath = os.path.join(root,_file)
 				_,ext = os.path.splitext(_file)
+				parentDir = Path(filePath).resolve().parent
+				parentDir = os.path.basename(str(parentDir))
 				if not ext.lower() in ('.dpx','.wav'):
-					result = False
-					badFiles.append(os.path.join(root,_file))
+					if not parentDir.lower() == 'documentation':
+						result = False
+						badFiles.append(filePath)
 
 	return result,badFiles
 
@@ -100,7 +116,7 @@ def check_complexity(inputPath):
 	# we can assume that it is a multi-reel scan input
 	complexity = 'single reel dpx'
 	for item in os.scandir(inputPath):
-		if item.is_dir() and item.name.lower() != 'dpx':
+		if item.is_dir() and item.name.lower() not in ('dpx','documentation'):
 			complexity = 'multi-reel dpx'
 		else:
 			pass
@@ -113,7 +129,11 @@ def main(inputPath):
 		pass
 
 	else:
-		result,details = check_formats(inputPath)
+		if details == 'documentation':
+			details = 'discrete file(s) with documentation'
+			pass
+		else:
+			result,details = check_formats(inputPath)
 	print(result,details)
 
 	if result == True:

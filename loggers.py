@@ -190,13 +190,13 @@ def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 	is too detailed.
 	'''
 	ingest_log(
+		CurrentIngest,
 		event,
 		outcome,
-		status,
-		**ingestLogBoilerplate
+		status
 		)
 	eventID = insert_event(
-		processingVars,
+		CurrentIngest,
 		event,
 		outcome,
 		status
