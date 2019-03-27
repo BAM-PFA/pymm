@@ -3,7 +3,6 @@
 import os
 
 # local modules
-import dbAccess
 import dbReporters
 import pymmFunctions
 
@@ -184,7 +183,7 @@ def log_event(CurrentIngest,event,outcome,status):
 
 	return eventID
 
-def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
+def short_log(CurrentIngest,event,outcome,status):
 	'''
 	same as log_event() but skip the system log for when the event
 	is too detailed.
@@ -204,19 +203,19 @@ def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 
 	return eventID
 
-def end_log(processingVars,event,outcome,status):
+def end_log(CurrentIngest,event,outcome,status):
 	'''
 	same as short_log() but skip the ingest log 
 	so as not to bungle the hashdeep manifest
 	'''
 	pymm_log(
-		processingVars,
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
 	eventID = insert_event(
-		processingVars,
+		CurrentIngest,
 		event,
 		outcome,
 		status
@@ -275,7 +274,10 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 
 def insert_event(CurrentIngest,eventType,outcome,status):
 	# this is the THING the event is being performed on
-	theObject = CurrentIngest.currentTargetObject
+	if CurrentIngest.currentTargetObject == None:
+		theObject = CurrentIngest.canonicalName
+	else:
+		theObject = CurrentIngest.currentTargetObject
 
 	# get the name of the computer
 	computer = CurrentIngest.ProcessArguments.computer

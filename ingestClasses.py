@@ -111,6 +111,7 @@ class InputObject:
 		# ASSIGNED / MUTABLE DURING PROCESSING
 		self.componentObjectData = {}
 		self.pbcoreXML = pbcore.PBCoreDocument()
+		self.pbcoreFile = None
 
 	def sniff_input(self,inputPath):
 		'''
@@ -150,6 +151,8 @@ class Ingest:
 		self.packageMetadataDir = None
 		self.packageMetadataObjects = None
 		self.packageLogDir = None
+
+		self.includesSubmissionDocumentation = None
 
 		######
 		# LOGGING ATTRIBUTES
