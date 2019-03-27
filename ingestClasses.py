@@ -154,6 +154,8 @@ class Ingest:
 
 		self.includesSubmissionDocumentation = None
 
+		self.source_list = None
+
 		######
 		# LOGGING ATTRIBUTES
 		self.ingestResults = {
@@ -168,6 +170,7 @@ class Ingest:
 		# VARIABLES ASSIGNED DURING PROCESSING
 		self.caller = None
 		self.currentTargetObject = None
+		self.currentTargetObjectPath = None
 
 	def prep_package(self,tempID,outdir_ingestsip):
 		'''
@@ -202,7 +205,7 @@ class Ingest:
 
 		return True
 
-	def start_ingestLog(self):
+	def create_ingestLog(self):
 		self.ingestLogPath = os.path.join(
 			self.packageLogDir,
 			'{}_{}_ingestfile-log.txt'.format(

@@ -56,6 +56,7 @@ def ingest_log(CurrentIngest,event,outcome,status):
 	user = CurrentIngest.ProcessArguments.user
 	filename = CurrentIngest.InputObject.filename
 	ingestLogPath = CurrentIngest.ingestLogPath
+	inputType = CurrentIngest.InputObject.inputType
 
 
 	if event == "ingestion start":
@@ -69,6 +70,7 @@ def ingest_log(CurrentIngest,event,outcome,status):
 			"Object Canonical Name: {}\n".format(canonicalName),
 			"Object Input Filepath: {}\n".format(inputPath),
 			"Object Temp ID: {}\n".format(tempID),
+			"Object Type: {}\n".format(inputType),
 			"Ingest UUID: {}\n".format(ingestUUID),
 			"Ingest Working Directory: {}\n".format(workingDir),
 			"Operator: {}\n".format(user),
@@ -275,7 +277,7 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 def insert_event(CurrentIngest,eventType,outcome,status):
 	# this is the THING the event is being performed on
 	if CurrentIngest.currentTargetObject == None:
-		theObject = CurrentIngest.canonicalName
+		theObject = CurrentIngest.InputObject.canonicalName
 	else:
 		theObject = CurrentIngest.currentTargetObject
 
