@@ -798,14 +798,14 @@ def do_cleanup(\
 	else:
 		print("Ending, quitting, bye bye.")
 
-def directory_precheck(ingestLogBoilerplate,processingVars):
+def directory_precheck(CurrentIngest):
 	'''
 	Do some checking on directories:
 	- remove system files
 	- check for subdirectories
 	'''
 	precheckPass = (True,'')
-	inputPath = ingestLogBoilerplate['inputPath']
+	inputPath = CurrentIngest.InputObject.inputPath
 	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
 	### DESTROY!! DESTROY!! DESTROY! ###
@@ -819,15 +819,7 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 	removeFailures = []
 	status = "OK"
 	event = "deletion"
-	# check again for system files... just in case.
-	for _object in source_list:
-		if os.path.basename(_object).startswith('.'):
-			try:
-				removedFiles.append(_object)
-				os.remove(_object)
-			except:
-				removeFailures.append(_object)
-				print("tried to remove a pesky system file and failed.")
+	
 	if not removeFailures == []:
 		if not removedFiles == []: 
 			outcome = ("System files deleted at \n{}\n"
@@ -843,9 +835,8 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 			outcome = "Tried and failed to remove system files. Sorry."
 			status = "FAIL"
 
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
+		loggers.short_log(
+			CurrentIngest,
 			event,
 			outcome,
 			status
@@ -855,9 +846,8 @@ def directory_precheck(ingestLogBoilerplate,processingVars):
 			outcome = "System files deleted at \n{}\n".format(
 				"\n".join(removedFiles)
 				)
-			pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
+			loggers.short_log(
+			CurrentIngest,
 			event,
 			outcome,
 			status
@@ -992,17 +982,17 @@ def main():
 
 	# reset variables
 	CurrentIngest.caller = None
-	CurrentIngest.currentTargetObject = None
+	CurrentIngest.currentTargetObject = CurrentObject.canonicalName
 
 	### RUN A PRECHECK ON DIRECTORY INPUTS
 	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
 	### DPX INPUT.
-	if inputType == 'dir':
+	if CurrentObject.inputType == 'dir':
 		# precheckDetails == dir type to be set later
 		precheckPass,precheckDetails = directory_precheck(
-			ingestLogBoilerplate,
-			processingVars
+			CurrentIngest
 			)
+		sys.exit()
 		if precheckPass == False:
 			pymmFunctions.cleanup_package(
 				processingVars,
