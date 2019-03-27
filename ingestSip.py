@@ -806,19 +806,26 @@ def directory_precheck(CurrentIngest):
 	'''
 	precheckPass = (True,'')
 	inputPath = CurrentIngest.InputObject.inputPath
+
 	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
 	### DESTROY!! DESTROY!! DESTROY! ###
-
 	removedFiles = pymmFunctions.remove_hidden_system_files(
 		inputPath
 		)
-	source_list = pymmFunctions.list_files(
-		inputPath
-		)
+	
 	removeFailures = []
 	status = "OK"
 	event = "deletion"
+	# check again for system files... just in case.
+	for _object in source_list:
+		if os.path.basename(_object).startswith('.'):
+			try:
+				removedFiles.append(_object)
+				os.remove(_object)
+			except:
+				removeFailures.append(_object)
+				print("tried to remove a pesky system file and failed.")
 	
 	if not removeFailures == []:
 		if not removedFiles == []: 
@@ -859,14 +866,11 @@ def directory_precheck(CurrentIngest):
 	############################
 
 	subs = 0
-	for _object in source_list:
+	for _object in CurrentIngest.source_list:
 		if os.path.isdir(_object):
 			subs += 1
 			print("\nYou have subdirectory(ies) in your input:"
 				"\n({})\n".format(_object))
-
-			if _object.lower() == 'documentation':
-				CurrentIngest.includesSubmissionDocumentation = True
 
 	if subs > 0:
 		# sequenceScanner checks for DPX folder structure compliance
@@ -957,14 +961,48 @@ def main():
 	if not prepped:
 		print(CurrentIngest.ingestResults)
 		return CurrentIngest
-	print(CurrentIngest.ingestResults)
+
+	### Run some prepartory checks on directory inputs:
+	### - If input has subidrs, see if it is a valid DPX input.
+	### - Check for a valid submission documentation folder
+	if CurrentIngest.InputObject.inputType == 'dir':
+		CurrentIngest.source_list = pymmFunctions.list_files(
+			inputPath
+			)
+		if any(x for x in CurrentIngest.source_list if str(x).lower() == 'documentation'):
+			CurrentIngest.includesSubmissionDocumentation = True
+
+		# precheckPass is True/False conformance to expected folder structure
+		# precheckDetails is the type of folder structure
+		precheckPass,precheckDetails = directory_precheck(CurrentIngest)
+		
+		if precheckPass == False:
+			CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
+			pymmFunctions.cleanup_package(
+				CurrentIngest,
+				CurrentIngest.packageOutputDir,
+				"ABORTING",
+				precheckDetails
+				)
+			CurrentIngest.ingestResults['abortReason'] = precheckDetails
+			print(CurrentIngest.ingestResults)
+			return CurrentIngest
+		
+		elif precheckPass == True:
+			# set inputType to one of:
+			# 'discrete files'
+			# 'discrete file(s) with documentation'
+			# 'single reel dpx'
+			# 'multi-reel dpx'
+			CurrentIngest.InputObject.inputType = precheckDetails
+
 	#### END SET INGEST ARGS #### 
 	#############################
 
 	###########################
 	#### LOGGING / CLEANUP ####
 	# start a log file for this ingest
-	CurrentIngest.start_ingestLog()
+	CurrentIngest.create_ingestLog()
 
 	# insert a database record for this SIP as an 'intellectual entity'
 	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
@@ -986,38 +1024,14 @@ def main():
 
 	# reset variables
 	CurrentIngest.caller = None
-	# CurrentIngest.currentTargetObject = CurrentObject.canonicalName
-
-	### RUN A PRECHECK ON DIRECTORY INPUTS
-	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
-	### DPX INPUT.
-	if CurrentObject.inputType == 'dir':
-		# precheckDetails is the 'dir type' to be set later
-		precheckPass,precheckDetails = directory_precheck(CurrentIngest)
-		
-		if precheckPass == False:
-			CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
-			pymmFunctions.cleanup_package(
-				CurrentIngest,
-				CurrentIngest.packageOutputDir,
-				"ABORTING",
-				precheckDetails
-				)
-			CurrentIngest.ingestResults['abortReason'] = precheckDetails
-			print(CurrentIngest.ingestResults)
-			return CurrentIngest
-		
-		elif precheckPass == True:
-			source_list = pymmFunctions.list_files(inputPath)
-			# set inputType to 'discrete files','single reel dpx','multi-reel dpx'
-			inputType = precheckDetails
+	CurrentIngest.currentTargetObject = None
 
 	### Create a PBCore XML file and send any existing descriptive metadata JSON
 	### 	to the object metadata directory.
 	### 	We will add instantiation data later during ingest
 	# pbcoreXML = pbcore.PBCoreDocument()
 	if CurrentIngest.ProcessArguments.objectJSON != None:
-		# if it exists, move it
+		# if it exists, copy it over
 		copy = shutil.copy2(
 			CurrentIngest.ProcessArguments.objectJSON,
 			CurrentIngest.packageMetadataDir
@@ -1037,7 +1051,7 @@ def main():
 			)
 	else:
 		# if no bampfa metadata, just make a container pbcore.xml w/o a
-		# representation of the physical asset
+		# representation of the physical/original asset
 		CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
 			CurrentIngest.InputObject.pbcoreXML,
 			os.path.join(
@@ -1059,15 +1073,18 @@ def main():
 		)
 	CurrentIngest.caller = None
 	CurrentIngest.currentTargetObject = None
-
 	sys.exit()
+
 	#### END LOGGING / CLEANUP ####
 	###############################
 
-	###############
-	## DO STUFF! ##
-	###############
+	########################
+	  ####################
+	     ## DO STUFF! ##
+	  ####################
+	#########################
 	
+	#########################
 	### SINGLE-FILE INPUT ###
 	if inputType == 'file':
 		processingVars = loggers.insert_object(
