@@ -426,21 +426,21 @@ def validate_SIP_structure(SIPpath):
 
 	return structureValidated,outcome
 
-# def database_connection(user):
-# 	connection = dbAccess.DB(user)
-# 	try:
-# 		connection.connect()
-# 		return connection
-# 	except:
-# 		print("DB connection problem...")
-# 		return False
+def database_connection(user):
+	connection = dbAccess.DB(user)
+	try:
+		connection.connect()
+		return connection
+	except:
+		print("DB connection problem...")
+		return False
 
-# def do_query(connection,sql,*args):
-# 	'''
-# 	must be passed an open mysql.connector.connection.MySQLConnection object
-# 	'''
-# 	cursor = connection.query(sql,*args)
-# 	return cursor
+def do_query(connection,sql,*args):
+	'''
+	must be passed an open mysql.connector.connection.MySQLConnection object
+	'''
+	cursor = connection.query(sql,*args)
+	return cursor
 
 # def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 # 	operator = processingVars['operator']

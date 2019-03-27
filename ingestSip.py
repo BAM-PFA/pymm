@@ -68,7 +68,7 @@ def set_args():
 		help='try to concatenate access files after ingest'
 		)
 	parser.add_argument(
-		'-d','--database_reporting',
+		'-d','--databaseReporting',
 		action='store_true',
 		default=False,
 		help='report preservation metadata/events to database'
@@ -915,7 +915,7 @@ def report_SIP_fixity(processingVars,objectManifestPath,eventID):
 
 def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
 	# MOVE THIS TO PYMMFUNCTIONS AND PARSE THE OBJECT DICT THERE
-	if processingVars['database_reporting'] != True:
+	if processingVars['databaseReporting'] != True:
 		return processingVars
 	else:
 		processingVars = pymmFunctions.insert_obj_chars(
@@ -931,7 +931,7 @@ def main():
 	inputPath = args.inputPath
 	user = args.user
 	objectJSON = args.metadataJSON
-	database_reporting = args.database_reporting
+	databaseReporting = args.databaseReporting
 	ingestType = args.ingestType
 	makeProres = args.makeProres
 	concatChoice = args.concatAccessFiles
@@ -944,7 +944,7 @@ def main():
 	CurrentProcess = ingestClasses.ProcessArguments(
 		user,
 		objectJSON,
-		database_reporting,
+		databaseReporting,
 		ingestType,
 		makeProres,
 		concatChoice,
@@ -956,12 +956,6 @@ def main():
 	CurrentObject = ingestClasses.InputObject(inputPath)
 	CurrentIngest = ingestClasses.Ingest(CurrentProcess,CurrentObject)
 
-	#### END SET INGEST ARGS #### 
-	#############################
-
-	#############################
-	#### TEST / SET ENV VARS ####
-
 	prepped = CurrentIngest.prep_package(
 		CurrentIngest.InputObject.tempID,
 		CurrentIngest.ProcessArguments.outdir_ingestsip
@@ -970,90 +964,35 @@ def main():
 		print(CurrentIngest.ingestResults)
 		return CurrentIngest.ingestResults
 	print(CurrentIngest.ingestResults)
-
-	# set up a dict for processing variables to pass around
-	# processingVars = {
-	# 	'user':user,
-	# 	'inputPath':inputPath,
-	# 	'objectJSON':objectJSON,
-	# 	'pbcore':'',
-	# 	'tempID':tempID,
-	# 	'ingestType':ingestType,
-	# 	'ingestUUID':ingestUUID,
-	# 	'filename':filename,
-	# 	'inputName':inputName,
-	# 	'canonicalName':canonicalName,
-	# 	'makeProres':makeProres,
-	# 	'packageOutputDir':packageOutputDir,
-	# 	'packageObjectDir':packageObjectDir,
-	# 	'packageMetadataDir':packageMetadataDir,
-	# 	'packageMetadataObjects':packageMetadataObjects,
-	# 	'packageLogDir':packageLogDir,
-	# 	'aip_staging':aip_staging,
-	# 	'outdir_ingestsip':outdir_ingestsip,
-	# 	'resourcespace_deliver':resourcespace_deliver,
-	# 	'componentObjectData':{},
-	# 	'computer':computer,
-	# 	'caller':None,
-	# 	'database_reporting':database_reporting,
-	# 	'ffmpeg':ffmpegVersion
-	# 	}
-	#### END TEST / SET ENV VARS ####
-	#################################
+	#### END SET INGEST ARGS #### 
+	#############################
 
 	###########################
 	#### LOGGING / CLEANUP ####
-	# set up a log file for this ingest...
-	# ingestLogPath = os.path.join(
-	# 	packageLogDir,
-	# 	'{}_{}_ingestfile-log.txt'.format(
-	# 		tempID,
-	# 		pymmFunctions.timestamp('now')
-	# 		)
-	# 	)
-	# with open(ingestLogPath,'x') as ingestLog:
-	# 	print('Laying a log at '+ingestLogPath)
-	# ingestLogBoilerplate = {
-	# 	'ingestLogPath':ingestLogPath,
-	# 	'tempID':tempID,
-	# 	'inputName':inputName,
-	# 	'filename':filename,
-	# 	'user':user,
-	# 	'inputPath':inputPath,
-	# 	'ingestUUID':ingestUUID
-	# 	}
+	# start a log file for this ingest
 	CurrentIngest.start_ingestLog()
-	# sys.exit()
+
+	# insert a database record for this SIP as an 'intellectual entity'
+	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
+	loggers.insert_object(
+		CurrentIngest,
+		objectCategory='intellectual entity',
+		objectCategoryDetail='Archival Information Package'
+		)
+
 	# tell the various logs that we are starting
 	CurrentIngest.caller = 'ingestSIP.main()'
-	CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
-	# processingVars['caller'] = 'ingestSIP.main()'
+	# CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
 	loggers.log_event(
 		CurrentIngest,
 		event = 'ingestion start',
 		outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
 		status = 'STARTING'
 		)
-	sys.exit()
-	# pymmFunctions.log_event(
-	# 	processingVars,
-	# 	ingestLogBoilerplate,
-	# 	event = 'ingestion start',
-	# 	outcome = "SYSTEM INFO:\n{}".format(pymmFunctions.system_info()),
-	# 	status = 'STARTING'
-	# 	)
-	# insert a database record for this SIP as an 'intellectual entity'
-	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
-	# origFilename = processingVars['filename']
-	# processingVars['filename'] = ingestUUID
-	processingVars = pymmFunctions.insert_object(
-		CurrentIngest,
-		objectCategory='intellectual entity',
-		objectCategoryDetail='Archival Information Package'
-		)
-	
+
 	# reset variables
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
+	CurrentIngest.currentTargetObject = None
 
 	### RUN A PRECHECK ON DIRECTORY INPUTS
 	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID

@@ -2,8 +2,9 @@
 # standard library modules
 import os
 
-
+# local modules
 import dbAccess
+import dbReporters
 import pymmFunctions
 
 def check_pymm_log_exists():
@@ -174,15 +175,14 @@ def log_event(CurrentIngest,event,outcome,status):
 		outcome,
 		status
 		)
-	# eventID = insert_event(
-	# 	CurrentIngest,
-	# 	event,
-	# 	outcome,
-	# 	status
-	# 	)
+	eventID = insert_event(
+		CurrentIngest,
+		event,
+		outcome,
+		status
+		)
 
-	# return eventID
-	return True
+	return eventID
 
 def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
 	'''
@@ -224,7 +224,6 @@ def end_log(processingVars,event,outcome,status):
 
 	return eventID
 
-
 ##############################################
 ##############################################
 
@@ -232,89 +231,71 @@ def end_log(processingVars,event,outcome,status):
 
 ##############################################
 ##############################################
-
-def database_connection(user):
-	connection = dbAccess.DB(user)
-	try:
-		connection.connect()
-		return connection
-	except:
-		print("DB connection problem...")
-		return False
-
-def do_query(connection,sql,*args):
-	'''
-	must be passed an open mysql.connector.connection.MySQLConnection object
-	'''
-	cursor = connection.query(sql,*args)
-	return cursor
-
 def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
-	user = processingVars['user']
-	if processingVars['filename'] in ('',None):
-		theObject = processingVars['inputName']
-	else:
-		theObject = processingVars['filename']
-	if processingVars['database_reporting'] == True:
+	user = CurrentIngest.ProcessArguments.user
+	theObject = CurrentIngest.currentTargetObject
+
+	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		# init an insertion instance
 		objectInsert = dbReporters.ObjectInsert(
-				user,
-				theObject,
-				objectCategory,
-				objectCategoryDetail
-				)
+			user,
+			theObject,
+			objectCategory,
+			objectCategoryDetail
+			)
 		try:
 			# report the details to the db
 			objectIdentifierValueID = objectInsert.report_to_db()
+			print(objectInsert.user)
 			del objectInsert
 		except:
 			print("CAN'T MAKE DB CONNECTION")
 			pymm_log(
-				processingVars,
+				CurrentIngest,
 				event = "connect to database",
 				outcome = "NO DATABASE CONNECTION!!!",
 				status = "WARNING"
 				)
-			processingVars['database_reporting'] = False
+			objectIdentifierValueID = None
+			CurrentIngest.ProcessArguments.databaseReporting = False
 	else:
 		objectIdentifierValueID = None
 	# update the processingVars with the unique db ID of the object
-	processingVars['componentObjectData'][theObject] = {}
-	processingVars['componentObjectData'][theObject]['databaseID'] = str(
+	CurrentIngest.InputObject.componentObjectData[theObject] = {}
+	CurrentIngest.InputObject.componentObjectData[theObject]['databaseID'] = str(
 		objectIdentifierValueID
 		)
 	# set the object category in component object data
-	processingVars['componentObjectData'][theObject]\
+	CurrentIngest.InputObject.componentObjectData[theObject]\
 		['objectCategory'] = objectCategory
-	processingVars['componentObjectData'][theObject]\
+	CurrentIngest.InputObject.componentObjectData[theObject]\
 		['objectCategoryDetail'] = objectCategoryDetail
 
-	return processingVars
+	return True
 
 def insert_event(CurrentIngest,eventType,outcome,status):
-	filename = CurrentIngest.InputObject.filename
-	if processingVars['filename'] in ('',None):
-			theObject = processingVars['inputName']
-	else:
-		theObject = processingVars['filename']
-	# get the name of the computer
-	computer = processingVars['computer']
-	# get the name of the program, script, or function doing the event
-	callingAgent = processingVars['caller']
+	# this is the THING the event is being performed on
+	theObject = CurrentIngest.currentTargetObject
 
-	objectID = processingVars['componentObjectData'][theObject]['databaseID']
-	if processingVars['database_reporting'] == True:
+	# get the name of the computer
+	computer = CurrentIngest.ProcessArguments.computer
+	# get the name of the program, script, or function doing the event
+	callingAgent = CurrentIngest.caller
+	user = CurrentIngest.ProcessArguments.user
+
+	objectID = CurrentIngest.InputObject.componentObjectData[theObject]['databaseID']
+	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		#insert the event
 		eventInsert = dbReporters.EventInsert(
 			eventType,
 			objectID,
 			theObject,
-			timestamp('iso8601'),
+			pymmFunctions.timestamp('iso8601'),
 			status,
 			outcome,
 			callingAgent,
 			computer,
-			processingVars['user'],
+			user,
 			eventID=None
 			)
 
@@ -332,11 +313,11 @@ def insert_obj_chars(processingVars,ingestLogBoilerplate):
 	- for SIPs report the pbcore, ingestLog
 	- 
 	'''
-	if processingVars['database_reporting'] != True:
+	if processingVars['databaseReporting'] != True:
 		return processingVars
 	user = processingVars['user']
-	for _object,chars in processingVars['componentObjectData'].items():
-		data = processingVars['componentObjectData'][_object]
+	for _object,chars in CurrentIngest.InputObject.componentObjectData.items():
+		data = CurrentIngest.InputObject.componentObjectData[_object]
 		category = data['objectCategory']
 		categoryDetail = data['objectCategoryDetail']
 		if category == 'file':
@@ -416,17 +397,17 @@ def insert_fixity(\
 	messageDigestSource=None,
 	eventDateTime=None
 	):
-	# if processingVars['database_reporting'] == True:
+	# if processingVars['databaseReporting'] == True:
 	# 	pass
 	# else:
 	# 	return None
 	inputFile = processingVars['filename']
-	objectID = processingVars['componentObjectData'][inputFile]['databaseID']
+	objectID = CurrentIngest.InputObject.componentObjectData[inputFile]['databaseID']
 	objectIDValue = processingVars['filename']
 	eventDetailCallingFunc = processingVars['caller']
 	messageDigestFilepath = processingVars['inputPath']
 	
-	if processingVars['database_reporting'] == True:
+	if processingVars['databaseReporting'] == True:
 		eventTimestamp = get_event_timestamp(
 			eventID,
 			processingVars['user']
