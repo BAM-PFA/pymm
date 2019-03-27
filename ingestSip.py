@@ -866,12 +866,16 @@ def directory_precheck(CurrentIngest):
 			subs += 1
 			print("\nYou have subdirectory(ies) in your input:"
 				"\n({})\n".format(_object))
+
+			if _object.lower() == 'documentation':
+				CurrentIngest.includesSubmissionDocumentation = True
+
 	if subs > 0:
 		# sequenceScanner checks for DPX folder structure compliance
 		# and whether it is a single or multi-reel scan
 		result,details = sequenceScanner.main(inputPath)
 		if result != True:
-			precheckPass = (False,"Problems! See: {}".format(details))
+			precheckPass = (False,"Directory structure and/or file format problems! See: {}".format(details))
 		else:
 			precheckPass = (True,details)
 	else:
@@ -1013,7 +1017,7 @@ def main():
 		)
 	if not prepped:
 		print(CurrentIngest.ingestResults)
-		return CurrentIngest.ingestResults
+		return CurrentIngest
 	print(CurrentIngest.ingestResults)
 	#### END SET INGEST ARGS #### 
 	#############################
@@ -1043,27 +1047,27 @@ def main():
 
 	# reset variables
 	CurrentIngest.caller = None
-	CurrentIngest.currentTargetObject = CurrentObject.canonicalName
+	# CurrentIngest.currentTargetObject = CurrentObject.canonicalName
 
 	### RUN A PRECHECK ON DIRECTORY INPUTS
 	### IF INPUT HAS SUBIDRS, SEE IF IT IS A VALID
 	### DPX INPUT.
 	if CurrentObject.inputType == 'dir':
-		# precheckDetails == dir type to be set later
-		precheckPass,precheckDetails = directory_precheck(
-			CurrentIngest
-			)
-		sys.exit()
+		# precheckDetails is the 'dir type' to be set later
+		precheckPass,precheckDetails = directory_precheck(CurrentIngest)
+		
 		if precheckPass == False:
+			CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
 			pymmFunctions.cleanup_package(
-				processingVars,
-				packageOutputDir,
+				CurrentIngest,
+				CurrentIngest.packageOutputDir,
 				"ABORTING",
 				precheckDetails
 				)
-			ingestResults['abortReason'] = precheckDetails
-			print(ingestResults)
-			return ingestResults
+			CurrentIngest.ingestResults['abortReason'] = precheckDetails
+			print(CurrentIngest.ingestResults)
+			return CurrentIngest
+		
 		elif precheckPass == True:
 			source_list = pymmFunctions.list_files(inputPath)
 			# set inputType to 'discrete files','single reel dpx','multi-reel dpx'
@@ -1072,52 +1076,52 @@ def main():
 	### Create a PBCore XML file and send any existing descriptive metadata JSON
 	### 	to the object metadata directory.
 	### 	We will add instantiation data later during ingest
-	pbcoreXML = pbcore.PBCoreDocument()
-	if objectJSON != None:
+	# pbcoreXML = pbcore.PBCoreDocument()
+	if CurrentIngest.ProcessArguments.objectJSON != None:
 		# if it exists, move it
 		copy = shutil.copy2(
-			objectJSON,
-			processingVars['packageMetadataDir']
+			CurrentIngest.ProcessArguments.objectJSON,
+			CurrentIngest.packageMetadataDir
 			)
 		# reset var to new path
-		processingVars['objectJSON'] = os.path.abspath(copy)
+		CurrentIngest.ProcessArguments.objectJSON = os.path.abspath(copy)
 		makePbcore.add_physical_elements(
-			pbcoreXML,
-			processingVars['objectJSON']
+			CurrentIngest.InputObject.pbcoreXML,
+			CurrentIngest.ProcessArguments.objectJSON
 			)
-		pbcoreFile = makePbcore.xml_to_file(
-			pbcoreXML,
+		CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
+			CurrentIngest.InputObject.pbcoreXML,
 			os.path.join(
-				processingVars['packageMetadataDir'],
-				canonicalName+"_pbcore.xml"
+				CurrentIngest.packageMetadataDir,
+				CurrentIngest.InputObject.canonicalName+"_pbcore.xml"
 				)
 			)
 	else:
 		# if no bampfa metadata, just make a container pbcore.xml w/o a
 		# representation of the physical asset
-		pbcoreFile = makePbcore.xml_to_file(
-			pbcoreXML,
+		CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
+			CurrentIngest.InputObject.pbcoreXML,
 			os.path.join(
-				processingVars['packageMetadataDir'],
-				canonicalName+"_pbcore.xml"
+				CurrentIngest.packageMetadataDir,
+				CurrentIngest.InputObject.canonicalName+"_pbcore.xml"
 				)
 			)
 
-	processingVars['pbcore'] = pbcoreFile
-	if os.path.exists(pbcoreFile):
+	if os.path.exists(CurrentIngest.InputObject.pbcoreFile):
 		status = 'OK'
 	else:
 		status = 'Fail'
-	processingVars['caller'] = 'pbcore.PBCoreDocument() , makePbcore.xml_to_file()'
-	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	CurrentIngest.caller = 'pbcore.PBCoreDocument() , makePbcore.xml_to_file()'
+	loggers.short_log(
+		CurrentIngest,
 		event = 'metadata extraction',
 		outcome = 'make pbcore representation',
 		status = status
 		)
-	processingVars['caller'] = None
-	processingVars['filename'] = origFilename
+	CurrentIngest.caller = None
+	CurrentIngest.currentTargetObject = None
+
+	sys.exit()
 	#### END LOGGING / CLEANUP ####
 	###############################
 
@@ -1127,7 +1131,7 @@ def main():
 	
 	### SINGLE-FILE INPUT ###
 	if inputType == 'file':
-		processingVars = pymmFunctions.insert_object(
+		processingVars = loggers.insert_object(
 			processingVars,
 			objectCategory = 'file',
 			objectCategoryDetail='preservation master'
