@@ -86,32 +86,72 @@ class ProcessArguments:
 		else:
 			return False
 
+class ComponentObject:
+	'''
+	Defines a single component of an InputObject.
+	Can be a single file or an image sequence directory.
+
+	'''
+	def __init__(self,inputPath):
+		######
+		# CORE ATTRIBUTES
+		self.inputPath = inputPath
+		self.basename = os.path.basename(inputPath)
+		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
+
+		self.isDocumentation = False
+		if self.basename.lower() == 'documentation':
+			self.isDocumentation = True
+
+		if not self.isDocumentation:
+			self.avStatus = pymmFunctions.is_av(inputPath)
+
+		self.mediaInfoPath = None
+		self.md5hash = None
+		self.databaseID = None
 
 class InputObject:
-	"""Defines an object to be ingested"""
+	'''
+	Defines an object to be ingested.
+	Can be simple (a single file), complex (a multi-reel DPX scan),
+	or mixed (a/v material with supplementary documentation)
+	'''
 	def __init__(self,inputPath):
 		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
 		self.tempID = pymmFunctions.get_temp_id(inputPath)
+		self.databaseID = None
 
-		self.inputType = self.sniff_input(self.inputPath)
+		self.inputType = self.sniff_input(inputPath)
+
+		# Initialize a list to be filled with component objects. 
+		# There should be at least one in the case of a single file input.
+		# Objects should either be AV or a single documentation folder called 
+		# 'documentation'
+		self.ComponentObjects = []
+
+		if self.inputType == 'dir':
+			pymmFunctions.remove_hidden_system_files(inputPath)
+			for item in os.listdir(self.inputPath):
+				self.ComponentObjects.append(
+					ComponentObject(os.path.join(inputPath,item))
+					)
+		elif self.inputType == 'file':
+			self.ComponentObjects.append(
+				ComponentObject(inputPath)
+				)
 
 		# this is the "canonical name" of an object, either the 
 		# filename of a single file or the dirname, which should
 		# encompass the whole work/package being ingested.
 		self.canonicalName = os.path.basename(self.inputPath)
-		if self.inputType == 'file':
-			self.filename = self.inputName = self.canonicalName
-		elif self.inputType == 'dir':
-			self.filename = ''
-			self.inputName = self.canonicalName
 
 		######
 		# ASSIGNED / MUTABLE DURING PROCESSING
-		self.componentObjectData = {}
 		self.pbcoreXML = pbcore.PBCoreDocument()
 		self.pbcoreFile = None
+
 
 	def sniff_input(self,inputPath):
 		'''
@@ -120,6 +160,7 @@ class InputObject:
 		If it's a directory, check that the filenames
 		make sense together or if there are any outliers.
 		'''
+		# returns 'dir' or 'file'
 		inputType = pymmFunctions.dir_or_file(inputPath)
 		if inputType == 'dir':
 			# filename sanity check
@@ -164,7 +205,7 @@ class Ingest:
 			'ingestUUID':self.ingestUUID
 			}
 		self.ingestLogPath = None
-		
+		self.databaseID = None
 
 		######
 		# VARIABLES ASSIGNED DURING PROCESSING

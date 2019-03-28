@@ -249,7 +249,6 @@ def is_video(inputPath):
 		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
 		out = probe.stdout.decode('utf-8')
 		output = json.loads(out)
-		# print(output)
 		try:
 			codec_type = output['streams'][0]['codec_type']
 			if codec_type == 'video':
@@ -306,14 +305,17 @@ def is_av(inputPath):
 		if _is_audio:
 			return 'AUDIO'
 		else:
-			try:
-				_is_dpx,details = sequenceScanner.main(inputPath)
-			except:
-				print('error scanning a sequence directory')
-				return False
-			if _is_dpx:
-				if details in ('single reel dpx','multi-reel dpx'):
-					# insert test for only dpx contents
+			if os.path.isdir(inputPath):
+				# if it's a folder, see if it's a DPX sequence
+				try:
+					# test for a valid folder structure
+					_is_dpx,details = sequenceScanner.main(inputPath)
+				except:
+					print('error scanning input!')
+					return False
+				if _is_dpx:
+					# if it passes the folder structure, run
+					# mediainfo to check for dpx contents
 					status, failedDirs = test_sequence_reel_dir(inputPath)
 					if status == True:
 						print('THIS IS AN IMAGE SEQUENCE!')
@@ -324,14 +326,8 @@ def is_av(inputPath):
 							'problem directories: {}'.format(failedDirs)
 							)
 						return False
-
-			elif _is_dpx == None:
-				# if we are dealing with an actual sequence folder,
-				# run a different test
-				_is_dpx_av = is_dpx_sequence(inputPath)
-				if _is_dpx_av:
-					print('THIS IS AN IMAGE SEQUENCE!')
-					return 'DPX'
+				else:
+					return None
 			else:
 				return None
 
@@ -346,13 +342,16 @@ def test_sequence_reel_dir(reelPath):
 	failures = 0
 	for item in os.scandir(reelPath):
 		if item.is_dir():
-			# print(item.path)
-			_is_dpx_av = is_dpx_sequence(item.path)
-			if not _is_dpx_av:
+			print(item.path)
+			if item.name.lower() == 'dpx':
+				_is_dpx = is_dpx_sequence(item.path)
+				if not _is_dpx:
+					failedDirs.append(item.path)
+					failures += 1
+			else:
 				failedDirs.append(item.path)
 				failures += 1
-			else:
-				pass
+			
 	if failures > 0:
 		return False, failedDirs
 	else:
@@ -361,19 +360,16 @@ def test_sequence_reel_dir(reelPath):
 def is_dpx_sequence(inputPath):
 	'''
 	run mediainfo on the 'dpx' folder
-	if there's anything other than dpx files in there
-	the result will not parse as json and it indicates
-	noncompliance with expected structure
-	(PS-this is a hack)
 	'''
 	_is_dpx_av = False
 	try:
-		mediainfo = makeMetadata.get_mediainfo_report(inputPath,'',_JSON=True)
-		mediainfo = json.loads(mediainfo)
+		format = get_mediainfo_value(inputPath,'General','Format')
+		if any([('dpx','directory') for x in format.lower()]):
+			_is_dpx_av = True
+		else:
+			pass
 	except:
 		_is_dpx_av = False
-	if mediainfo:
-		_is_dpx_av = True
 
 	return _is_dpx_av
 
