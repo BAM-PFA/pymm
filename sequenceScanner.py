@@ -48,25 +48,30 @@ def scan_dir(inputPath):
 					print("removing an empty folder at "+path)
 					os.rmdir(path)
 	# start looking for inappropriate/unrecorgnized folders
-	problems = []
+	outcome = []
 	dirs = []
-	outcome = None
+	status = None
 	for entry in os.scandir(inputPath):
 		# cast the fiery circle,
 		# summon all the subdirectories for judgement before my wrath
 		if entry.is_dir():
 			dirs.append(entry.path)
+	print(dirs)
 	if len(dirs) > 0:
 		if len(dirs) == 1:
 			dirname = os.path.basename(dirs[0]).lower()
 			# if there is only one subdir and it isn't
 			# DPX or documentation, report it as a problem
 			if dirname not in ('dpx','documentation'):
-				problems = dirs
-				return False,problems
+				outcome = dirs
+				status = False
 			elif dirname == 'documentation':
 				# if the only subdir is documentation, return that
-				return True, 'documentation'
+				status = True
+				outcome = 'documentation'
+			elif dirname == 'dpx':
+				status = True
+				outcome = 'dpx'
 
 		elif len(dirs) > 1:
 			baddies = []
@@ -82,18 +87,22 @@ def scan_dir(inputPath):
 						baddies.append(thing)
 			if baddies != []:
 				# there shouldn't be anything other than dpx or documentation folders at this level
-				outcome = False
+				status = False
 				for baddie in baddies:
-					problems.append(baddie)
+					outcome.append(baddie)
 			else:
 				print("Image sequence folders are ok")
-				outcome = True
-		else:
-			outcome = True
+				status = True
+				outcome = 'dpx' # is this true?? @fixme
 
-	return outcome,problems
+	return status,outcome
 
 def check_formats(inputPath):
+	'''
+	This function is insane and duplicates efforts in pymmFunctions.
+	What is it even trying to accomplish?
+	@fixme
+	'''
 	badFiles = []
 	result = True
 	for root, dirs, files in os.walk(inputPath):
@@ -110,16 +119,21 @@ def check_formats(inputPath):
 
 	return result,badFiles
 
-def check_complexity(inputPath):
+def check_complexity(inputPath,details):
 	# by the time it gets here the structure and contents 
 	# should be valid, so if there's any subdir other than dpx, 
 	# we can assume that it is a multi-reel scan input
-	complexity = 'single reel dpx'
-	for item in os.scandir(inputPath):
-		if item.is_dir() and item.name.lower() not in ('dpx','documentation'):
-			complexity = 'multi-reel dpx'
-		else:
-			pass
+
+	# NO LONGER TRUE, @fixme
+	if 'discrete' not in details:
+		complexity = 'single reel dpx'
+		for item in os.scandir(inputPath):
+			if item.is_dir() and item.name.lower() != 'dpx':
+				complexity = 'multi-reel dpx'
+			else:
+				pass
+	else:
+		complexity = details
 
 	return complexity
 
@@ -137,7 +151,7 @@ def main(inputPath):
 	print(result,details)
 
 	if result == True:
-		complexity = check_complexity(inputPath)
+		complexity = check_complexity(inputPath,details)
 		details = complexity
 	return result,details
 

@@ -215,35 +215,30 @@ def deliver_concat_access(concatPath,accessPath):
 		print('couldnt deliver the concat file')
 		return False
 
-def check_av_status(inputPath,ingestLogBoilerplate,processingVars):
+def check_av_status(CurrentIngest):
 	'''
 	Check whether or not a file is recognized as an a/v object.
 	'''
 	avStatus = False
 	event = 'format identification'
-	processingVars['caller'] = 'pymmFunctions.is_av()'
-	AV = pymmFunctions.is_av(inputPath)
+	CurrentIngest.caller = 'pymmFunctions.is_av()'
+	AV = pymmFunctions.is_av(CurrentIngest.currentTargetObject)
 	if not AV:
 		outcome = "WARNING: {} is not recognized as an a/v object.".format(
-			ingestLogBoilerplate['filename']
+			CurrentIngest.currentTargetObject
 			)
 		status = "WARNING"
 		print(outcome)
 
 	else:
-		if ingestLogBoilerplate['filename'] == '':
-			theObject = processingVars['inputName']
-		else:
-			theObject = ingestLogBoilerplate['filename']
 		outcome = "{} is a(n) {} object, way to go.".format(
-			theObject,
+			CurrentIngest.currentTargetObject,
 			AV
 			)
 		status = "OK"
 		avStatus = True
-	pymmFunctions.log_event(
-		processingVars,
-		ingestLogBoilerplate,
+	loggers.log_event(
+		CurrentIngest,
 		event,
 		outcome,
 		status
@@ -1085,14 +1080,10 @@ def main():
 
 	# reset variables
 	CurrentIngest.caller = None
-	CurrentIngest.currentTargetObject = None
+	# CurrentIngest.currentTargetObject = None
 
-	### Create a PBCore XML file and send any existing descriptive metadata JSON
-	### 	to the object metadata directory.
-	### 	We will add instantiation data later during ingest
-	# pbcoreXML = pbcore.PBCoreDocument()
+	# Send existing descriptive metadata JSON to the object metadata directory
 	if CurrentIngest.ProcessArguments.objectJSON != None:
-		# if it exists, copy it over
 		copy = shutil.copy2(
 			CurrentIngest.ProcessArguments.objectJSON,
 			CurrentIngest.packageMetadataDir
@@ -1103,23 +1094,18 @@ def main():
 			CurrentIngest.InputObject.pbcoreXML,
 			CurrentIngest.ProcessArguments.objectJSON
 			)
-		CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
-			CurrentIngest.InputObject.pbcoreXML,
-			os.path.join(
-				CurrentIngest.packageMetadataDir,
-				CurrentIngest.InputObject.canonicalName+"_pbcore.xml"
-				)
-			)
 	else:
-		# if no bampfa metadata, just make a container pbcore.xml w/o a
+		# if no descriptive metadata, just use a container pbcore.xml w/o a
 		# representation of the physical/original asset
-		CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
-			CurrentIngest.InputObject.pbcoreXML,
-			os.path.join(
-				CurrentIngest.packageMetadataDir,
-				CurrentIngest.InputObject.canonicalName+"_pbcore.xml"
-				)
+		pass
+	# Write the XML to file
+	CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
+		CurrentIngest.InputObject.pbcoreXML,
+		os.path.join(
+			CurrentIngest.packageMetadataDir,
+			CurrentIngest.InputObject.canonicalName+"_pbcore.xml"
 			)
+		)
 
 	if os.path.exists(CurrentIngest.InputObject.pbcoreFile):
 		status = 'OK'
@@ -1135,7 +1121,6 @@ def main():
 	CurrentIngest.caller = None
 	CurrentIngest.currentTargetObject = None
 	sys.exit()
-
 	#### END LOGGING / CLEANUP ####
 	###############################
 
@@ -1147,19 +1132,18 @@ def main():
 	
 	#########################
 	### SINGLE-FILE INPUT ###
-	if inputType == 'file':
+	if CurrentIngest.InputObject.inputType == 'file':
+		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
 		processingVars = loggers.insert_object(
-			processingVars,
+			CurrentIngest,
 			objectCategory = 'file',
 			objectCategoryDetail='preservation master'
 			)
 		# check that input file is actually a/v
-		# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-		avStatus, AV = check_av_status(
-			inputPath,
-			ingestLogBoilerplate,
-			processingVars
-			)
+		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.inputPath
+		avStatus, AV = check_av_status(CurrentIngest)
+		sys.exit()
+
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		processingVars,ingestLogBoilerplate = move_input_file(
 			processingVars,
@@ -1179,7 +1163,7 @@ def main():
 			status = 'OK'
 			)
 		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
-
+		sys.exit()
 	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':
 		for _file in source_list:			
@@ -1195,12 +1179,8 @@ def main():
 				)
 			#######################
 			# check that input file is actually a/v
-			# THIS CHECK SHOULD BE AT THE START OF THE INGEST PROCESS
-			avStatus, AV = check_av_status(
-				_file,
-				ingestLogBoilerplate,
-				processingVars
-				)
+			avStatus, AV = check_av_status(CurrentIngest)
+
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
 			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
