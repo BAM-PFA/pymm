@@ -453,9 +453,9 @@ def check_for_outliers(inputPath):
 		print("Here's a list of them:\n"
 			+'\n'.join(outlierList)
 			)
-		return False
+		return False,outlierList
 	else:
-		return True
+		return True,None
 
 def list_files(_input):
 	'''
