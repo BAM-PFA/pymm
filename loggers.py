@@ -52,7 +52,7 @@ def ingest_log(CurrentIngest,event,outcome,status):
 
 	canonicalName = CurrentIngest.InputObject.canonicalName
 	inputPath = CurrentIngest.InputObject.inputPath
-	tempID = CurrentIngest.InputObject.tempID
+	tempID = CurrentIngest.tempID
 	user = CurrentIngest.ProcessArguments.user
 	filename = CurrentIngest.InputObject.filename
 	ingestLogPath = CurrentIngest.ingestLogPath
@@ -114,7 +114,7 @@ def pymm_log(CurrentIngest,event,outcome,status):
 	
 	user = CurrentIngest.ProcessArguments.user
 	ingestUUID = CurrentIngest.ingestUUID
-	tempID = CurrentIngest.InputObject.tempID
+	tempID = CurrentIngest.tempID
 	workingDir = CurrentIngest.ProcessArguments.outdir_ingestsip
 
 	prefix = ''
@@ -236,18 +236,19 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 	user = CurrentIngest.ProcessArguments.user
 	theObject = CurrentIngest.currentTargetObject
 
+	objectIdentifierValue = theObject.objectIdentifierValue
+
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		# init an insertion instance
 		objectInsert = dbReporters.ObjectInsert(
 			user,
-			theObject,
+			objectIdentifierValue,
 			objectCategory,
 			objectCategoryDetail
 			)
 		try:
 			# report the details to the db
 			objectIdentifierValueID = objectInsert.report_to_db()
-			print(objectInsert.user)
 			del objectInsert
 		except:
 			print("CAN'T MAKE DB CONNECTION")
@@ -261,43 +262,38 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 			CurrentIngest.ProcessArguments.databaseReporting = False
 	else:
 		objectIdentifierValueID = None
-	# update the processingVars with the unique db ID of the object
-	CurrentIngest.InputObject.componentObjectData[theObject] = {}
-	CurrentIngest.InputObject.componentObjectData[theObject]['databaseID'] = str(
-		objectIdentifierValueID
-		)
-	# set the object category in component object data
-	CurrentIngest.InputObject.componentObjectData[theObject]\
-		['objectCategory'] = objectCategory
-	CurrentIngest.InputObject.componentObjectData[theObject]\
-		['objectCategoryDetail'] = objectCategoryDetail
+
+	theObject.databaseID = str(objectIdentifierValueID)
+	try:
+		# set the object category in component object data
+		theObject.objectCategory = objectCategory
+		theObject.objectCategoryDetail = objectCategoryDetail
+	except:
+		pass
 
 	return True
 
 def insert_event(CurrentIngest,eventType,outcome,status):
 	# this is the THING the event is being performed on
-	if CurrentIngest.currentTargetObject == None:
-		theObject = CurrentIngest.InputObject.canonicalName
-	else:
-		theObject = CurrentIngest.currentTargetObject
-
+	theObject = CurrentIngest.currentTargetObject
+	objectIdentifierValue = theObject.objectIdentifierValue
 	# get the name of the computer
 	computer = CurrentIngest.ProcessArguments.computer
 	# get the name of the program, script, or function doing the event
-	callingAgent = CurrentIngest.caller
+	caller = CurrentIngest.caller
 	user = CurrentIngest.ProcessArguments.user
 
-	objectID = CurrentIngest.InputObject.componentObjectData[theObject]['databaseID']
+	objectID = theObject.databaseID
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		#insert the event
 		eventInsert = dbReporters.EventInsert(
 			eventType,
 			objectID,
-			theObject,
+			objectIdentifierValue,
 			pymmFunctions.timestamp('iso8601'),
 			status,
 			outcome,
-			callingAgent,
+			caller,
 			computer,
 			user,
 			eventID=None

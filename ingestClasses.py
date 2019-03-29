@@ -47,6 +47,7 @@ class ProcessArguments:
 		#######
 		# INPUT ARGUMENTS (FROM CLI)
 		self.user = user
+		# path to optional JSON file of descriptive mentadata
 		self.objectJSON = objectJSON
 		self.databaseReporting = databaseReporting
 		self.ingestType = ingestType
@@ -89,8 +90,9 @@ class ProcessArguments:
 class ComponentObject:
 	'''
 	Defines a single component of an InputObject.
-	Can be a single file or an image sequence directory.
-
+	Can be a single file,
+		an image sequence directory,
+		or a folder of documentation.
 	'''
 	def __init__(self,inputPath):
 		######
@@ -98,21 +100,25 @@ class ComponentObject:
 		self.inputPath = inputPath
 		self.basename = os.path.basename(inputPath)
 		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
+		self.objectCategoryDetail = None
+		self.databaseID = None
+		self.objectIdentifierValue = self.basename
 
 		self.isDocumentation = False
 		if self.basename.lower() == 'documentation':
 			self.isDocumentation = True
-
 		if not self.isDocumentation:
 			self.avStatus = pymmFunctions.is_av(inputPath)
+		else:
+			self.avStatus = None
 
 		self.mediaInfoPath = None
 		self.md5hash = None
-		self.databaseID = None
 
 class InputObject:
 	'''
 	Defines an object to be ingested.
+	There should/can only be one object per ingestSip call.
 	Can be simple (a single file), complex (a multi-reel DPX scan),
 	or mixed (a/v material with supplementary documentation)
 	'''
@@ -120,9 +126,12 @@ class InputObject:
 		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
-		self.tempID = pymmFunctions.get_temp_id(inputPath)
-		self.databaseID = None
+		self.basename = os.path.basename(inputPath)
+		self.filename = None
+		# self.databaseID = None
+		# self.objectIdentifierValue = self.basename
 
+		self.outlierComponents = []
 		self.inputType = self.sniff_input(inputPath)
 
 		# Initialize a list to be filled with component objects. 
@@ -135,9 +144,12 @@ class InputObject:
 			pymmFunctions.remove_hidden_system_files(inputPath)
 			for item in os.listdir(self.inputPath):
 				self.ComponentObjects.append(
-					ComponentObject(os.path.join(inputPath,item))
+					ComponentObject(
+						os.path.join(inputPath,item)
+						)
 					)
 		elif self.inputType == 'file':
+			self.filename = self.basename
 			self.ComponentObjects.append(
 				ComponentObject(inputPath)
 				)
@@ -152,6 +164,7 @@ class InputObject:
 		self.pbcoreXML = pbcore.PBCoreDocument()
 		self.pbcoreFile = None
 
+		self.source_list = None
 
 	def sniff_input(self,inputPath):
 		'''
@@ -164,26 +177,44 @@ class InputObject:
 		inputType = pymmFunctions.dir_or_file(inputPath)
 		if inputType == 'dir':
 			# filename sanity check
-			goodNames = pymmFunctions.check_for_outliers(inputPath)
+			goodNames,badList = pymmFunctions.check_for_outliers(inputPath)
 			if goodNames:
 				print("input is a directory")
 			else:
-				return False
-		
+				if badList != None:
+					for outlier in badList:
+						self.outlierComponents.append(outlier)
 		else:
 			print("input is a single file")
 		return inputType
 
 class Ingest:
-	"""An object representing a single ingest process"""
+	'''
+	An object representing the high-level aspects of a single ingest process.
+	This includes information about the SIP like paths, high-level logging,
+	  and contains attributes that get updated throughout the ingest process
+	  to facilitate logging and file transfers.
+	There are two classes (not *technically* subclasses) required as 
+	  attributes of this class:
+	  * ProcessArguments- defines the various CLI and environment details
+	  * InputObject- one thing that is being ingested. 
+	    * This object in turn must contain one or many ComponentObjects.
+          These are the individual objects that are actually being ingested, 
+          so they can be a single file, 
+          or something like a WAV+DPX sequence folder.
+	'''
 	def __init__(self,ProcessArguments,InputObject):
 		######
 		# CORE ATTRIBUTES
 		self.ingestUUID = str(uuid.uuid4())
+		self.databaseID = None
+		self.objectIdentifierValue = self.ingestUUID
+		self.systemInfo = pymmFunctions.system_info() 
+
 		# These objects must be fully initialized before getting passed here
 		self.ProcessArguments = ProcessArguments
 		self.InputObject = InputObject
-		self.systemInfo = pymmFunctions.system_info()
+		self.tempID = pymmFunctions.get_temp_id(self.InputObject.inputPath)
 
 		######
 		# SIP ATTRIBUTES
@@ -195,7 +226,6 @@ class Ingest:
 
 		self.includesSubmissionDocumentation = None
 
-		self.source_list = None
 
 		######
 		# LOGGING ATTRIBUTES
@@ -205,7 +235,6 @@ class Ingest:
 			'ingestUUID':self.ingestUUID
 			}
 		self.ingestLogPath = None
-		self.databaseID = None
 
 		######
 		# VARIABLES ASSIGNED DURING PROCESSING
@@ -250,14 +279,10 @@ class Ingest:
 		self.ingestLogPath = os.path.join(
 			self.packageLogDir,
 			'{}_{}_ingestfile-log.txt'.format(
-				self.InputObject.tempID,
+				self.tempID,
 				pymmFunctions.timestamp('now')
 				)
 			)
 		with open(self.ingestLogPath,'x') as ingestLog:
 			print('Laying a log at '+self.ingestLogPath)
-
-
-
-
 		

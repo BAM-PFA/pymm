@@ -267,57 +267,49 @@ def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
 			**ingestLogBoilerplate
 			)
 
-def update_input_path(processingVars,ingestLogBoilerplate):
+def update_input_path(CurrentIngest):
 	'''
-	change the input path to reflect the object in the SIP
-	rather than the input object
+	change the current object's input path to reflect the object in the SIP
+	rather than its source in the input object
 	'''
-	objectDir = processingVars['packageObjectDir']
-	inputDir = os.path.dirname(processingVars['inputPath'])
-	for _dict in processingVars,ingestLogBoilerplate:
-		for key, value in _dict.items():
-			# if isinstance(value,str):
-			if isinstance(value,str) and inputDir in value:
-				_dict[key] = value.replace(inputDir,objectDir)
+	objectDir = CurrentIngest.packageObjectDir
+	inputDirPath = os.path.dirname(CurrentIngest.CurrentObject.inputPath)
+	CurrentIngest.CurrentObject.inputPath.replace(inputDirPath,objectDir)
 
-	return processingVars,ingestLogBoilerplate
+	return True
 
 
-def move_input_file(processingVars,ingestLogBoilerplate):
+def move_component_object(currentTargetObject):
 	'''
-	Put the input file into the package object dir.
+	Put the current component object into the package object folder
 	'''
-	objectDir = processingVars['packageObjectDir']
+	objectDir = CurrentIngest.packageObjectDir
 	sys.argv = [
 		'',
-		'-i'+processingVars['inputPath'],
+		'-i'+currentTargetObject.inputPath,
 		'-d'+objectDir,
-		'-L'+processingVars['packageLogDir'],
+		'-L'+CurrentIngest,packageLogDir,
 		'-m'
 		]
 	event = 'replication'
-	outcome = 'migrate file to SIP at {}'.format(objectDir)
-	processingVars['caller'] = 'rsync'
+	outcome = 'migrate object to SIP at {}'.format(objectDir)
+	CurrentIngest.caller = 'rsync'
 	try:
 		moveNcopy.main()
 		status = 'OK'
 	except:
 		status = 'FAIL'
 	pymmFunctions.log_event(
-		processingVars,
-		ingestLogBoilerplate,
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 	if not status == 'FAIL':
-		processingVars,ingestLogBoilerplate = update_input_path(
-			processingVars,
-			ingestLogBoilerplate
-			)
+		update_input_path(CurrentIngest)
 
-	return processingVars,ingestLogBoilerplate
+	return True
 
 def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
 	if processingVars['filename'] == '':
@@ -412,21 +404,21 @@ def add_pbcore_md5_location(processingVars):
 			pbcoreFile
 			)
 
-def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
-	_file = processingVars['inputPath']
+def add_pbcore_instantiation(CurrentIngest,level):
+	_file = CurrentIngest.CurrentObject.inputPath
 	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
-
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	else:
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
-	descriptiveJSONpath = processingVars['objectJSON']
-	pbcoreFile = processingVars['pbcore']
-	pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)
+
+	descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
+	pbcoreFilePath = CurrentIngest.InputObject.pbcoreFile
+	pbcoreXML = pbcore.PBCoreDocument(pbcoreFilePath)
 
 	event = 'metadata modification'
 	outcome = 'add pbcore instantiation representation'
-	processingVars['caller'] = 'makePbcore.add_instantiation()'
+	CurrentIngest.caller = 'makePbcore.add_instantiation()'
 	try:
 		status = 'OK'
 		makePbcore.add_instantiation(
@@ -435,7 +427,7 @@ def add_pbcore_instantiation(processingVars,ingestLogBoilerplate,level):
 			descriptiveJSONpath=descriptiveJSONpath,
 			level=level
 			)
-		makePbcore.xml_to_file(pbcoreXML,pbcoreFile)
+		makePbcore.xml_to_file(pbcoreXML,pbcoreFilePath)
 
 		pymmFunctions.short_log(
 			processingVars,
@@ -815,7 +807,7 @@ def directory_precheck(CurrentIngest):
 	status = "OK"
 	event = "deletion"
 	# check again for system files... just in case.
-	for _object in source_list:
+	for _object in CurrentIngest.InputObject.source_list:
 		if os.path.basename(_object).startswith('.'):
 			try:
 				removedFiles.append(_object)
@@ -863,7 +855,7 @@ def directory_precheck(CurrentIngest):
 	############################
 
 	subs = 0
-	for _object in CurrentIngest.source_list:
+	for _object in CurrentIngest.InputObject.source_list:
 		if os.path.isdir(_object):
 			subs += 1
 			print("\nYou have subdirectory(ies) in your input:"
@@ -1011,21 +1003,21 @@ def main():
 		return ingestResults
 
 	prepped = CurrentIngest.prep_package(
-		CurrentIngest.InputObject.tempID,
+		CurrentIngest.tempID,
 		CurrentIngest.ProcessArguments.outdir_ingestsip
 		)
 	if not prepped:
 		print(CurrentIngest.ingestResults)
 		return CurrentIngest
 
-	### Run some prepartory checks on directory inputs:
+	### Run some preparatory checks on directory inputs:
 	### - If input has subidrs, see if it is a valid DPX input.
 	### - Check for a valid submission documentation folder
 	if CurrentIngest.InputObject.inputType == 'dir':
-		CurrentIngest.source_list = pymmFunctions.list_files(
-			inputPath
+		CurrentIngest.InputObject.source_list = pymmFunctions.list_files(
+			CurrentIngest.InputObject.inputPath
 			)
-		if any(x for x in CurrentIngest.source_list if str(x).lower() == 'documentation'):
+		if any(x for x in CurrentIngest.InputObject.source_list if str(x).lower() == 'documentation'):
 			CurrentIngest.includesSubmissionDocumentation = True
 
 		# precheckPass is True/False conformance to expected folder structure
@@ -1061,7 +1053,7 @@ def main():
 	CurrentIngest.create_ingestLog()
 
 	# insert a database record for this SIP as an 'intellectual entity'
-	CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
+	CurrentIngest.currentTargetObject = CurrentIngest
 	loggers.insert_object(
 		CurrentIngest,
 		objectCategory='intellectual entity',
@@ -1097,6 +1089,7 @@ def main():
 	else:
 		# if no descriptive metadata, just use a container pbcore.xml w/o a
 		# representation of the physical/original asset
+		# this is created in the __init__ of an InputObject
 		pass
 	# Write the XML to file
 	CurrentIngest.InputObject.pbcoreFile = makePbcore.xml_to_file(
@@ -1120,7 +1113,20 @@ def main():
 		)
 	CurrentIngest.caller = None
 	CurrentIngest.currentTargetObject = None
-	sys.exit()
+
+	if CurrentIngest.InputObject.outlierComponents != []:
+		CurrentIngest.currentTargetObject = CurrentIngest
+		loggers.log_event(
+			CurrentIngest,
+			event = 'validation',
+			outcome = 'test of input filenames '\
+				'reveals these outliers that may not belong: {}'.format(
+					';'.join(CurrentIngest.InputObject.outlierComponents)
+					),
+			status = 'WARNING'
+			)
+
+	# sys.exit()
 	#### END LOGGING / CLEANUP ####
 	###############################
 
@@ -1133,29 +1139,30 @@ def main():
 	#########################
 	### SINGLE-FILE INPUT ###
 	if CurrentIngest.InputObject.inputType == 'file':
-		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
-		processingVars = loggers.insert_object(
+		# take the first ComponentObject
+		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.ComponentObjects[0]
+		loggers.insert_object(
 			CurrentIngest,
 			objectCategory = 'file',
 			objectCategoryDetail='preservation master'
 			)
+		# I THINK THS AV TEST IS BUNK AND ALSO MAYBE NOT HELPFUL?
 		# check that input file is actually a/v
-		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.inputPath
-		avStatus, AV = check_av_status(CurrentIngest)
-		sys.exit()
+		# CurrentIngest.currentTargetObject = CurrentIngest.InputObject.inputPath
+		# avStatus, AV = check_av_status(CurrentIngest)
 
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		processingVars,ingestLogBoilerplate = move_input_file(
-			processingVars,
-			ingestLogBoilerplate
+		move_component_object(
+			CurrentIngest
 			)
 		add_pbcore_instantiation(
-			processingVars,
-			ingestLogBoilerplate,
+			CurrentIngest,
 			"Preservation master"
 			)
 
-		get_file_metadata(ingestLogBoilerplate,processingVars)
+		sys.exit()
+
+		get_file_metadata(CurrentIngest)
 		pymmFunctions.pymm_log(
 			processingVars,
 			event = 'metadata extraction',
@@ -1183,7 +1190,7 @@ def main():
 
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_input_file(
+			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_component_object(
 				processingVars,ingestLogBoilerplate
 				)
 			add_pbcore_instantiation(
@@ -1292,7 +1299,7 @@ def main():
 			processingVars['filename'] = ''
 		ingestLogBoilerplate['inputPath'] =\
 			processingVars['inputPath'] = inputPath
-		processingVars,ingestLogBoilerplate = move_input_file(
+		processingVars,ingestLogBoilerplate = move_component_object(
 				processingVars,ingestLogBoilerplate
 				)
 		accessPath = make_derivs(
@@ -1360,7 +1367,7 @@ def main():
 				processingVars['filename'] = ''
 			ingestLogBoilerplate['inputPath'] =\
 				processingVars['inputPath'] = reel
-			processingVars,ingestLogBoilerplate = move_input_file(
+			processingVars,ingestLogBoilerplate = move_component_object(
 					processingVars,ingestLogBoilerplate
 					)
 

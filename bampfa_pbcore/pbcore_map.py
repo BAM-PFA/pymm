@@ -526,6 +526,71 @@ PBCORE_MAP = {
 			"TEXT":"value"
 		}
 	},
+	"recordingAnalogTechnicalNotes":{
+		"instantiationAnnotation":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotationType":"Technical note about a source (generally analog) recording"
+			},
+			"TEXT":"value"
+		}
+	},
+	"audioRecordingID":{
+		"instantiationIdentifier":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"PFA audio recording database ID"
+			},
+			"TEXT":"value"
+		}
+	},
+	"recordingPermissionsNotes":{
+		"pbcoreRightsSummary":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"rightsSummary":{
+					"ATTRIBUTES":{
+						"annotation":"Permissions statement for PFA Theater guests"
+					},
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"analogTapeNumber":{
+		"instantiationIdentifier":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"Tape number of analog audio cassette"
+			},
+			"TEXT":"value"
+		}
+	},
+	"analogTapeSide":{
+		"instantiationPart":{
+			"LEVEL":"INSTANTIATION"
+			},
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"instantiationLocation":{
+					"ATTRIBUTES":{
+						"annotation":"The face from which a digitized instatiation was recorded."
+					},
+					"TEXT":"Value"
+				}
+			}
+		}
+	},
+	"digitizationQCNotes":{
+		"instantiationAnnotation":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotationType":"Technical QC notes about the digitization of an analog source"
+			},
+			"TEXT":"value"
+		}
+	},
 	"BAMPFA_FIELD":{
 		"PBCORE_ELEMENT":{
 			"LEVEL":"WORK_OR_INSTANTIATION",
