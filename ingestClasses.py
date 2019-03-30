@@ -101,6 +101,7 @@ class ComponentObject:
 		self.basename = os.path.basename(inputPath)
 		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
 		self.objectCategoryDetail = None
+
 		self.databaseID = None
 		self.objectIdentifierValue = self.basename
 
