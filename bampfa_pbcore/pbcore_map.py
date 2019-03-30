@@ -569,8 +569,7 @@ PBCORE_MAP = {
 	},
 	"analogTapeSide":{
 		"instantiationPart":{
-			"LEVEL":"INSTANTIATION"
-			},
+			"LEVEL":"INSTANTIATION",
 			"TEXT":"",
 			"SUBELEMENTS":{
 				"instantiationLocation":{

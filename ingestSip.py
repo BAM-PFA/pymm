@@ -273,22 +273,23 @@ def update_input_path(CurrentIngest):
 	rather than its source in the input object
 	'''
 	objectDir = CurrentIngest.packageObjectDir
-	inputDirPath = os.path.dirname(CurrentIngest.CurrentObject.inputPath)
-	CurrentIngest.CurrentObject.inputPath.replace(inputDirPath,objectDir)
+	inputDirPath = os.path.dirname(CurrentIngest.currentTargetObject.inputPath)
+	CurrentIngest.currentTargetObject.inputPath.replace(inputDirPath,objectDir)
 
 	return True
 
 
-def move_component_object(currentTargetObject):
+def move_component_object(CurrentIngest):
 	'''
 	Put the current component object into the package object folder
 	'''
+	currentTargetObject = CurrentIngest.currentTargetObject
 	objectDir = CurrentIngest.packageObjectDir
 	sys.argv = [
 		'',
 		'-i'+currentTargetObject.inputPath,
 		'-d'+objectDir,
-		'-L'+CurrentIngest,packageLogDir,
+		'-L'+CurrentIngest.packageLogDir,
 		'-m'
 		]
 	event = 'replication'
@@ -299,7 +300,7 @@ def move_component_object(currentTargetObject):
 		status = 'OK'
 	except:
 		status = 'FAIL'
-	pymmFunctions.log_event(
+	loggers.log_event(
 		CurrentIngest,
 		event,
 		outcome,
@@ -405,14 +406,20 @@ def add_pbcore_md5_location(processingVars):
 			)
 
 def add_pbcore_instantiation(CurrentIngest,level):
-	_file = CurrentIngest.CurrentObject.inputPath
+	'''
+	Get a PBCore XML string about a single ComponentObject 
+	from `mediainfo` and add it as an instantiation to the main 
+	PBCore document for the InputObject.
+	'''
+
+	_file = CurrentIngest.currentTargetObject.inputPath
 	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	else:
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 
-	descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
+	# descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
 	pbcoreFilePath = CurrentIngest.InputObject.pbcoreFile
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFilePath)
 
@@ -424,33 +431,25 @@ def add_pbcore_instantiation(CurrentIngest,level):
 		makePbcore.add_instantiation(
 			pbcoreXML,
 			pbcoreReport,
-			descriptiveJSONpath=descriptiveJSONpath,
+			descriptiveJSONpath=None,
 			level=level
 			)
 		makePbcore.xml_to_file(pbcoreXML,pbcoreFilePath)
 
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
-
 	except:
 		outcome = 'could not '+outcome
 		status = 'FAIL'
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
-			event,
-			outcome,
-			status
-			)
-	# reset 'caller'
-	processingVars['caller'] = None
 
-	return processingVars
+	loggers.short_log(
+		CurrentIngest,
+		event,
+		outcome,
+		status
+		)
+	# reset 'caller'
+	CurrentIngest.caller = None
+
+	return True
 
 def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 	'''
@@ -1152,9 +1151,8 @@ def main():
 		# avStatus, AV = check_av_status(CurrentIngest)
 
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_component_object(
-			CurrentIngest
-			)
+		move_component_object(CurrentIngest)
+
 		add_pbcore_instantiation(
 			CurrentIngest,
 			"Preservation master"
@@ -1163,7 +1161,8 @@ def main():
 		sys.exit()
 
 		get_file_metadata(CurrentIngest)
-		pymmFunctions.pymm_log(
+		
+		loggers.pymm_log(
 			processingVars,
 			event = 'metadata extraction',
 			outcome = 'calculate input file technical metadata',
