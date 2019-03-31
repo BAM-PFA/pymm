@@ -457,11 +457,10 @@ def check_for_outliers(inputPath):
 				str(outliers),
 				outlierListString
 				)
-			)
-		goodNames = False
+			)		
+		return False,outlierList
 	else:
-		warning = None
-	return goodNames,warning
+		return True,None
 
 def list_files(_input):
 	'''

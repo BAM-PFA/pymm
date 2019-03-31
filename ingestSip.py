@@ -137,28 +137,6 @@ def prep_package(tempID,outdir_ingestsip):
 
 	return packageDirs
 
-def sniff_input(inputPath):
-	'''
-	Check whether the input path from command line is a directory
-	or single file. 
-	If it's a directory, check that the filenames
-	make sense together or if there are any outliers.
-	'''
-	inputType = pymmFunctions.dir_or_file(inputPath)
-	warning = None
-	if inputType == 'dir':
-		# filename sanity check
-		goodNames, warning = pymmFunctions.check_for_outliers(inputPath)
-		if goodNames:
-			print("input is a directory")
-		else:
-			inputType = False
-			print(warning)
-	
-	else:
-		print("input is a single file")
-	return inputType,warning
-
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
 	sys.argv = [
@@ -946,65 +924,6 @@ def main():
 		)
 	CurrentObject = ingestClasses.InputObject(inputPath)
 	CurrentIngest = ingestClasses.Ingest(CurrentProcess,CurrentObject)
-
-	#### END SET INGEST ARGS #### 
-	#############################
-
-	#############################
-	#### TEST / SET ENV VARS ####
-	# get the name of the local machine to record w/ PREMIS data
-	computer = pymmFunctions.get_node_name()
-	# get the version of ffmpeg in use
-	ffmpegVersion = 'ffmpeg ver.: '+pymmFunctions.get_ffmpeg_version()
-	# init a dict of outcomes to be returned
-	ingestResults = {
-		'status':False,
-		'abortReason':'',
-		'ingestUUID':''
-		}
-	# sniff whether the input is a file or directory
-	inputType,warning = sniff_input(inputPath,ingestUUID)
-	if not inputType:
-		ingestResults['abortReason'] = warning
-		print(ingestResults)
-		return ingestResults
-	try:
-		# create directory paths for ingest...
-		packageOutputDir,packageObjectDir,packageMetadataDir,\
-		packageMetadataObjects,packageLogDir = prep_package(tempID,outdir_ingestsip)
-	except:
-		ingestResults["abortReason"] = (
-			"package previously ingested, remove manually"
-			)
-		print(ingestResults)
-		return ingestResults
-
-	# check that required vars are declared & init other vars
-	requiredVars = ['inputPath','operator']
-	# Quit if there are required variables missing
-	missingVars = 0
-	missingVarsReport = ""
-	for flag in requiredVars:
-		if getattr(args,flag) == None:
-			problem = ('CONFIGURATION PROBLEM: YOU FORGOT TO SET {}.'\
-				'It is required. Try again, '\
-				'but set {} with the flag --{}'.format(flag)
-				)
-			missingVars += 1
-			missingVarsReport += "\n{}\n".format(problem)
-			print(problem)
-	if missingVars > 0:
-		ingestResults["abortReason"] = (
-			"ingestSip.py called with some flags missing."
-			)
-		pymmFunctions.pymm_log(
-			processingVars,
-			event = 'abort',
-			outcome = missingVarsReport,
-			status = 'ABORTING'
-			)
-		print(ingestResults)
-		return ingestResults
 
 	prepped = CurrentIngest.prep_package(
 		CurrentIngest.tempID,
