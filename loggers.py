@@ -4,6 +4,7 @@ import os
 
 # local modules
 import dbReporters
+import MySQLqueries
 import pymmFunctions
 
 def check_pymm_log_exists():
@@ -237,6 +238,7 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 	theObject = CurrentIngest.currentTargetObject
 
 	objectIdentifierValue = theObject.objectIdentifierValue
+	objectIdentifierValueID = None
 
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		# init an insertion instance
@@ -258,10 +260,10 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 				outcome = "NO DATABASE CONNECTION!!!",
 				status = "WARNING"
 				)
-			objectIdentifierValueID = None
+
 			CurrentIngest.ProcessArguments.databaseReporting = False
 	else:
-		objectIdentifierValueID = None
+		pass
 
 	theObject.databaseID = str(objectIdentifierValueID)
 	try:
@@ -271,7 +273,7 @@ def insert_object(CurrentIngest,objectCategory,objectCategoryDetail):
 	except:
 		pass
 
-	return True
+	return str(objectIdentifierValueID)
 
 def insert_event(CurrentIngest,eventType,outcome,status):
 	# this is the THING the event is being performed on
@@ -305,25 +307,22 @@ def insert_event(CurrentIngest,eventType,outcome,status):
 		eventID = None
 	return eventID
 
-def insert_obj_chars(processingVars,ingestLogBoilerplate):
+def insert_obj_chars(CurrentIngest):
 	'''
 	report obect characteristics to db:
-	- get the object dict
+	- get the list of component objects
 	- for files report the mediainfo text
 	- for SIPs report the pbcore, ingestLog
 	- 
 	'''
-	if processingVars['databaseReporting'] != True:
-		return processingVars
-	user = processingVars['user']
-	for _object,chars in CurrentIngest.InputObject.componentObjectData.items():
-		data = CurrentIngest.InputObject.componentObjectData[_object]
-		category = data['objectCategory']
-		categoryDetail = data['objectCategoryDetail']
+	user = CurrentIngest.user
+	for _object in CurrentIngest.InputObject.ComponentObjects:
+		category = _object.objectCategory
+		categoryDetail = _object.objectCategoryDetail
 		if category == 'file':
 			try:
-				mediainfoPath = data['mediainfoPath']
-				objID = data['databaseID']
+				mediainfoPath = _object.mediainfoPath
+				objID = _object.databaseID
 				with open(mediainfoPath,'r') as MI:
 					mediainfoText = MI.read()
 				objectCharsInsert = dbReporters.InsertObjChars(
@@ -389,28 +388,23 @@ def get_event_timestamp(eventID,user):
 	timestamp =  value[0].strftime("%Y-%m-%dT%H:%M:%S")
 	return timestamp
 
-def insert_fixity(\
-	processingVars,\
-	eventID,\
-	messageDigestAlgorithm,\
-	messageDigestHashValue,\
+def insert_fixity(
+	CurrentIngest,
+	eventID,
+	messageDigestAlgorithm,
+	messageDigestHashValue,
 	messageDigestSource=None,
 	eventDateTime=None
 	):
-	# if processingVars['databaseReporting'] == True:
-	# 	pass
-	# else:
-	# 	return None
-	inputFile = processingVars['filename']
-	objectID = CurrentIngest.InputObject.componentObjectData[inputFile]['databaseID']
-	objectIDValue = processingVars['filename']
-	eventDetailCallingFunc = processingVars['caller']
-	messageDigestFilepath = processingVars['inputPath']
+	objectID = CurrentIngest.currentTargetObject.databaseID
+	objectIDValue = CurrentIngest.currentTargetObject.basename
+	eventDetailCallingFunc = CurrentIngest.caller
+	messageDigestFilepath = CurrentIngest.currentTargetObject.inputPath
 	
-	if processingVars['databaseReporting'] == True:
+	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		eventTimestamp = get_event_timestamp(
 			eventID,
-			processingVars['user']
+			CurrentIngest.user
 			)
 
 		if not eventTimestamp:
@@ -419,7 +413,7 @@ def insert_fixity(\
 			eventDateTime = eventTimestamp
 
 		fixityInsert = dbReporters.FixityInsert(
-			processingVars['user'],
+			CurrentIngest.user,
 			eventID,
 			objectID,
 			objectIDValue,

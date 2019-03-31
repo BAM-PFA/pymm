@@ -94,13 +94,13 @@ class ComponentObject:
 		an image sequence directory,
 		or a folder of documentation.
 	'''
-	def __init__(self,inputPath):
+	def __init__(self,inputPath,objectCategoryDetail=None):
 		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
 		self.basename = os.path.basename(inputPath)
 		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
-		self.objectCategoryDetail = None
+		self.objectCategoryDetail = objectCategoryDetail
 
 		self.databaseID = None
 		self.objectIdentifierValue = self.basename
@@ -108,12 +108,12 @@ class ComponentObject:
 		self.isDocumentation = False
 		if self.basename.lower() == 'documentation':
 			self.isDocumentation = True
-		if not self.isDocumentation:
+		if not self.isDocumentation or (self.objectCategoryDetail == 'Archival Information Package'):
 			self.avStatus = pymmFunctions.is_av(inputPath)
 		else:
 			self.avStatus = None
 
-		self.mediaInfoPath = None
+		self.mediainfoPath = None
 		self.md5hash = None
 
 	def update_path(self,oldPath,newBasePath):
@@ -158,7 +158,8 @@ class InputObject:
 					)
 		elif self.inputType == 'file':
 			self.filename = self.basename
-			self.ComponentObjects.append(
+			self.ComponentObjects.insert(
+				0,
 				ComponentObject(inputPath)
 				)
 
@@ -232,6 +233,8 @@ class Ingest:
 		self.packageMetadataObjects = None
 		self.packageLogDir = None
 
+		self.objectManifestPath = None
+
 		self.includesSubmissionDocumentation = None
 
 
@@ -249,6 +252,7 @@ class Ingest:
 		self.caller = None
 		self.currentTargetObject = None
 		self.currentTargetObjectPath = None
+		self.currentMetadataDestination = None
 
 	def prep_package(self,tempID,outdir_ingestsip):
 		'''
@@ -259,7 +263,7 @@ class Ingest:
 		self.packageMetadataDir = os.path.join(self.packageOutputDir,'metadata')
 		self.packageMetadataObjects = os.path.join(self.packageMetadataDir,'objects')
 		self.packageLogDir = os.path.join(self.packageMetadataDir,'logs')
-		packageDirs = [
+		self.packageDirs = [
 			self.packageOutputDir,
 			self.packageObjectDir,
 			self.packageMetadataDir,
@@ -278,7 +282,7 @@ class Ingest:
 
 		# ... AND IF NOT, MAKE THEM ALL
 		else:
-			for directory in packageDirs:
+			for directory in self.packageDirs:
 				os.mkdir(directory)
 
 		return True
@@ -293,4 +297,19 @@ class Ingest:
 			)
 		with open(self.ingestLogPath,'x') as ingestLog:
 			print('Laying a log at '+self.ingestLogPath)
+
+	def update_paths(self,target,replacement):
+		'''
+		Update some part of the main working paths for a SIP
+		to include a new portion of a file path
+		'''
+		packageDirs = [
+			self.packageOutputDir,
+			self.packageObjectDir,
+			self.packageMetadataDir,
+			self.packageMetadataObjects,
+			self.packageLogDir
+		]
+		for path in packageDirs:
+			path = path.replace(target,replacement)
 		

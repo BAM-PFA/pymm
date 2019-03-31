@@ -301,7 +301,7 @@ def get_file_metadata(CurrentIngest,_type=None):
 
 	mediainfoPath = makeMetadata.get_mediainfo_report(
 		inputPath,
-		CurrentIngest.packageMetadataObjects,
+		CurrentIngest.currentMetadataDestination,
 		_JSON=None,
 		altFileName=basename
 		)
@@ -342,22 +342,21 @@ def get_file_metadata(CurrentIngest,_type=None):
 
 	return mediainfoPath
 
-def add_pbcore_md5_location(processingVars):
+def add_pbcore_md5_location(CurrentIngest):
 	'''
-	as of 7/20/2018 have to call this after 
-	creation of object manifest for SIP
+	have to call this after creation of object manifest for SIP
 	and parsing of manifest by report_SIP_fixity()
 	'''
-	if processingVars['pbcore'] != '':
-		pbcoreFile = processingVars['pbcore']
+	if CurrentIngest.InputObject.pbcoreFile != '':
+		pbcoreFile = CurrentIngest.InputObject.pbcoreFile
 		pbcoreXML = pbcore.PBCoreDocument(pbcoreFile)		
-		for _object, data in processingVars['componentObjectData'].items():
+		for _object in CurrentIngest.InputObject.ComponentObjects:
 			# look for component files and add instantiation data
-			if data['objectCategory'] == 'file':
+			if _object.objectCategory == 'file':
 				# add md5 as an identifier to the 
 				# pbcoreInstantiation for the file
 				# processingVars['filename'] = _object
-				inputFileMD5 = data['md5hash']
+				inputFileMD5 = _object.md5hash
 				attributes = {
 					"source":"BAMPFA {}".format(
 						pymmFunctions.timestamp('iso8601')
@@ -367,7 +366,7 @@ def add_pbcore_md5_location(processingVars):
 				}
 				makePbcore.add_element_to_instantiation(
 					pbcoreXML,
-					_object,
+					_object.basename,
 					'instantiationIdentifier',
 					attributes,
 					inputFileMD5
@@ -376,7 +375,7 @@ def add_pbcore_md5_location(processingVars):
 				attributes = {}
 				makePbcore.add_element_to_instantiation(
 					pbcoreXML,
-					_object,
+					_object.basename,
 					'instantiationLocation',
 					attributes,
 					"BAMPFA Digital Repository"
@@ -394,7 +393,6 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	'''
 
 	_file = CurrentIngest.currentTargetObject.inputPath
-	print(_file)
 	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
@@ -535,6 +533,7 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 		# metadata for each deriv is stored in a folder named
 		# for the derivtype under the main Metadata folder
 		mdDest = os.path.join(packageMetadataObjects,key)
+		CurrentIngest.currentMetadataDestination = mdDest
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
 
@@ -557,6 +556,8 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 				)
 		else:
 			pass
+
+		CurrentIngest.currentMetadataDestination = None
 
 		if CurrentIngest.InputObject.pbcoreFile not in ('',None):
 			if derivType in ('resourcespace'):
@@ -620,55 +621,52 @@ def uuid_logfile(ingestLogBoilerplate,_uuid):
 	'''
 	rename the ingest log w the UUID
 	'''
-	logpath = ingestLogBoilerplate['ingestLogPath']
+	logpath = CurrentIngest.ingestLogPath
 	logbase = os.path.basename(logpath)
-	tempID = ingestLogBoilerplate['tempID'].strip()
+	tempID = CurrentIngest.tempID
 	newbase = logbase.replace(tempID,_uuid)
 	newpath = logpath.replace(logbase,newbase)
 	os.rename(logpath,newpath)
-	ingestLogBoilerplate = update_tempID(ingestLogBoilerplate)
 
-	return ingestLogBoilerplate
+	CurrentIngest.ingestLogPath = newpath
 
-def update_tempID(processingVars):
+	return True
+
+def update_tempID(CurrentIngest):
 	'''
 	replace filepath instances of temp ID with UUID
-	to allow file opening
 	'''
-	tempID = processingVars['tempID']
-	_uuid = processingVars['ingestUUID']
-	for key, value in processingVars.items():
-		if value and isinstance(value,str):
-			if not (key == 'tempID'):
-				if tempID in value:
-					processingVars[key] = value.replace(tempID,_uuid)
-	# update paths in componentObjectData dict 
-	if 'componentObjectData' in processingVars:
-		for key, value in processingVars['componentObjectData'].items():
-			if isinstance(value,dict):
-				processingVars['componentObjectData'][key] = replace_paths(
-					value,
-					tempID,
-					_uuid
-					)
+	tempID = CurrentIngest.tempID
+	_uuid = CurrentIngest.ingestUUID
 
-	return processingVars
+	CurrentIngest.update_paths(tempID,_uuid)
 
-def rename_SIP(processingVars,ingestLogBoilerplate):
+	for component in CurrentIngest.InputObject.ComponentObjects:
+		try:
+			component.mediainfoPath = component.mediainfoPath.replace(
+				tempID,
+				_uuid
+				)
+		except:
+			pass
+
+	return True
+
+def rename_SIP(CurrentIngest):
 	'''
 	Rename the directory to the ingest UUID.
 	'''
-	pymmOutDir = processingVars['outdir_ingestsip']
-	packageOutputDir = processingVars['packageOutputDir']
-	ingestUUID = processingVars['ingestUUID']
+	pymmOutDir = CurrentIngest.ProcessArguments.outdir_ingestsip
+	packageOutputDir = CurrentIngest.packageOutputDir
+	ingestUUID = CurrentIngest.ingestUUID
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
-	# update the existing filepaths in processingVars
-	processingVars = update_tempID(processingVars)
+
+	# update the existing filepaths
+	update_tempID(CurrentIngest)
 	# update the log filepath
-	ingestLogBoilerplate = uuid_logfile(ingestLogBoilerplate,ingestUUID)
-	# rename the SIP dir
+	uuid_logfile(CurrentIngest)
+	# now rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
-	processingVars['packageOutputDir'] = UUIDpath
 
 	event = 'filename change'
 	outcome = 'SIP renamed from {} to {}.'.format(
@@ -676,59 +674,66 @@ def rename_SIP(processingVars,ingestLogBoilerplate):
 		UUIDpath
 		)
 	status = 'OK'
-	processingVars['caller'] = 'pymmFunctions.rename_dir()'
-	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	CurrentIngest.caller = 'pymmFunctions.rename_dir()'
+	loggers.short_log(
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 
-	return processingVars,UUIDpath
+	return True
 
-def replace_paths(_dict,target,replacement,exceptions=None):
-	for key, value in _dict.items():
-		if value and key != exceptions and isinstance(value,str):
-			if target in value:
-				_dict[key] = value.replace(target,replacement)
-	return _dict
-
-def update_enveloped_paths(processingVars,ingestLogBoilerplate):
+def update_enveloped_paths(CurrentIngest):
 	'''
 	update stored paths to reflect enveloped SIP structure
 	'''
-	pymmOutDir = processingVars['outdir_ingestsip']
-	_uuid = processingVars['ingestUUID']
-	UUIDpath = os.path.join(pymmOutDir,_uuid)
+	_uuid = CurrentIngest.ingestUUID
+	UUIDpath = CurrentIngest.packageOutputDir
 	envelopedPath = os.path.join(UUIDpath,_uuid)
-	# update processingVars specifically
-	processingVars = replace_paths(processingVars,UUIDpath,envelopedPath,'packageOutputDir')
-	# update paths in componentObjectData dict
-	for key, value in processingVars['componentObjectData'].items():
-		if isinstance(value,dict):
-			value = replace_paths(value,UUIDpath,envelopedPath)
-			processingVars['componentObjectData'][key] = value
-	# this is basically just the log path
-	ingestLogBoilerplate = replace_paths(ingestLogBoilerplate,UUIDpath,envelopedPath)
-	return processingVars,ingestLogBoilerplate
 
-def envelop_SIP(processingVars,ingestLogBoilerplate):
+	CurrentIngest.update_paths(UUIDpath,envelopedPath)
+	CurrentIngest.ingestLogPath = os.path.join(
+		CurrentIngest.packageLogDir,
+		os.path.basename(CurrentIngest.ingestLogPath)
+		)
+	CurrentIngest.InputObject.pbcoreFile = os.path.join(
+		CurrentIngest.packageMetadataDir,
+		os.path.basename(CurrentIngest.InputObject.pbcoreFile)
+		)
+
+	for component in CurrentIngest.InputObject.ComponentObjects:
+		try:
+			component.mediainfoPath = component.mediainfoPath.replace(
+				UUIDpath,
+				envelopedPath
+				)
+		except:
+			pass
+
+	if os.path.isfile(CurrentIngest.ingestLogPath):
+		pass
+	else:
+		print("OOOOO HHHHHH NNNN OOOOO")
+
+	return True
+
+def envelop_SIP(CurrentIngest):
 	'''
 	Make a parent directory named w UUID to facilitate hashdeeping/logging.
 	Update the ingest log to reflect the new path.
 	'''
-	ingestUUID = processingVars['ingestUUID']
+	ingestUUID = CurrentIngest.ingestUUID
 	UUIDslice = ingestUUID[:8]
-	pymmOutDir = processingVars['outdir_ingestsip']
-	_SIP = processingVars['packageOutputDir']
+	pymmOutDir = CurrentIngest.ProcessArguments.outdir_ingestsip
+	_SIP = CurrentIngest.packageOutputDir
 	event = 'faux-bag'
 	outcome = (
 		'Make a parent directory named w UUID '
 		'to facilitate hash manifest/auditing.'
 		)
-	processingVars['caller'] = 'ingestSIP.envelop_SIP()'
+	CurrentIngest.caller = 'ingestSIP.envelop_SIP()'
 
 	try:
 		status = "OK"
@@ -737,23 +742,23 @@ def envelop_SIP(processingVars,ingestLogBoilerplate):
 		os.mkdir(parentSlice)
 		# ...move the SIP into it...
 		shutil.move(_SIP,parentSlice)
-		# ...and rename the parent w UUID path
+		# ...and rename the parent w UUID path...
 		pymmFunctions.rename_dir(parentSlice,_SIP)
-		processingVars,ingestLogBoilerplate = update_enveloped_paths(processingVars,ingestLogBoilerplate)
+		# ... now update all the file paths again
+		update_enveloped_paths(CurrentIngest)
 	except:
 		status = "FAIL"
 		print("Something no bueno.")
 
-	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	loggers.short_log(
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 
-	return _SIP, ingestLogBoilerplate
+	return True
 
 def do_cleanup(\
 	processingVars,\
@@ -856,42 +861,37 @@ def directory_precheck(CurrentIngest):
 
 	return precheckPass
 
-def report_SIP_fixity(processingVars,objectManifestPath,eventID):
+def report_SIP_fixity(CurrentIngest,eventID):
 	# parser returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
+	objectManifestPath = CurrentIngest.objectManifestPath
 	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
-	knownObjects = processingVars['componentObjectData']
+	knownObjects = CurrentIngest.InputObject.ComponentObjects
+	hashedObjects = []
 	if not parsed == True:
 		return parsed
 	else:
-		for _object, _hash in hashes.items():
-			# hashes dict should look like {'filename':'md5hash'}
-			if _object in list(knownObjects.keys()):
-				processingVars['componentObjectData'][_object]['md5hash'] = _hash
-				for key,value in knownObjects.items():
-					if _object == key:
-						processingVars['filename'] = _object
-						pymmFunctions.insert_fixity(
-							processingVars,
-							eventID,
-							messageDigestAlgorithm = "md5",
-							messageDigestHashValue = _hash,
-							messageDigestSource=objectManifestPath
-							)
+		for item in knownObjects:
+			for _object, _hash in hashes.items():
+				# hashes dict should look like {'filename':'md5hash'}
+				if _object == item.basename:
+					item.md5hash = _hash
+					CurrentIngest.currentTargetObject = item
+					loggers.insert_fixity(
+						CurrentIngest,
+						eventID,
+						messageDigestAlgorithm = "md5",
+						messageDigestHashValue = _hash,
+						messageDigestSource=objectManifestPath
+						)
+				hashedObjects.append(item)
 			else:
 				pass
 
-	return processingVars
+	unhashed = [x for x in knownObjects if x not in hashedObjects]
+	if unhashed != []:
+		print('WARNING! {} are unhashed...')
 
-def report_SIP_object_chars(processingVars,ingestLogBoilerplate):
-	# MOVE THIS TO PYMMFUNCTIONS AND PARSE THE OBJECT DICT THERE
-	if processingVars['databaseReporting'] != True:
-		return processingVars
-	else:
-		processingVars = pymmFunctions.insert_obj_chars(
-			processingVars,
-			ingestLogBoilerplate
-			)
-		return processingVars
+	return processingVars
 
 def main():
 	#########################
@@ -977,11 +977,17 @@ def main():
 
 	# insert a database record for this SIP as an 'intellectual entity'
 	CurrentIngest.currentTargetObject = CurrentIngest
-	loggers.insert_object(
+	thisSip = ingestClasses.ComponentObject(CurrentIngest.packageOutputDir,'Archival Information Package')
+	thisSip.objectCategory = 'intellectual entity'
+	CurrentIngest.InputObject.ComponentObjects.append(thisSip)
+
+	sipDatabaseID = loggers.insert_object(
 		CurrentIngest,
 		objectCategory='intellectual entity',
 		objectCategoryDetail='Archival Information Package'
 		)
+
+	thisSip.databaseID = sipDatabaseID
 
 	# tell the various logs that we are starting
 	CurrentIngest.caller = 'ingestSIP.main()'
@@ -1082,7 +1088,12 @@ def main():
 			"Preservation master"
 			)
 
+		CurrentIngest.currentMetadataDestination = \
+			CurrentIngest.packageMetadataObjects
+
 		get_file_metadata(CurrentIngest)
+
+		CurrentIngest.currentMetadataDestination = None
 
 		loggers.pymm_log(
 			CurrentIngest,
@@ -1091,7 +1102,7 @@ def main():
 			status = 'OK'
 			)
 		accessPath = make_derivs(CurrentIngest)
-		sys.exit()
+
 	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':
 		for _file in source_list:			
@@ -1172,6 +1183,7 @@ def main():
 					accessPath
 					)
 
+	#### SINGLE-REEL DPX INPUT ####
 	elif inputType == 'single reel dpx':
 		processingVars = pymmFunctions.insert_object(
 			processingVars,
@@ -1230,6 +1242,7 @@ def main():
 			isSequence=True
 			)
 
+	#### MULTI-REEL DPX INPUT ####
 	elif inputType == 'multi-reel dpx':
 		masterList = source_list
 		for reel in masterList:
@@ -1322,49 +1335,46 @@ def main():
 	
 	###############################
 	## FLUFF THE SIP FOR STAGING ##
+
 	# set the logging 'filename' to the UUID for the rest of the process
-	processingVars['filename'] = ingestUUID
+	CurrentIngest.currentTargetObject = CurrentIngest
 	# rename SIP from temp to UUID
-	processingVars,_SIP = rename_SIP(processingVars,ingestLogBoilerplate)
+	processingVars,_SIP = rename_SIP(CurrentIngest)
 	# put the package into a UUID parent folder
-	_SIP,ingestLogBoilerplate = envelop_SIP(
-		processingVars,
-		ingestLogBoilerplate
-		)
+	envelop_SIP(CurrentIngest)
+
 	# make a hashdeep manifest for the objects directory
 	objectManifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP,
 		'objects'
 		)
+	CurrentIngest.objectManifestPath = objectManifestPath
 	outcome = (
 		'create hashdeep manifest '
 		'for objects directory at {}'.format(objectManifestPath)
 		)
 	status = 'OK'
-	processingVars['caller'] = 'hashdeep'
+	CurrentIngest.caller = 'hashdeep'
 	if not os.path.isfile(objectManifestPath):
 		status = 'FAIL'
 		outcome = 'could not '+outcome
 	else:
 		pass
-	eventID = pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	eventID = loggers.short_log(
+		CurrentIngest,
 		event = 'message digest calculation',
 		outcome = outcome,
 		status = status
 		)
 	# report data from the object manifest
-	# get back updated processingVars['componentObjectData'] dict
-	processingVars = report_SIP_fixity(processingVars,objectManifestPath,eventID)
-	processingVars['caller'] = None	
+	report_SIP_fixity(CurrentIngest,eventID)
+	CurrentIngest.caller = None	
 	# also add md5 and filename for each object as identifiers
 	# to the pbcore record
-	add_pbcore_md5_location(processingVars)
-	report_SIP_object_chars(
-		processingVars,
-		ingestLogBoilerplate
-		)
+	add_pbcore_md5_location(CurrentIngest)
+	# report characteristics of the SIP's objects
+	if CurrentIngest.ProcessArguments.databaseReporting == True:
+		loggers.insert_obj_chars(CurrentIngest)
 	
 	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH

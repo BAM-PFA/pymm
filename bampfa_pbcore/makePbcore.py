@@ -290,13 +290,13 @@ def add_physical_elements(self,descriptiveJSONpath):
 					"essenceTrackType[text()='{}'"\
 					"]]".format(track)
 					)
-				print(trackXpath)
+				# print(trackXpath)
 				if track == "Video":
 					existingEssenceTrack = physicalInstantiation.xpath(
 						trackXpath,
 						namespaces=self.XPATH_NS_MAP
 						)
-					print(existingEssenceTrack)
+					# print(existingEssenceTrack)
 				elif track == 'Audio':
 					existingEssenceTrack = physicalInstantiation.xpath(
 						trackXpath,
