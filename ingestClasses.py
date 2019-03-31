@@ -116,6 +116,13 @@ class ComponentObject:
 		self.mediaInfoPath = None
 		self.md5hash = None
 
+	def update_path(self,oldPath,newBasePath):
+		newPath = oldPath.replace(
+			os.path.dirname(oldPath),
+			newBasePath
+			)
+		return newPath
+
 class InputObject:
 	'''
 	Defines an object to be ingested.

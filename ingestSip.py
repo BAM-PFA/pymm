@@ -292,12 +292,17 @@ def move_component_object(CurrentIngest):
 		'-L'+CurrentIngest.packageLogDir,
 		'-m'
 		]
+
 	event = 'replication'
 	outcome = 'migrate object to SIP at {}'.format(objectDir)
 	CurrentIngest.caller = 'rsync'
 	try:
 		moveNcopy.main()
 		status = 'OK'
+		currentTargetObject.inputPath = currentTargetObject.update_path(
+			currentTargetObject.inputPath,
+			objectDir
+			)
 	except:
 		status = 'FAIL'
 	loggers.log_event(
@@ -312,54 +317,52 @@ def move_component_object(CurrentIngest):
 
 	return True
 
-def get_file_metadata(ingestLogBoilerplate,processingVars,_type=None):
-	if processingVars['filename'] == '':
-		inputObject = os.path.basename(processingVars['inputPath'])
-	else:
-		inputObject = processingVars['filename']
+def get_file_metadata(CurrentIngest,_type=None):
+	inputPath = CurrentIngest.currentTargetObject.inputPath
+	basename = os.path.basename(inputPath)
 
-	mediainfo = makeMetadata.get_mediainfo_report(
-		processingVars['inputPath'],
-		processingVars['packageMetadataObjects'],
+	mediainfoPath = makeMetadata.get_mediainfo_report(
+		inputPath,
+		CurrentIngest.packageMetadataObjects,
 		_JSON=None,
-		altFileName=inputObject
+		altFileName=basename
 		)
-	if mediainfo:
+	if os.path.isfile(mediainfoPath):
 		event = 'metadata extraction'
 		outcome = ("mediainfo XML report for input file "
 			"written to metadata directory for package.")
-		processingVars['caller'] = '`mediainfo --Output=XML`'
-		pymmFunctions.short_log(
-			processingVars,
-			ingestLogBoilerplate,
+		CurrentIngest.caller = '`mediainfo --Output=XML`'
+		loggers.short_log(
+			CurrentIngest,
 			event,
 			outcome,
 			status='OK'
 			)
-		processingVars['caller'] = None
-		processingVars['componentObjectData'][inputObject]['mediainfoPath'] = mediainfo
+		CurrentIngest.caller = None
+		CurrentIngest.currentTargetObject.mediainfoPath = mediainfoPath
 	
 	if not _type == 'derivative':
 	# don't bother calculating frame md5 for derivs....
 		frameMD5 = makeMetadata.make_frame_md5(
-			processingVars['inputPath'],
-			processingVars['packageMetadataObjects']
+			inputPath,
+			CurrentIngest.packageMetadataObjects
 			)
 		if frameMD5 != False:
 			event = 'message digest calculation'
 			outcome = ("frameMD5 report for input file "
 				"written to metadata directory for package")
-			processingVars['caller'] = processingVars['ffmpeg']+' with option `-f frameMD5`'
-			pymmFunctions.short_log(
-				processingVars,
-				ingestLogBoilerplate,
+			CurrentIngest.caller = \
+				CurrentIngest.ProcessArguments.ffmpegVersion\
+				+' with option `-f frameMD5`'
+			loggers.short_log(
+				CurrentIngest,
 				event,
 				outcome,
 				status='OK'
 				)
-			processingVars['caller'] = None
+			CurrentIngest.caller = None
 
-	return mediainfo
+	return mediainfoPath
 
 def add_pbcore_md5_location(processingVars):
 	'''
@@ -413,6 +416,7 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	'''
 
 	_file = CurrentIngest.currentTargetObject.inputPath
+	print(_file)
 	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
@@ -420,6 +424,7 @@ def add_pbcore_instantiation(CurrentIngest,level):
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 
 	# descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
+	# print(pbcoreReport)
 	pbcoreFilePath = CurrentIngest.InputObject.pbcoreFile
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFilePath)
 
@@ -477,22 +482,23 @@ def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
 
 	return rsPackageDelivery
 
-def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=None):
+def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 	'''
 	Make derivatives based on options declared in config...
 	'''
-	inputPath = processingVars['inputPath']
-	packageObjectDir = processingVars['packageObjectDir']
-	packageLogDir = processingVars['packageLogDir']
-	packageMetadataObjects = processingVars['packageMetadataObjects']
-	makeProres = processingVars['makeProres']
-	ingestType = processingVars['ingestType']
-	resourcespace_deliver = processingVars['resourcespace_deliver']
+	initialObject = CurrentIngest.currentTargetObject
+	inputPath = initialObject.inputPath
+	packageObjectDir = CurrentIngest.packageObjectDir
+	packageLogDir = CurrentIngest.packageLogDir
+	packageMetadataObjects = CurrentIngest.packageMetadataObjects
+	makeProres = CurrentIngest.ProcessArguments.makeProres
+	ingestType = CurrentIngest.ProcessArguments.ingestType
+	resourcespace_deliver = CurrentIngest.ProcessArguments.resourcespace_deliver
 
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
 	rsPackageDelivery = make_rs_package(
-		processingVars['canonicalName'],
+		CurrentIngest.InputObject.canonicalName,
 		rsPackage,
 		resourcespace_deliver
 		)
@@ -532,21 +538,20 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 		deliveredDerivPaths[derivType] = deliveredDeriv
 
 		event = 'migration'
-		processingVars['caller'] = processingVars['ffmpeg']
+		CurrentIngest.caller = CurrentIngest.ProcessArguments.ffmpegVersion
 		if pymmFunctions.is_av(deliveredDeriv):
 			outcome = 'create access copy at {}'.format(deliveredDeriv)
 			status = 'OK'
 		else:
 			outcome = 'could not create access copy'
 			status = 'FAIL'
-		pymmFunctions.log_event(
-			processingVars,
-			ingestLogBoilerplate,
+		loggers.log_event(
+			CurrentIngest,
 			event,
 			outcome,
 			status
 			)
-		processingVars['caller'] = None
+		CurrentIngest.caller = None
 
 	for key,value in deliveredDerivPaths.items():
 		# metadata for each deriv is stored in a folder named
@@ -554,26 +559,28 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 		mdDest = os.path.join(packageMetadataObjects,key)
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
-		origMDdest = processingVars['packageMetadataObjects']
-		processingVars['packageMetadataObjects'] = mdDest
-		processingVars['inputPath'] = value
-		processingVars['filename'] = pymmFunctions.get_base(value)
-		
+
 		if os.path.isfile(value):
-			processingVars = pymmFunctions.insert_object(
-				processingVars,
+			# if the new access file exists, 
+			# create it as a ComponentObject object and
+			# add it to the list in InputObject
+			newObject = ingestClasses.ComponentObject(value)
+			CurrentIngest.InputObject.ComponentObjects.append(newObject)
+			CurrentIngest.currentTargetObject = newObject
+
+			loggers.insert_object(
+				CurrentIngest,
 				objectCategory='file',
 				objectCategoryDetail='access file'
 				)
-			get_file_metadata(\
-				ingestLogBoilerplate,\
-				processingVars,\
-				_type='derivative'\
+			get_file_metadata(
+				CurrentIngest,
+				_type='derivative'
 				)
 		else:
 			pass
 
-		if processingVars['pbcore'] != '':
+		if CurrentIngest.InputObject.pbcoreFile not in ('',None):
 			if derivType in ('resourcespace'):
 				level = 'Access copy'
 			elif derivType in ('proresHQ'):
@@ -582,8 +589,7 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 				level = 'Derivative'
 
 			add_pbcore_instantiation(
-				processingVars,
-				ingestLogBoilerplate,
+				CurrentIngest,
 				level
 				)
 
@@ -593,14 +599,13 @@ def make_derivs(ingestLogBoilerplate,processingVars,rsPackage=None,isSequence=No
 	# * for a folder of files it's the path to the enclosing deriv folder
 	# 
 	# this path is used to make an API call to resourcespace
-	if rsPackageDelivery != '':
+	if rsPackageDelivery not in ('',None):
 		accessPath = rsPackageDelivery
 	else:
 		SIPaccessPath = deliveredDerivPaths['resourcespace']
 		deliveredAccessBase = os.path.basename(SIPaccessPath)
 		accessPath = os.path.join(resourcespace_deliver,deliveredAccessBase)
-	# reset metadata dir
-	processingVars['packageMetadataObjects'] = origMDdest
+
 	return accessPath
 
 def stage_sip(processingVars,ingestLogBoilerplate):
@@ -1158,17 +1163,15 @@ def main():
 			"Preservation master"
 			)
 
-		sys.exit()
-
 		get_file_metadata(CurrentIngest)
-		
+
 		loggers.pymm_log(
-			processingVars,
+			CurrentIngest,
 			event = 'metadata extraction',
 			outcome = 'calculate input file technical metadata',
 			status = 'OK'
 			)
-		accessPath = make_derivs(ingestLogBoilerplate,processingVars)
+		accessPath = make_derivs(CurrentIngest)
 		sys.exit()
 	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':
