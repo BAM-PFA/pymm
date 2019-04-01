@@ -628,7 +628,6 @@ def rename_SIP(CurrentIngest):
 
 	# update the existing filepaths
 	update_tempID(CurrentIngest,tempID,ingestUUID)
-	print()
 	# now rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
 	# now update the log filepath

@@ -333,6 +333,7 @@ class Ingest:
 		'''
 		newLogPath = self.ingestLogPath.replace(target,replacement)
 		os.rename(self.ingestLogPath,newLogPath)
+		self.ingestLogPath = newLogPath
 
 
 		
