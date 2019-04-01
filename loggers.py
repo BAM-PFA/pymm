@@ -315,8 +315,36 @@ def insert_obj_chars(CurrentIngest):
 	- for SIPs report the pbcore, ingestLog
 	- 
 	'''
-	user = CurrentIngest.user
+	user = CurrentIngest.ProcessArguments.user
+	CurrentIngest.currentTargetObject = CurrentIngest
+
+	# First report on the SIP:
+	pbcorePath = CurrentIngest.InputObject.pbcoreFile
+	with open(pbcorePath,'r') as p:
+		try:
+			pbcoreString = p.read()
+		except:
+			pbcoreString = ''
+	with open(CurrentIngest.ingestLogPath,'r') as l:
+		try:
+			ingestLogString = l.read()
+		except:
+			ingestLogString = ''
+	objID = CurrentIngest.databaseID
+	objectCharsInsert = dbReporters.InsertObjChars(
+		user,
+		objID,
+		CurrentIngest.currentTargetObject,
+		mediaInfo=None,
+		ingestLog=ingestLogString,
+		pbcoreText=pbcoreString,
+		pbcoreXML=pbcorePath
+		)
+	objectCharsInsert.report_to_db()
+
+	# Now report on all the stuff in ComponentObjects
 	for _object in CurrentIngest.InputObject.ComponentObjects:
+		CurrentIngest.currentTargetObject = _object
 		category = _object.objectCategory
 		categoryDetail = _object.objectCategoryDetail
 		if category == 'file':
@@ -335,49 +363,51 @@ def insert_obj_chars(CurrentIngest):
 				del objectCharsInsert
 			except:
 				pass
-		elif category == 'intellectual entity'\
-			and categoryDetail == 'Archival Information Package':
-			try:
-				objID = data['databaseID']
-				pbcorePath = processingVars['pbcore']
-				# print(pbcorePath)
-				if os.path.isfile(pbcorePath):
-					with open(pbcorePath,'r') as PB:
-						pbcoreText = PB.read()
-						# print(pbcoreText)
-				else:
-					pbcoreText = None
-					pbcorePath = None
-				ingestLogPath = ingestLogBoilerplate['ingestLogPath']
-				if os.path.isfile(ingestLogPath):
-					with open(ingestLogPath,'r') as IL:
-						ingestLogText = IL.read()
-				else:
-					ingestLogText = None				
-				# theres some mysql permission preventing
-				# load_file(pbcorePath) as BLOB
-				# @fixme ... also, is it worth it?
-				objectCharsInsert = dbReporters.InsertObjChars(
-					user,
-					objID,
-					_object,
-					mediaInfo=None,
-					ingestLog=ingestLogText,
-					pbcoreText=pbcoreText,
-					pbcoreXML=pbcorePath
-					)
-				objectCharsInsert.report_to_db()
-			except:
-				print(
-					"COULDN'T REPORT characteristics FOR {}".format(_object)
-					)
-	return processingVars
+		# elif category == 'intellectual entity'\
+		# 	and categoryDetail == 'Archival Information Package':
+		# 	try:
+		# 		objID = data['databaseID']
+		# 		pbcorePath = processingVars['pbcore']
+		# 		# print(pbcorePath)
+		# 		if os.path.isfile(pbcorePath):
+		# 			with open(pbcorePath,'r') as PB:
+		# 				pbcoreText = PB.read()
+		# 				# print(pbcoreText)
+		# 		else:
+		# 			pbcoreText = None
+		# 			pbcorePath = None
+		# 		ingestLogPath = ingestLogBoilerplate['ingestLogPath']
+		# 		if os.path.isfile(ingestLogPath):
+		# 			with open(ingestLogPath,'r') as IL:
+		# 				ingestLogText = IL.read()
+		# 		else:
+		# 			ingestLogText = None				
+		# 		# theres some mysql permission preventing
+		# 		# load_file(pbcorePath) as BLOB
+		# 		# @fixme ... also, is it worth it?
+		# 		objectCharsInsert = dbReporters.InsertObjChars(
+		# 			user,
+		# 			objID,
+		# 			_object,
+		# 			mediaInfo=None,
+		# 			ingestLog=ingestLogText,
+		# 			pbcoreText=pbcoreText,
+		# 			pbcoreXML=pbcorePath
+		# 			)
+		# 		objectCharsInsert.report_to_db()
+		# 	except:
+		# 		print(
+		# 			"COULDN'T REPORT characteristics FOR {}".format(_object)
+		# 			)
+	
+	CurrentIngest.currentTargetObject = None
+	return True
 
 def get_event_timestamp(eventID,user):
-	connection = database_connection(user)
+	connection = pymmFunctions.database_connection(user)
 	sql = MySQLqueries.getEventTimestamp
 
-	cursor = do_query(
+	cursor = pymmFunctions.do_query(
 		connection,
 		sql,
 		eventID
@@ -404,7 +434,7 @@ def insert_fixity(
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		eventTimestamp = get_event_timestamp(
 			eventID,
-			CurrentIngest.user
+			CurrentIngest.ProcessArguments.user
 			)
 
 		if not eventTimestamp:
@@ -413,7 +443,7 @@ def insert_fixity(
 			eventDateTime = eventTimestamp
 
 		fixityInsert = dbReporters.FixityInsert(
-			CurrentIngest.user,
+			CurrentIngest.ProcessArguments.user,
 			eventID,
 			objectID,
 			objectIDValue,

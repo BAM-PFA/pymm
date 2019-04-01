@@ -154,7 +154,7 @@ def manifest_path(inputPath,_uuid,_type):
 		)
 	return manifestPath
 
-def make_hashdeep_manifest(inputPath,_type):
+def make_hashdeep_manifest(CurrentIngest,_type):
 	'''
 	given a directory, make a hashdeep manifest.
 	chdir into target dir, make a manifest with relative paths, and get out.
@@ -163,7 +163,7 @@ def make_hashdeep_manifest(inputPath,_type):
 	proposal: also store the manifest as a blob
 	(or as text?) in a db entry... yeah.
 	'''
-	_uuid = pymmFunctions.get_base(inputPath)
+	_uuid = CurrentIngest.ingestUUID
 	if _type == 'hashdeep':
 		# there should be a child dir with the same name as inputPath
 		target = os.path.join(inputPath,_uuid)
@@ -172,9 +172,9 @@ def make_hashdeep_manifest(inputPath,_type):
 			return False
 	elif _type == 'objects':
 		# were in the 'real' SIP dir so look for a subdir called 'objects'
-		target = os.path.join(inputPath,_uuid,'objects')
+		target = CurrentIngest.packageObjectDir
 		# we want to write the manifest to the metadata dir
-		inputPath = os.path.join(inputPath,_uuid,'metadata')
+		inputPath = CurrentIngest.packageMetadataDir
 		if not os.path.isdir(target) or not os.path.isdir(inputPath):
 			print("the expected directory structure is not present.") # @logme
 			return False

@@ -195,7 +195,7 @@ class InsertObjChars:
 		self,
 		user,
 		objectID,
-		objectIdentifierValue,
+		_object,
 		mediaInfo = None,
 		ingestLog = None,
 		pbcoreText = None,
@@ -207,7 +207,7 @@ class InsertObjChars:
 		'''
 		self.user = user
 		self.objectID = objectID
-		self.objectIdentifierValue = objectIdentifierValue
+		self.objectIdentifierValue = _object.objectIdentifierValue
 		self.mediaInfo = mediaInfo
 		self.ingestLog = ingestLog
 		self.pbcoreText = pbcoreText

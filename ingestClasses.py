@@ -8,22 +8,11 @@ It should have these properties:
   	dicts from the current ingestSip 
 '''
 # standard library modules
-import json
 import os
-import shutil
-import subprocess
-import sys
-import time
 import uuid
 # local modules:
-from bampfa_pbcore import pbcore, makePbcore
-import concatFiles
-import dbReporters
-import makeDerivs
-import moveNcopy
-import makeMetadata
+from bampfa_pbcore import pbcore
 import pymmFunctions
-import sequenceScanner
 
 class ProcessArguments:
 	"""Defines the variables and so on that exist during an ingest."""
@@ -290,7 +279,7 @@ class Ingest:
 	def create_ingestLog(self):
 		self.ingestLogPath = os.path.join(
 			self.packageLogDir,
-			'{}_{}_ingestfile-log.txt'.format(
+			'{}_{}_ingest-log.txt'.format(
 				self.tempID,
 				pymmFunctions.timestamp('now')
 				)
@@ -302,14 +291,45 @@ class Ingest:
 		'''
 		Update some part of the main working paths for a SIP
 		to include a new portion of a file path
+		Upate the path leading to the logfile
 		'''
-		packageDirs = [
-			self.packageOutputDir,
-			self.packageObjectDir,
-			self.packageMetadataDir,
-			self.packageMetadataObjects,
-			self.packageLogDir
-		]
-		for path in packageDirs:
+		self.packageOutputDir = self.packageOutputDir.replace(
+			target,replacement
+			)
+		self.packageObjectDir = self.packageObjectDir.replace(
+			target,replacement
+			)
+		self.packageMetadataDir = self.packageMetadataDir.replace(
+			target,replacement
+			)
+		self.packageMetadataObjects = self.packageMetadataObjects.replace(
+			target,replacement
+			)
+		self.packageLogDir = self.packageLogDir.replace(
+			target,replacement
+			)
+
+		# packageDirs is just a handy reference for all the paths, 
+		# not a collection of the attributes themselves!!
+		for path in self.packageDirs:
 			path = path.replace(target,replacement)
+
+		print("% "*50)
+		print(self.packageDirs)
+
+		logbase = os.path.dirname(self.ingestLogPath)
+		logbase = logbase.replace(target,replacement)
+		self.ingestLogPath = os.path.join(
+			logbase,
+			os.path.basename(self.ingestLogPath)
+			)
+
+	def update_logfile(self,target,replacement):
+		'''
+		update the log file path and rename the actual file
+		'''
+		newLogPath = self.ingestLogPath.replace(target,replacement)
+		os.rename(self.ingestLogPath,newLogPath)
+
+
 		

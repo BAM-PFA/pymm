@@ -104,39 +104,6 @@ def set_args():
 
 	return parser.parse_args()
 
-def prep_package(tempID,outdir_ingestsip):
-	'''
-	Create a directory structure for a SIP
-	'''
-	packageOutputDir = os.path.join(outdir_ingestsip,tempID)
-	packageObjectDir = os.path.join(packageOutputDir,'objects')
-	packageMetadataDir = os.path.join(packageOutputDir,'metadata')
-	packageMetadataObjects = os.path.join(packageMetadataDir,'objects')
-	packageLogDir = os.path.join(packageMetadataDir,'logs')
-	packageDirs = [
-		packageOutputDir,
-		packageObjectDir,
-		packageMetadataDir,
-		packageMetadataObjects,
-		packageLogDir
-		]
-	
-	# ... SEE IF THE TOP DIR EXISTS ...
-	if os.path.isdir(packageOutputDir):
-		print('''
-			It looks like {} was already ingested.
-			If you want to replace the existing package please delete the package at
-			{}
-			and then try again.
-			'''.format(tempID,packageOutputDir))
-		return False
-
-	# ... AND IF NOT, MAKE THEM ALL
-	for directory in packageDirs:
-		os.mkdir(directory)
-
-	return packageDirs
-
 def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 	ingestLogBoilerplate,processingVars):
 	sys.argv = [
@@ -617,13 +584,14 @@ def stage_sip(processingVars,ingestLogBoilerplate):
 
 	return stagedSIP
 
-def uuid_logfile(ingestLogBoilerplate,_uuid):
+def uuid_logfile(CurrentIngest):
 	'''
 	rename the ingest log w the UUID
 	'''
 	logpath = CurrentIngest.ingestLogPath
 	logbase = os.path.basename(logpath)
 	tempID = CurrentIngest.tempID
+	_uuid = CurrentIngest.ingestUUID
 	newbase = logbase.replace(tempID,_uuid)
 	newpath = logpath.replace(logbase,newbase)
 	os.rename(logpath,newpath)
@@ -632,20 +600,17 @@ def uuid_logfile(ingestLogBoilerplate,_uuid):
 
 	return True
 
-def update_tempID(CurrentIngest):
+def update_tempID(CurrentIngest,tempID,ingestUUID):
 	'''
 	replace filepath instances of temp ID with UUID
 	'''
-	tempID = CurrentIngest.tempID
-	_uuid = CurrentIngest.ingestUUID
-
-	CurrentIngest.update_paths(tempID,_uuid)
+	CurrentIngest.update_paths(tempID,ingestUUID)
 
 	for component in CurrentIngest.InputObject.ComponentObjects:
 		try:
 			component.mediainfoPath = component.mediainfoPath.replace(
 				tempID,
-				_uuid
+				ingestUUID
 				)
 		except:
 			pass
@@ -659,14 +624,16 @@ def rename_SIP(CurrentIngest):
 	pymmOutDir = CurrentIngest.ProcessArguments.outdir_ingestsip
 	packageOutputDir = CurrentIngest.packageOutputDir
 	ingestUUID = CurrentIngest.ingestUUID
+	tempID = CurrentIngest.tempID
 	UUIDpath = os.path.join(pymmOutDir,ingestUUID)
 
 	# update the existing filepaths
-	update_tempID(CurrentIngest)
-	# update the log filepath
-	uuid_logfile(CurrentIngest)
+	update_tempID(CurrentIngest,tempID,ingestUUID)
+	print()
 	# now rename the SIP dir
 	pymmFunctions.rename_dir(packageOutputDir,UUIDpath)
+	# now update the log filepath
+	CurrentIngest.update_logfile(tempID,ingestUUID)
 
 	event = 'filename change'
 	outcome = 'SIP renamed from {} to {}.'.format(
@@ -683,7 +650,7 @@ def rename_SIP(CurrentIngest):
 		)
 	CurrentIngest.caller = None
 
-	return True
+	return UUIDpath
 
 def update_enveloped_paths(CurrentIngest):
 	'''
@@ -694,6 +661,7 @@ def update_enveloped_paths(CurrentIngest):
 	envelopedPath = os.path.join(UUIDpath,_uuid)
 
 	CurrentIngest.update_paths(UUIDpath,envelopedPath)
+	# print(CurrentIngest.packageDirs)
 	CurrentIngest.ingestLogPath = os.path.join(
 		CurrentIngest.packageLogDir,
 		os.path.basename(CurrentIngest.ingestLogPath)
@@ -734,6 +702,8 @@ def envelop_SIP(CurrentIngest):
 		'to facilitate hash manifest/auditing.'
 		)
 	CurrentIngest.caller = 'ingestSIP.envelop_SIP()'
+
+	print(CurrentIngest.packageDirs)
 
 	try:
 		status = "OK"
@@ -864,7 +834,7 @@ def directory_precheck(CurrentIngest):
 def report_SIP_fixity(CurrentIngest,eventID):
 	# parser returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
 	objectManifestPath = CurrentIngest.objectManifestPath
-	parsed,hashes = pymmFunctions.parse_object_manifest(objectManifestPath)
+	parsed,hashes = loggers.parse_object_manifest(objectManifestPath)
 	knownObjects = CurrentIngest.InputObject.ComponentObjects
 	hashedObjects = []
 	if not parsed == True:
@@ -891,7 +861,7 @@ def report_SIP_fixity(CurrentIngest,eventID):
 	if unhashed != []:
 		print('WARNING! {} are unhashed...')
 
-	return processingVars
+	return True
 
 def main():
 	#########################
@@ -977,17 +947,11 @@ def main():
 
 	# insert a database record for this SIP as an 'intellectual entity'
 	CurrentIngest.currentTargetObject = CurrentIngest
-	thisSip = ingestClasses.ComponentObject(CurrentIngest.packageOutputDir,'Archival Information Package')
-	thisSip.objectCategory = 'intellectual entity'
-	CurrentIngest.InputObject.ComponentObjects.append(thisSip)
-
-	sipDatabaseID = loggers.insert_object(
+	loggers.insert_object(
 		CurrentIngest,
 		objectCategory='intellectual entity',
 		objectCategoryDetail='Archival Information Package'
 		)
-
-	thisSip.databaseID = sipDatabaseID
 
 	# tell the various logs that we are starting
 	CurrentIngest.caller = 'ingestSIP.main()'
@@ -1339,13 +1303,13 @@ def main():
 	# set the logging 'filename' to the UUID for the rest of the process
 	CurrentIngest.currentTargetObject = CurrentIngest
 	# rename SIP from temp to UUID
-	processingVars,_SIP = rename_SIP(CurrentIngest)
+	_SIP = rename_SIP(CurrentIngest)
 	# put the package into a UUID parent folder
 	envelop_SIP(CurrentIngest)
 
 	# make a hashdeep manifest for the objects directory
 	objectManifestPath = makeMetadata.make_hashdeep_manifest(
-		_SIP,
+		CurrentIngest,
 		'objects'
 		)
 	CurrentIngest.objectManifestPath = objectManifestPath
@@ -1375,10 +1339,12 @@ def main():
 	# report characteristics of the SIP's objects
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		loggers.insert_obj_chars(CurrentIngest)
+
+	sys.exit()
 	
 	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
-	processingVars['caller'] = 'ingestSIP.main()'
+	CurrentIngest.caller = 'ingestSIP.main()'
 	pymmFunctions.short_log(
 		processingVars,
 		ingestLogBoilerplate,
