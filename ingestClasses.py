@@ -123,6 +123,7 @@ class InputObject:
 		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
+		self.inputParent = os.path.dirname(inputPath)
 		self.basename = os.path.basename(inputPath)
 		self.filename = None
 		# self.databaseID = None
@@ -226,6 +227,8 @@ class Ingest:
 
 		self.includesSubmissionDocumentation = None
 
+		self.accessPath = None
+
 
 		######
 		# LOGGING ATTRIBUTES
@@ -311,11 +314,11 @@ class Ingest:
 
 		# packageDirs is just a handy reference for all the paths, 
 		# not a collection of the attributes themselves!!
+		temp = []
 		for path in self.packageDirs:
 			path = path.replace(target,replacement)
-
-		print("% "*50)
-		print(self.packageDirs)
+			temp.append(path)
+		self.packageDirs = temp
 
 		logbase = os.path.dirname(self.ingestLogPath)
 		logbase = logbase.replace(target,replacement)

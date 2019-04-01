@@ -84,6 +84,9 @@ import dbAccess
 
 def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 	# print(pathForDeletion)
+	inputType = CurrentIngest.InputObject.inputType
+	dontDelete = False
+
 	if reason == "ABORTING":
 		status = 'ABORTING'
 		event = 'ingestion end'
@@ -95,6 +98,36 @@ def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 					pathForDeletion
 					)
 				)
+		# put the things back
+		try:
+			if inputType == 'file':
+				_object = [
+					thing.path for thing in 
+					os.scandir(CurrentIngest.packageObjectDir)
+					if thing.is_file()
+					][0]
+				if os.path.isfile(CurrentIngest.InputObject.inputPath):
+					pass
+				else:
+					shutil.move(
+						_object,
+						CurrentIngest.InputObject.inputParent
+						)
+			else:
+				if not os.path.isdir(CurrentIngest.InputObject.inputPath):
+					os.mkdir(CurrentIngest.InputObject.inputPath)
+				for _object in os.scandir(CurrentIngest.packageObjectDir):
+					if _object.name not in ('resourcespace','prores'):
+						shutil.move(
+							_object.path,
+							CurrentIngest.InputObject.inputPath
+							)
+		except:
+			dontDelete = True
+			outcome = ("COULD NOT REPLACE ORIGINAL COPIES!! \
+				NOT DELETING {}!".format(pathForDeletion))
+			print(outcome)
+
 	elif reason == 'done':
 		status = 'OK'
 		event = 'deletion'
@@ -103,7 +136,7 @@ def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 			"of object at {}".format(pathForDeletion)
 			)
 
-	if os.path.isdir(pathForDeletion):
+	if os.path.isdir(pathForDeletion) and dontDelete == False:
 		try:
 			shutil.rmtree(pathForDeletion)
 		except:
@@ -113,6 +146,7 @@ def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 				". Try deleting it manually?"
 				)
 			print(outcome)
+
 	CurrentIngest.caller = 'pymmFunctions.cleanup_package()'
 	loggers.end_log(
 		CurrentIngest,

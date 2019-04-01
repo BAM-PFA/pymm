@@ -123,7 +123,7 @@ def add_related_physical(self,instantiation,_id=None):
 
 def get_related_physical_ID(self, descriptiveJSONpath):
 	'''
-	Look for a barcode or an accession number for the 
+	Look for a barcode or an accession number or an audio database ID for the 
 	instantiationRelationIdentifier value. 
 	This relies on the FMP barcode output which concatenates
 	all reel barcodes into one string. I should redo this to look for a 
@@ -133,6 +133,7 @@ def get_related_physical_ID(self, descriptiveJSONpath):
 	asset = list(descriptiveJSON.keys())[0]
 	assetBarcode = descriptiveJSON[asset]['metadata']['Barcode']
 	assetAccNo = descriptiveJSON[asset]['metadata']['accFull']
+	audioRecordingID = descriptiveJSON[asset]['metadata']['audioRecordingID']
 
 	if assetAccNo != "":
 		physicalAccXpath = (
@@ -173,6 +174,20 @@ def get_related_physical_ID(self, descriptiveJSONpath):
 			namespaces=self.XPATH_NS_MAP
 			)
 		_id = physicalBarcode[0]
+
+		return _id
+	elif audioRecordingID != '':
+		physicalAudioIDXpath = (
+			"/p:pbcoreDescriptionDocument/p:pbcoreInstantiation/"
+			"p:instantiationIdentifier["
+				"@source='PFA audio recording database ID'"
+				"]/text()"
+			)
+		physicalAudioID = self.descriptionRoot.xpath(
+			physicalAudioIDXpath,
+			namespaces = self.XPATH_NS_MAP
+			)
+		_id = physicalAudioID[0]
 
 		return _id
 

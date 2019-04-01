@@ -554,33 +554,32 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 
 	return accessPath
 
-def stage_sip(processingVars,ingestLogBoilerplate):
+def stage_sip(CurrentIngest):
 	'''
 	Move a prepped SIP to the AIP staging area.
 	'''
-	packageOutputDir = processingVars['packageOutputDir']
-	aip_staging = processingVars['aip_staging']
+	packageOutputDir = CurrentIngest.packageOutputDir
+	aip_staging = CurrentIngest.ProcessArguments.aip_staging
 	# tempID = processingVars['tempID']
-	ingestUUID = processingVars['ingestUUID']
+	ingestUUID = CurrentIngest.ingestUUID
 	sys.argv = 	['',
 				'-i'+packageOutputDir,
 				'-d'+aip_staging,
-				'-L'+os.path.join(aip_staging,ingestUUID,'metadata','logs')]
+				'-L'+os.path.join(aip_staging,ingestUUID,ingestUUID,'metadata','logs')]
 	moveNcopy.main()
 
 	# rename the staged dir
 	stagedSIP = os.path.join(aip_staging,ingestUUID)
 	# UUIDpath = os.path.join(aip_staging,ingestUUID)
 	# pymmFunctions.rename_dir(stagedSIP,UUIDpath)
-	processingVars['caller'] = 'rsync'
+	CurrentIngest.caller = 'rsync'
 	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+		CurrentIngest,
 		event = 'replication',
 		outcome = 'SIP moved to staging area at {}'.format(stagedSIP),
 		status = "OK"
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 
 	return stagedSIP
 
@@ -730,17 +729,19 @@ def envelop_SIP(CurrentIngest):
 
 	return True
 
-def do_cleanup(\
-	processingVars,\
-	cleanupStrategy,\
-	packageVerified,\
-	inputPath,\
-	packageOutputDir,\
-	reason\
+def do_cleanup(
+	CurrentIngest,
+	packageVerified,
+	reason
 	):
-	if cleanupStrategy == True and packageVerified == True:
-		print("Things seem copacetic so let's remove the originals.")
-		pymmFunctions.cleanup_package(processingVars,inputPath,reason)
+	if CurrentIngest.ProcessArguments.cleanupStrategy == True:
+		if packageVerified == True:
+			print("Things seem copacetic so let's remove the originals.")
+			pymmFunctions.cleanup_package(
+				CurrentIngest,
+				inputPath,
+				reason
+				)
 	else:
 		print("Ending, quitting, bye bye.")
 
@@ -1065,7 +1066,7 @@ def main():
 			outcome = 'calculate input file technical metadata',
 			status = 'OK'
 			)
-		accessPath = make_derivs(CurrentIngest)
+		CurrentIngest.accessPath = make_derivs(CurrentIngest)
 
 	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':
@@ -1086,7 +1087,7 @@ def main():
 
 			# check against mediaconch policy
 			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			processingVars,ingestLogBoilerplate = processingVars,ingestLogBoilerplate = move_component_object(
+			processingVars,ingestLogBoilerplate = move_component_object(
 				processingVars,ingestLogBoilerplate
 				)
 			add_pbcore_instantiation(
@@ -1302,14 +1303,15 @@ def main():
 
 	# set the logging 'filename' to the UUID for the rest of the process
 	CurrentIngest.currentTargetObject = CurrentIngest
-	# rename SIP from temp to UUID
+	# rename SIP from temp to UUID; _SIP is the staged UUID path
 	_SIP = rename_SIP(CurrentIngest)
 	# put the package into a UUID parent folder
 	envelop_SIP(CurrentIngest)
 
 	# make a hashdeep manifest for the objects directory
 	objectManifestPath = makeMetadata.make_hashdeep_manifest(
-		CurrentIngest,
+		CurrentIngest.packageObjectDir,
+		CurrentIngest.ingestUUID,
 		'objects'
 		)
 	CurrentIngest.objectManifestPath = objectManifestPath
@@ -1340,36 +1342,39 @@ def main():
 	if CurrentIngest.ProcessArguments.databaseReporting == True:
 		loggers.insert_obj_chars(CurrentIngest)
 
-	sys.exit()
-	
 	#####
 	# AT THIS POINT THE SIP IS FULLY FORMED SO LOG IT AS SUCH
+	CurrentIngest.currentTargetObject = CurrentIngest
 	CurrentIngest.caller = 'ingestSIP.main()'
-	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	loggers.short_log(
+		CurrentIngest,
 		event = 'information package creation',
 		outcome = 'assemble SIP into valid structure',
 		status = 'OK'
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 
 	# recursively set SIP and manifest to 777 file permission
 	chmodded = pymmFunctions.recursive_chmod(_SIP)
-	processingVars['caller'] = 'Python3 os.chmod(x,0o777)'
-	pymmFunctions.short_log(
-		processingVars,
-		ingestLogBoilerplate,
+	CurrentIngest.caller = 'Python3 os.chmod(x,0o777)'
+	if chmodded:
+		status = 'OK'
+	else:
+		status = 'FAIL'
+	loggers.short_log(
+		CurrentIngest,
 		event = 'modification',
 		outcome = 'recursively set SIP and manifest file permissions to 777',
-		status = 'OK'
+		status = status
 		)
-	processingVars['caller'] = None
+	CurrentIngest.caller = None
 
 	packageVerified = False
 	# move the SIP if needed
-	if not aip_staging == outdir_ingestsip:
-		_SIP = stage_sip(processingVars, ingestLogBoilerplate)
+	if not CurrentIngest.ProcessArguments.aip_staging == \
+		CurrentIngest.ProcessArguments.outdir_ingestsip:
+
+		_SIP = stage_sip(CurrentIngest)
 		# audit the hashdeep manifest 
 		objectsVerified = False
 		auditOutcome,objectsVerified = makeMetadata.hashdeep_audit(
@@ -1377,7 +1382,7 @@ def main():
 			objectManifestPath,
 			_type='objects'
 			)
-		processingVars['caller'] = 'hashdeep'
+		CurrentIngest.caller = 'hashdeep'
 		if objectsVerified == True:
 			status = 'OK'
 			outcome = (
@@ -1391,14 +1396,13 @@ def main():
 				"Some files may be missing or damaged!"
 				"Check the hashdeep audit: \n{}".format(auditOutcome)
 				)
-		pymmFunctions.log_event(
-			processingVars,
-			ingestLogBoilerplate,
+		loggers.log_event(
+			CurrentIngest,
 			event = 'fixity check',
 			outcome = outcome,
 			status = status
 			)
-		processingVars['caller'] = None
+		CurrentIngest.caller = None
 
 	else:
 		objectsVerified = True
@@ -1409,80 +1413,77 @@ def main():
 		#     THAT IT DIDN'T PASS MUSTER BUT SAVE IT.
 		# OR MAKE AN "INCONCLUSIVE/WARNING" VERSION?
 		# NOTE: the failure gets logged in the system log,
-		# along with listing reasons for failure
-		# then the abort message is logged in cleanup_package()
+		#   along with listing reasons for failure
+		#   then the abort message is logged in cleanup_package()
 		pymmFunctions.cleanup_package(
-			processingVars,
+			CurrentIngest,
 			_SIP,
 			"ABORTING",
 			validationOutcome
 			)
-		print(ingestResults)
-		return ingestResults
+		CurrentIngest.ingestResults['abortReason'] = validationOutcome
+		print(CurrentIngest.ingestResults)
+		return CurrentIngest
 	else:
-		# set inputPath as the SIP path
-		processingVars['inputPath'] = _SIP
-		processingVars['caller'] = 'pymmFunctions.validate_SIP_structure()'
-		pymmFunctions.log_event(
-			processingVars,
-			ingestLogBoilerplate,
+		CurrentIngest.caller = 'pymmFunctions.validate_SIP_structure()'
+		loggers.log_event(
+			CurrentIngest,
 			event = "validation",
 			outcome = "SIP validated against expected structure",
 			status = "OK"
 			)
-		processingVars['caller'] = None
+		CurrentIngest.caller = None
 
 	if objectsVerified and validSIP:
-		ingestResults['status'] = True
-	ingestResults['ingestUUID'] = ingestUUID
-	ingestResults['accessPath'] = accessPath
+		CurrentIngest.ingestResults['status'] = True
+	CurrentIngest.ingestResults['ingestUUID'] = CurrentIngest.ingestUUID
+	CurrentIngest.ingestResults['accessPath'] = CurrentIngest.accessPath
 
 	# THIS IS THE LAST CALL MADE TO MODIFY ANYTHING IN THE SIP.
-	pymmFunctions.ingest_log(
+	loggers.ingest_log(
+		CurrentIngest,
 		event = 'ingestion end',
 		outcome = 'Submission Information Package verified and staged',
-		status = 'ENDING',
-		**ingestLogBoilerplate
+		status = 'ENDING'
 		)
 
 	# make a hashdeep manifest
 	manifestPath = makeMetadata.make_hashdeep_manifest(
 		_SIP,
+		CurrentIngest.ingestUUID,
 		'hashdeep'
 		)
-	processingVars['caller'] = 'hashdeep'
+	CurrentIngest.caller = 'hashdeep'
 	if os.path.isfile(manifestPath):
-		pymmFunctions.end_log(
-			processingVars,
+		loggers.end_log(
+			CurrentIngest,
 			event = 'message digest calculation',
-			outcome = 'create hashdeep manifest for SIP at {}'.format(manifestPath),
+			outcome = 'create hashdeep manifest '\
+				'for SIP at {}'.format(manifestPath),
 			status = 'OK'
 			)
 	do_cleanup(
-		processingVars,
-		cleanupStrategy,
+		CurrentIngest,
 		objectsVerified,
-		inputPath,
-		packageOutputDir,
 		'done'
 		)
-	processingVars['caller'] = 'ingestSIP.main()'	
-	pymmFunctions.end_log(
-		processingVars,
+	CurrentIngest.caller = 'ingestSIP.main()'	
+	loggers.end_log(
+		CurrentIngest,
 		event = 'ingestion end',
 		outcome = 'Submission Information Package verified and staged',
 		status = 'ENDING'
 		)
 	
-	if ingestResults['status'] == True:
+	if CurrentIngest.ingestResults['status'] == True:
 		print("####\nEVERYTHING WENT GREAT! "
 			"THE SIP IS GOOD TO GO! @{}\n####".format(_SIP))
 	else:
 		print("####\nSOMETHING DID NOT GO AS PLANNED. "
 			"CHECK THE LOG FOR MORE DETAILS!\n####")
 
-	print(ingestResults)
-	return ingestResults
+	print(CurrentIngest.ingestResults)
+	return CurrentIngest
 
 if __name__ == '__main__':
 	main()
