@@ -7,10 +7,14 @@ import sys
 import argparse
 import getpass
 # local modules:
-import pymmFunctions
-import dbAccess as db
-from pymmconfig import pymmconfig
-
+try:
+	import pymmFunctions
+	import dbAccess as db
+	from pymmconfig import pymmconfig
+except:
+	from . import pymmFunctions
+	from . import dbAccess as db
+	from . pymmconfig import pymmconfig
 ##################
 #   INIT ARGS
 #

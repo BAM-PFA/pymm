@@ -11,9 +11,12 @@ import hashlib
 import argparse
 import subprocess
 # local modules:
-import makeMetadata
-import pymmFunctions
-
+try:
+	import makeMetadata
+	import pymmFunctions
+except:
+	from . import makeMetadata
+	from . import pymmFunctions
 def move_n_verify_sip(
 	stagedSIPpath,
 	destination,

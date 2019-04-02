@@ -5,8 +5,13 @@
 import os
 import sys
 # local modules
-import MySQLqueries
-import pymmFunctions
+try:
+	import MySQLqueries
+	import pymmFunctions
+except:
+	from . import MySQLqueries
+	from . import pymmFunctions
+
 
 class EventInsert:
 	'''

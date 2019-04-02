@@ -6,7 +6,11 @@ import sys
 # non-standard libraries
 from lxml import etree
 # local modules
-import dbReporters
+try:
+	import dbReporters
+except:
+	from . import dbReporters
+	
 '''
 This is intended to parse an LTFS index.schema XML file in order to 
 list the contents of the tape in the pymm database. 

@@ -15,7 +15,10 @@ import sys
 # nonstandard libraries:
 # import xmltodict
 # local modules:
-import pymmFunctions
+try:
+	import pymmFunctions
+except:
+	from . import pymmFunctions
 
 def get_mediainfo_report(inputPath,destination,_JSON=None,altFileName=None):
 	# handle an exception for the way 

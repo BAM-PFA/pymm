@@ -17,9 +17,13 @@ import subprocess
 import sys
 import tempfile
 # local modules:
-import makeMetadata
-import pymmFunctions
-
+try:
+	import makeMetadata
+	import pymmFunctions
+except:
+	from . import makeMetadata
+	from . import pymmFunctions
+	
 def parse_args(**kwargs):
 	parser = argparse.ArgumentParser()
 	parser.add_argument(

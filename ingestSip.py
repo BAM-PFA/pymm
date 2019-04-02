@@ -20,17 +20,28 @@ import sys
 import time
 import uuid
 # local modules:
-from bampfa_pbcore import pbcore, makePbcore
-import concatFiles
-import dbReporters
-import ingestClasses
-import loggers
-import makeDerivs
-import moveNcopy
-import makeMetadata
-import pymmFunctions
-import sequenceScanner
-
+try:
+	from bampfa_pbcore import pbcore, makePbcore
+	import concatFiles
+	import dbReporters
+	import ingestClasses
+	import loggers
+	import makeDerivs
+	import moveNcopy
+	import makeMetadata
+	import pymmFunctions
+	import sequenceScanner
+except:
+	from . bampfa_pbcore import pbcore, makePbcore
+	from . import concatFiles
+	from . import dbReporters
+	from . import ingestClasses
+	from . import loggers
+	from . import makeDerivs
+	from . import moveNcopy
+	from . import makeMetadata
+	from . import pymmFunctions
+	from . import sequenceScanner 
 # read in from the config file
 config = pymmFunctions.read_config()
 

@@ -3,9 +3,14 @@
 import os
 
 # local modules
-import dbReporters
-import MySQLqueries
-import pymmFunctions
+try:
+	import dbReporters
+	import MySQLqueries
+	import pymmFunctions
+except:
+	from . import dbReporters
+	from . import MySQLqueries
+	from . import pymmFunctions
 
 def check_pymm_log_exists():
 	# open a local instance of config here in case 

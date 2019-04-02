@@ -11,7 +11,10 @@ except ImportError:
 	print("Try installing mysql connector/python again.")
 	sys.exit()
 # local modules:
-from pymmFunctions import read_config
+try:
+	from pymmFunctions import read_config
+except:
+	from . pymmFunctions import read_config
 # check this out for mysql.connector install: https://gist.github.com/stefanfoulis/902296/f466a8dba3a75c172ac88627298f18eaaf0aa4c3
 # brew install mysql-connector-c
 # pip3 install mysql-connector

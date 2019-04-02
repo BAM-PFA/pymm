@@ -7,9 +7,14 @@ import re
 import subprocess
 import sys
 # local modules:
-import moveNcopy
-import pymmFunctions
-import sequenceScanner
+try:
+	import moveNcopy
+	import pymmFunctions
+	import sequenceScanner
+except:
+	from . import moveNcopy
+	from . import pymmFunctions
+	from . import sequenceScanner
 
 config = pymmFunctions.read_config()
 

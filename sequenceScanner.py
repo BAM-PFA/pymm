@@ -2,9 +2,11 @@
 import os
 from pathlib import Path
 import sys
-
-import pymmFunctions
-
+# local modules
+try:
+	import pymmFunctions
+except:
+	from . import pymmFunctions
 # inputPath = sys.argv[1]
 
 def scan_dir(inputPath):

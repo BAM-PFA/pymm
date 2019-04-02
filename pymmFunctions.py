@@ -24,11 +24,19 @@ import time
 # nonstandard libraries:
 import Levenshtein
 # local modules:
-import dbReporters
-import loggers
-import makeMetadata
-import MySQLqueries
-import sequenceScanner
+try: 
+	import dbReporters
+	import loggers
+	import makeMetadata
+	import MySQLqueries
+	import sequenceScanner
+except:
+	from . import dbReporters
+	from . import loggers
+	from . import makeMetadata
+	from . import MySQLqueries
+	from . import sequenceScanner
+
 
 ################################################################
 # 
@@ -80,8 +88,10 @@ def check_missing_ingest_paths(pymmConfig):
 # PYMM ADMIN / LOGGING STUFF
 #
 # have to import dbAccess after init config to avoid circular error
-import dbAccess
-
+try:
+	import dbAccess
+except:
+	from . import dbAccess
 def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 	# print(pathForDeletion)
 	inputType = CurrentIngest.InputObject.inputType

@@ -11,9 +11,12 @@ It should have these properties:
 import os
 import uuid
 # local modules:
-from bampfa_pbcore import pbcore
-import pymmFunctions
-
+try:
+	from bampfa_pbcore import pbcore
+	import pymmFunctions
+except:
+	from . bampfa_pbcore import pbcore
+	from . import pymmFunctions
 class ProcessArguments:
 	"""Defines the variables and so on that exist during an ingest."""
 	def __init__(
