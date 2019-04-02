@@ -738,7 +738,7 @@ def do_cleanup(
 			print("Things seem copacetic so let's remove the originals.")
 			pymmFunctions.cleanup_package(
 				CurrentIngest,
-				inputPath,
+				CurrentIngest.InputObject.inputPath,
 				reason
 				)
 	else:
