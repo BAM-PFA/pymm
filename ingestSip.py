@@ -171,7 +171,7 @@ def deliver_concat_access(concatPath,accessPath):
 		print('couldnt deliver the concat file')
 		return False
 
-def check_av_status(CurrentIngest):
+# def check_av_status(CurrentIngest):
 	'''
 	Check whether or not a file is recognized as an a/v object.
 	'''
@@ -918,10 +918,10 @@ def main():
 	### - If input has subidrs, see if it is a valid DPX input.
 	### - Check for a valid submission documentation folder
 	if CurrentIngest.InputObject.inputType == 'dir':
-		CurrentIngest.InputObject.source_list = pymmFunctions.list_files(
-			CurrentIngest.InputObject.inputPath
-			)
-		if any(x for x in CurrentIngest.InputObject.source_list if str(x).lower() == 'documentation'):
+		if any(
+			x for x in CurrentIngest.InputObject.ComponentObjects \
+			if x.isDocumentation == True
+			):
 			CurrentIngest.includesSubmissionDocumentation = True
 
 		# precheckPass is True/False conformance to expected folder structure
@@ -976,7 +976,19 @@ def main():
 
 	# reset variables
 	CurrentIngest.caller = None
-	# CurrentIngest.currentTargetObject = None
+
+	# Log any filename outliers as a WARNING
+	if CurrentIngest.InputObject.outlierComponents != []:
+		CurrentIngest.currentTargetObject = CurrentIngest
+		loggers.log_event(
+			CurrentIngest,
+			event = 'validation',
+			outcome = 'test of input filenames '\
+				'reveals these outliers that may not belong: {}'.format(
+					';'.join(CurrentIngest.InputObject.outlierComponents)
+					),
+			status = 'WARNING'
+			)
 
 	# Send existing descriptive metadata JSON to the object metadata directory
 	if CurrentIngest.ProcessArguments.objectJSON != None:
@@ -1017,20 +1029,6 @@ def main():
 		)
 	CurrentIngest.caller = None
 	CurrentIngest.currentTargetObject = None
-
-	if CurrentIngest.InputObject.outlierComponents != []:
-		CurrentIngest.currentTargetObject = CurrentIngest
-		loggers.log_event(
-			CurrentIngest,
-			event = 'validation',
-			outcome = 'test of input filenames '\
-				'reveals these outliers that may not belong: {}'.format(
-					';'.join(CurrentIngest.InputObject.outlierComponents)
-					),
-			status = 'WARNING'
-			)
-
-	# sys.exit()
 	#### END LOGGING / CLEANUP ####
 	###############################
 
@@ -1040,6 +1038,22 @@ def main():
 	  ####################
 	#########################
 	
+	########################
+	# insert the objects
+	for _object in CurrentIngest.InputObject.ComponentObjects:
+		CurrentIngest.currentTargetObject = _object
+
+		loggers.insert_object(
+			CurrentIngest,
+			_object.objectCategory,
+			_object.objectCategoryDetail
+			)
+
+		if _object.avStatus = 
+
+
+
+
 	#########################
 	### SINGLE-FILE INPUT ###
 	if CurrentIngest.InputObject.inputType == 'file':
@@ -1052,8 +1066,7 @@ def main():
 			)
 		# I THINK THS AV TEST IS BUNK AND ALSO MAYBE NOT HELPFUL?
 		# check that input file is actually a/v
-		# CurrentIngest.currentTargetObject = CurrentIngest.InputObject.inputPath
-		# avStatus, AV = check_av_status(CurrentIngest)
+		avStatus, AV = check_av_status(CurrentIngest)
 
 		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
 		move_component_object(CurrentIngest)
@@ -1077,6 +1090,26 @@ def main():
 			status = 'OK'
 			)
 		CurrentIngest.accessPath = make_derivs(CurrentIngest)
+
+	#######################################################
+	### ONE OR MORE FILES WITH SUBMISSION DOCUMENTATION ###
+	elif CurrentIngest.InputObject.inputType == \
+		'discrete file(s) with documentation':
+		for _object in CurrentIngest.InputObject.ComponentObjects:
+			CurrentIngest.currentTargetObject = _object
+
+			if _object.isDocumentation:
+				loggers.insert_object(
+					CurrentIngest,
+					objectCategory = 'intellectual entity',
+					objectCategoryDetail=(
+						'submission documentation folder'
+						' with these contents: {}'.format(
+							'; '.join(self.documentationContents)
+							)
+						)
+					)
+				move_component_object(CurrentIngest)
 
 	### MULTIPLE, DISCRETE AV FILES INPUT ###
 	elif inputType == 'discrete files':

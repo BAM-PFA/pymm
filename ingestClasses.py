@@ -83,7 +83,7 @@ class ComponentObject:
 	'''
 	Defines a single component of an InputObject.
 	Can be a single file,
-		an image sequence directory,
+		an DPX+WAV directory,
 		or a folder of documentation.
 	'''
 	def __init__(self,inputPath,objectCategoryDetail=None):
@@ -98,15 +98,50 @@ class ComponentObject:
 		self.objectIdentifierValue = self.basename
 
 		self.isDocumentation = False
+		sefl.documentationContents = []
+
+		self.set_documentation()
+
+		self.set_av_status()
+
+		if objectCategoryDetail == None:
+			self.set_object_category()
+
+		self.mediainfoPath = None
+		self.md5hash = None
+
+	def set_documentation(self):
 		if self.basename.lower() == 'documentation':
 			self.isDocumentation = True
-		if not self.isDocumentation or (self.objectCategoryDetail == 'Archival Information Package'):
+			self.basename = 'documentation'
+			self.documentationContents = [
+				item for item in os.listdir(self.inputPath)
+				]
+
+		return self
+
+	def set_av_status(self):
+		if not self.isDocumentation:
 			self.avStatus = pymmFunctions.is_av(inputPath)
 		else:
 			self.avStatus = None
 
-		self.mediainfoPath = None
-		self.md5hash = None
+	def set_object_category(self):
+		if self.avStatus in ('VIDEO','AUDIO'):
+			self.objectCategory = 'file'
+			self.objectCategoryDetail = 'preservation master'
+
+		elif self.avStatus == 'DPX':
+			self.objectCategory = 'intellectual entity'
+			self.objectCategoryDetail = 'film scanner output reel'
+
+		elif self.isDocumentation:
+			self.objectCategory = 'intellectual entity'
+			self.objectCategoryDetail = ('submission documentation folder'
+				'with these contents: {}'.format(
+					self.documentationContents
+					)
+				)
 
 	def update_path(self,oldPath,newBasePath):
 		newPath = oldPath.replace(
@@ -129,8 +164,6 @@ class InputObject:
 		self.inputParent = os.path.dirname(inputPath)
 		self.basename = os.path.basename(inputPath)
 		self.filename = None
-		# self.databaseID = None
-		# self.objectIdentifierValue = self.basename
 
 		self.outlierComponents = []
 		self.inputType = self.sniff_input(inputPath)
@@ -165,8 +198,6 @@ class InputObject:
 		# ASSIGNED / MUTABLE DURING PROCESSING
 		self.pbcoreXML = pbcore.PBCoreDocument()
 		self.pbcoreFile = None
-
-		self.source_list = None
 
 	def sniff_input(self,inputPath):
 		'''
