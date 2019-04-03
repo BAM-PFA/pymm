@@ -171,7 +171,7 @@ def deliver_concat_access(concatPath,accessPath):
 		print('couldnt deliver the concat file')
 		return False
 
-# def check_av_status(CurrentIngest):
+def check_av_status(CurrentIngest):
 	'''
 	Check whether or not a file is recognized as an a/v object.
 	'''
@@ -188,7 +188,7 @@ def deliver_concat_access(concatPath,accessPath):
 
 	else:
 		outcome = "{} is a(n) {} object, way to go.".format(
-			CurrentIngest.currentTargetObject,
+			CurrentIngest.currentTargetObject.inputPath,
 			AV
 			)
 		status = "OK"
@@ -199,7 +199,6 @@ def deliver_concat_access(concatPath,accessPath):
 		outcome,
 		status
 		)
-	# processingVars['caller'] = None
 	return avStatus, AV
 
 def mediaconch_check(inputPath,ingestType,ingestLogBoilerplate):
@@ -240,34 +239,36 @@ def move_component_object(CurrentIngest):
 	Put the current component object into the package object folder
 	'''
 	currentTargetObject = CurrentIngest.currentTargetObject
-	objectDir = CurrentIngest.packageObjectDir
-	sys.argv = [
-		'',
-		'-i'+currentTargetObject.inputPath,
-		'-d'+objectDir,
-		'-L'+CurrentIngest.packageLogDir,
-		'-m'
-		]
+	status = 'OK'
+	if not currentTargetObject.ignoreDuringMove == True:
+		objectDir = CurrentIngest.packageObjectDir
+		sys.argv = [
+			'',
+			'-i'+currentTargetObject.inputPath,
+			'-d'+objectDir,
+			'-L'+CurrentIngest.packageLogDir,
+			'-m'
+			]
 
-	event = 'replication'
-	outcome = 'migrate object to SIP at {}'.format(objectDir)
-	CurrentIngest.caller = 'rsync'
-	try:
-		moveNcopy.main()
-		status = 'OK'
-		currentTargetObject.inputPath = currentTargetObject.update_path(
-			currentTargetObject.inputPath,
-			objectDir
+		event = 'replication'
+		outcome = 'migrate object to SIP at {}'.format(objectDir)
+		CurrentIngest.caller = 'rsync'
+		try:
+			moveNcopy.main()
+			status = 'OK'
+			currentTargetObject.inputPath = currentTargetObject.update_path(
+				currentTargetObject.inputPath,
+				objectDir
+				)
+		except:
+			status = 'FAIL'
+		loggers.log_event(
+			CurrentIngest,
+			event,
+			outcome,
+			status
 			)
-	except:
-		status = 'FAIL'
-	loggers.log_event(
-		CurrentIngest,
-		event,
-		outcome,
-		status
-		)
-	CurrentIngest.caller = None
+		CurrentIngest.caller = None
 	if not status == 'FAIL':
 		update_input_path(CurrentIngest)
 
@@ -371,10 +372,10 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	'''
 
 	_file = CurrentIngest.currentTargetObject.inputPath
-	if os.path.basename(_file).lower() in ('dpx','tiff','tif'):
+	if _file.avStatus in ('DPX','TIFF'):
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
-	else:
+	elif _file.avStatus in ('VIDEO','AUDIO'):
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
 
 	# descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
@@ -410,27 +411,26 @@ def add_pbcore_instantiation(CurrentIngest,level):
 
 	return True
 
-def make_rs_package(inputObject,rsPackage,resourcespace_deliver):
+def make_rs_package(inputObject,resourcespace_deliver):
 	'''
 	If the ingest input is a dir of files, put all the `*_access` files
 	into a folder named for the object
 	'''
-	rsPackageDelivery = ''
-	if rsPackage != None:
-		try:
-			_object = os.path.basename(inputObject)
-			rsPackageDelivery = os.path.join(resourcespace_deliver,_object)
+	rsPackageDelivery = None
+	try:
+		_object = os.path.basename(inputObject)
+		rsPackageDelivery = os.path.join(resourcespace_deliver,_object)
 
-			if not os.path.isdir(rsPackageDelivery):
-				try:
-					os.mkdir(rsPackageDelivery)
-					# add a trailing slash for rsync
-					rsPackageDelivery = os.path.join(rsPackageDelivery,'')
-					# print(rsPackageDelivery)
-				except OSError as e:
-					print("OOPS: {}".format(e))
-		except:
-			pass
+		if not os.path.isdir(rsPackageDelivery):
+			try:
+				os.mkdir(rsPackageDelivery)
+				# add a trailing slash for rsync
+				rsPackageDelivery = os.path.join(rsPackageDelivery,'')
+				# print(rsPackageDelivery)
+			except OSError as e:
+				print("OOPS: {}".format(e))
+	except:
+		pass
 	else:
 		pass
 
@@ -451,11 +451,13 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
-	rsPackageDelivery = make_rs_package(
-		CurrentIngest.InputObject.canonicalName,
-		rsPackage,
-		resourcespace_deliver
-		)
+	if rsPackage != None:
+		rsPackageDelivery = make_rs_package(
+			CurrentIngest.InputObject.canonicalName,
+			resourcespace_deliver
+			)
+	else:
+		rsPackageDelivery = None
 
 	# we'll always output a resourcespace access file for video ingests,
 	# so init the derivtypes list with `resourcespace`
@@ -482,7 +484,7 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 					'-d'+derivType,
 					'-L'+packageLogDir
 					]
-		if rsPackageDelivery != '':
+		if rsPackageDelivery != None:
 			sysargs.append('-r'+rsPackageDelivery)
 		if isSequence:
 			sysargs.append('-s')
@@ -823,11 +825,11 @@ def directory_precheck(CurrentIngest):
 	############################
 
 	subs = 0
-	for _object in CurrentIngest.InputObject.source_list:
-		if os.path.isdir(_object):
+	for _object in CurrentIngest.InputObject.ComponentObjects:
+		if os.path.isdir(_object.inputPath):
 			subs += 1
 			print("\nYou have subdirectory(ies) in your input:"
-				"\n({})\n".format(_object))
+				"\n({})\n".format(_object.inputPath))
 
 	if subs > 0:
 		# sequenceScanner checks for DPX folder structure compliance
@@ -1049,10 +1051,53 @@ def main():
 			_object.objectCategoryDetail
 			)
 
-		if _object.avStatus = 
+		if _object.avStatus = 'DPX':
+			# create a component object for each WAV and DPX
+			# component of a film scan
+			for item in os.listdir(_object.inputPath):
+				itemPath = os.path.join(_object.inputPath,item)
+				if os.path.isfile(itemPath):
+					objectCategory = 'file'
+					objectCategoryDetail = 'preservation master audio'
+				elif os.path.isdir(itemPath):
+					objectCategory = 'intellectual entity'
+					objectCategoryDetail = 'preservation master image sequence'
+				subObject = ingestClasses.ComponentObject(
+					itemPath,
+					objectCategoryDetail=objectCategoryDetail
+					)
+				CurrentIngest.InputObject.ComponentObjects.append(subObject)
+				CurrentIngest.currentTargetObject = subObject
 
+				loggers.insert_object(
+					CurrentIngest,
+					subObject.objectCategory,
+					subObject.objectCategoryDetail,
+					ignoreDuringMove = True
+					)
 
+		CurrentIngest.currentTargetObject = _object
 
+		move_component_object(CurrentIngest)
+
+		add_pbcore_instantiation(
+			CurrentIngest,
+			"Preservation master"
+			)
+
+		CurrentIngest.currentMetadataDestination = \
+			CurrentIngest.packageMetadataObjects
+		get_file_metadata(CurrentIngest)
+		CurrentIngest.currentMetadataDestination = None
+		loggers.pymm_log(
+			CurrentIngest,
+			event = 'metadata extraction',
+			outcome = 'calculate input file technical metadata',
+			status = 'OK'
+			)
+
+		if _object.
+		CurrentIngest.accessPath = make_derivs(CurrentIngest)
 
 	#########################
 	### SINGLE-FILE INPUT ###

@@ -53,9 +53,11 @@ def scan_dir(inputPath):
 	outcome = []
 	dirs = []
 	status = None
+	hasDocumentation = False
 	for entry in os.scandir(inputPath):
 		# cast the fiery circle,
-		# summon all the subdirectories for judgement before my wrath
+		# summon all the subdirectories 
+		# for judgement before my wrath
 		if entry.is_dir():
 			dirs.append(entry.path)
 	print(dirs)
@@ -78,17 +80,21 @@ def scan_dir(inputPath):
 		elif len(dirs) > 1:
 			baddies = []
 			for _dir in dirs:
-				for root,subs,_ in os.walk(_dir):
-					# grab any non-dpx dirs to return
-					things = [
-						os.path.join(root,sub) for sub in subs \
-							if sub.lower() not in \
-							('dpx','documentation')
-						]
-					for thing in things:
-						baddies.append(thing)
+				# if there's more than one subdirectory make sure it either:
+				# a) is documentation OR
+				# b) contains a DPX subfolder
+				if not os.path.basename(_dir).lower() == 'documentation':
+					for root,subs,_ in os.walk(_dir):
+						# grab any non-dpx dirs to return
+						badThings = [
+							os.path.join(root,sub) for sub in subs \
+								if sub.lower() != 'dpx'
+							]
+						for thing in badThings:
+							baddies.append(thing)
 			if baddies != []:
-				# there shouldn't be anything other than dpx or documentation folders at this level
+				# there shouldn't be anything other than dpx
+				# or documentation folders at this level
 				status = False
 				for baddie in baddies:
 					outcome.append(baddie)

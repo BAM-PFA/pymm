@@ -86,19 +86,31 @@ class ComponentObject:
 		an DPX+WAV directory,
 		or a folder of documentation.
 	'''
-	def __init__(self,inputPath,objectCategoryDetail=None):
+	def __init__(
+		self,
+		inputPath,
+		objectCategoryDetail=None,
+		ignoreDuringMove=None
+		):
 		######
 		# CORE ATTRIBUTES
 		self.inputPath = inputPath
 		self.basename = os.path.basename(inputPath)
 		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
 		self.objectCategoryDetail = objectCategoryDetail
+		# ignoreDuringMove lets us create ComponentObjects
+		# that are actually components of other ones or are
+		# otherwise NOT something we need/want to move 
+		# independently. prime example is WAV/DPX content of a
+		# ComponentObject that is logged/moved as a whole
+		self.ignoreDuringMove = ignoreDuringMove
+		self.accessPath = None
 
 		self.databaseID = None
 		self.objectIdentifierValue = self.basename
 
 		self.isDocumentation = False
-		sefl.documentationContents = []
+		self.documentationContents = []
 
 		self.set_documentation()
 
@@ -164,15 +176,28 @@ class InputObject:
 		self.inputParent = os.path.dirname(inputPath)
 		self.basename = os.path.basename(inputPath)
 		self.filename = None
+		# this is the "canonical name" of an object, either the 
+		# filename of a single file or the dirname, which should
+		# encompass the whole work/package being ingested.
+		self.canonicalName = os.path.basename(self.inputPath)
 
 		self.outlierComponents = []
 		self.inputType = self.sniff_input(inputPath)
 
 		# Initialize a list to be filled with component objects. 
 		# There should be at least one in the case of a single file input.
-		# Objects should either be AV or a single documentation folder called 
+		# Objects should either be AV or a single documentation folder called
 		# 'documentation'
 		self.ComponentObjects = []
+
+		# self.inputType gets set later during processing to something
+		# more specific. Possible values are:
+		# - 'file'
+		# - 'discrete file(s) with documentation'
+		# - 'single-reel dpx'
+		# - 'single-reel dpx with documentation'
+		# - 'multi-reel dpx'
+		# - 'multi-reel dpx with documentation'
 
 		if self.inputType == 'dir':
 			pymmFunctions.remove_hidden_system_files(inputPath)
@@ -188,11 +213,6 @@ class InputObject:
 				0,
 				ComponentObject(inputPath)
 				)
-
-		# this is the "canonical name" of an object, either the 
-		# filename of a single file or the dirname, which should
-		# encompass the whole work/package being ingested.
-		self.canonicalName = os.path.basename(self.inputPath)
 
 		######
 		# ASSIGNED / MUTABLE DURING PROCESSING
@@ -262,7 +282,7 @@ class Ingest:
 		self.includesSubmissionDocumentation = None
 
 		self.accessPath = None
-
+		self.rsPackage = None
 
 		######
 		# LOGGING ATTRIBUTES
