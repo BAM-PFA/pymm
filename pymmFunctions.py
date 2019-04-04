@@ -29,13 +29,13 @@ try:
 	import loggers
 	import makeMetadata
 	import MySQLqueries
-	import sequenceScanner
+	import directoryScanner
 except:
 	from . import dbReporters
 	from . import loggers
 	from . import makeMetadata
 	from . import MySQLqueries
-	from . import sequenceScanner
+	from . import directoryScanner
 
 
 ################################################################
@@ -353,7 +353,7 @@ def is_av(inputPath):
 				# if it's a folder, see if it's a DPX sequence
 				try:
 					# test for a valid folder structure
-					_is_dpx,details = sequenceScanner.main(inputPath)
+					_is_dpx,details = directoryScanner.main(inputPath)
 				except:
 					print('error scanning input!')
 					return False
@@ -642,7 +642,7 @@ def parse_sequence_parent(inputPath):
 		* startNumber = first sequence number
 		* framerate = embedded by scanner in DPX files
 	'''
-	sequenceScanner.main(inputPath)
+	directoryScanner.main(inputPath)
 	for entry in os.scandir(inputPath):
 		if entry.is_file():
 			if entry.name.endswith('.wav'):

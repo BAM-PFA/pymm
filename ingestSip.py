@@ -30,7 +30,7 @@ try:
 	import moveNcopy
 	import makeMetadata
 	import pymmFunctions
-	import sequenceScanner
+	import directoryScanner
 except:
 	from . bampfa_pbcore import pbcore, makePbcore
 	from . import concatFiles
@@ -41,7 +41,7 @@ except:
 	from . import moveNcopy
 	from . import makeMetadata
 	from . import pymmFunctions
-	from . import sequenceScanner 
+	from . import directoryScanner 
 # read in from the config file
 config = pymmFunctions.read_config()
 
@@ -835,9 +835,9 @@ def directory_precheck(CurrentIngest):
 				"\n({})\n".format(_object.inputPath))
 
 	if subs > 0:
-		# sequenceScanner checks for DPX folder structure compliance
+		# directoryScanner checks for DPX folder structure compliance
 		# and whether it is a single or multi-reel scan
-		result,details = sequenceScanner.main(inputPath)
+		result,details = directoryScanner.main(inputPath)
 		if result != True:
 			precheckPass = (False,"Directory structure and/or file format problems! See: {}".format(details))
 		else:
@@ -1073,16 +1073,15 @@ def main():
 		if _object.objectCategoryDetail == 'film scanner output reel':
 			# create a component object for each WAV and DPX
 			# component of a film scan
-			for item in os.listdir(_object.inputPath):
-				itemPath = os.path.join(_object.inputPath,item)
-				if os.path.isfile(itemPath):
+			for item in os.scandir(_object.inputPath):
+				if os.path.isfile(item.path):
 					objectCategory = 'file'
 					objectCategoryDetail = 'preservation master audio'
-				elif os.path.isdir(itemPath):
+				elif os.path.isdir(item.path):
 					objectCategory = 'intellectual entity'
 					objectCategoryDetail = 'preservation master image sequence'
 				subObject = ingestClasses.ComponentObject(
-					itemPath,
+					item.path,
 					objectCategory=objectCategory,
 					objectCategoryDetail=objectCategoryDetail,
 					topLevelObject = False

@@ -205,13 +205,15 @@ class InputObject:
 
 		if self.inputType == 'dir':
 			pymmFunctions.remove_hidden_system_files(inputPath)
-			for item in os.scandir(self.inputPath):
-				self.ComponentObjects.append(
-					ComponentObject(
-						item.path,
-						topLevelObject=True
+			_,self.inputType = directoryScanner.main(inputPath)
+			if not 'dpx' in self.inputType:
+				for item in os.scandir(self.inputPath):
+					self.ComponentObjects.append(
+						ComponentObject(
+							item.path,
+							topLevelObject=True
+							)
 						)
-					)
 		elif self.inputType == 'file':
 			self.filename = self.basename
 			self.ComponentObjects.insert(

@@ -10,11 +10,11 @@ import sys
 try:
 	import moveNcopy
 	import pymmFunctions
-	import sequenceScanner
+	import directoryScanner
 except:
 	from . import moveNcopy
 	from . import pymmFunctions
-	from . import sequenceScanner
+	from . import directoryScanner
 
 config = pymmFunctions.read_config()
 
