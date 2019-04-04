@@ -1104,36 +1104,37 @@ def main():
 	for _object in CurrentIngest.InputObject.ComponentObjects:
 		if not (_object.isDocumentation):
 			if not _object.objectCategoryDetail == 'film scanner output reel':
-				# we log metadata for the scanner output
-				# components individually
-				add_pbcore_instantiation(
-					CurrentIngest,
-					"Preservation master"
-					)
+				if _object.topLevelObject == True:
+					# we log metadata for the scanner output
+					# components individually
+					add_pbcore_instantiation(
+						CurrentIngest,
+						"Preservation master"
+						)
 
-				CurrentIngest.currentMetadataDestination = \
-					CurrentIngest.packageMetadataObjects
-				get_file_metadata(CurrentIngest)
-				CurrentIngest.currentMetadataDestination = None
-				loggers.pymm_log(
+					CurrentIngest.currentMetadataDestination = \
+						CurrentIngest.packageMetadataObjects
+					get_file_metadata(CurrentIngest)
+					CurrentIngest.currentMetadataDestination = None
+					loggers.pymm_log(
+						CurrentIngest,
+						event = 'metadata extraction',
+						outcome = 'calculate input file technical metadata',
+						status = 'OK'
+						)
+			if _object.topLevelObject == True:
+				# but the access file is made by calling the scanner
+				# output as a whole
+				isSequence,rsPackage = None,None
+				if _object.avStatus == 'DPX':
+					isSequence = True
+				if 'multi' in CurrentIngest.InputObject.inputType:
+					rsPackage = True
+				_object.accessPath = make_derivs(
 					CurrentIngest,
-					event = 'metadata extraction',
-					outcome = 'calculate input file technical metadata',
-					status = 'OK'
+					rsPackage=rsPackage,
+					isSequence=isSequence
 					)
-		if _object.topLevelObject == True:
-			# but the access file is made by calling the scanner
-			# output as a whole
-			isSequence,rsPackage = None,None
-			if _object.avStatus == 'DPX':
-				isSequence = True
-			if 'multi' in CurrentIngest.InputObject.inputType:
-				rsPackage = True
-			_object.accessPath = make_derivs(
-				CurrentIngest,
-				rsPackage=rsPackage,
-				isSequence=isSequence
-				)
 	if CurrentIngest.ProcessArguments.concatChoice == True:
 		av = [
 			x for x in CurrentIngest.InputObject.ComponentObjects \
