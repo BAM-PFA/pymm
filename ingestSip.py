@@ -780,13 +780,13 @@ def directory_precheck(CurrentIngest):
 	status = "OK"
 	event = "deletion"
 	# check again for system files... just in case.
-	for _object in CurrentIngest.InputObject.source_list:
-		if os.path.basename(_object).startswith('.'):
+	for item in os.scandir(inputPath):
+		if item.name.startswith('.'):
 			try:
-				removedFiles.append(_object)
-				os.remove(_object)
+				removedFiles.append(item.name)
+				os.remove(item.path)
 			except:
-				removeFailures.append(_object)
+				removeFailures.append(item.name)
 				print("tried to remove a pesky system file and failed.")
 	
 	if not removeFailures == []:
@@ -1100,6 +1100,7 @@ def main():
 
 		print("MOVING")
 		move_component_object(CurrentIngest)
+		CurrentIngest.currentTargetObject = None
 
 	for _object in CurrentIngest.InputObject.ComponentObjects:
 		if not (_object.isDocumentation):
@@ -1107,6 +1108,7 @@ def main():
 				if _object.topLevelObject == True:
 					# we log metadata for the scanner output
 					# components individually
+					CurrentIngest.currentTargetObject = _object
 					add_pbcore_instantiation(
 						CurrentIngest,
 						"Preservation master"

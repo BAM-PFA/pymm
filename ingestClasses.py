@@ -205,10 +205,10 @@ class InputObject:
 
 		if self.inputType == 'dir':
 			pymmFunctions.remove_hidden_system_files(inputPath)
-			for item in os.listdir(self.inputPath):
+			for item in os.scandir(self.inputPath):
 				self.ComponentObjects.append(
 					ComponentObject(
-						os.path.join(inputPath,item),
+						item.path,
 						topLevelObject=True
 						)
 					)
