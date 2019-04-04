@@ -71,6 +71,7 @@ def scan_dir(inputPath):
 				status = False
 			elif dirname == 'documentation':
 				# if the only subdir is documentation, return that
+
 				status = True
 				outcome = 'documentation'
 			elif dirname == 'dpx':
@@ -118,12 +119,9 @@ def check_formats(inputPath):
 			if not _file.startswith('.'):
 				filePath = os.path.join(root,_file)
 				_,ext = os.path.splitext(_file)
-				parentDir = Path(filePath).resolve().parent
-				parentDir = os.path.basename(str(parentDir))
 				if not ext.lower() in ('.dpx','.wav'):
-					if not parentDir.lower() == 'documentation':
-						result = False
-						badFiles.append(filePath)
+					result = False
+					badFiles.append(filePath)
 
 	return result,badFiles
 
@@ -131,8 +129,6 @@ def check_complexity(inputPath,details):
 	# by the time it gets here the structure and contents 
 	# should be valid, so if there's any subdir other than dpx, 
 	# we can assume that it is a multi-reel scan input
-
-	# NO LONGER TRUE, @fixme
 	if 'discrete' not in details:
 		complexity = 'single reel dpx'
 		for item in os.scandir(inputPath):
@@ -152,8 +148,14 @@ def main(inputPath):
 
 	else:
 		if details == 'documentation':
-			details = 'discrete file(s) with documentation'
-			pass
+			# if there is only one thing in inputPath that isn't the 
+			# documentation folder, then it is a single-file input.
+			# if there are more than one file, we can assume it is 
+			# a multiple discrete file input.
+			if len([x for x in os.scandir(inputPath) if not x.is_dir()]) > 1:
+				details = 'multiple discrete files with documentation'
+			else:
+				details = 'single discrete file with documentation'
 		else:
 			result,details = check_formats(inputPath)
 	print(result,details)

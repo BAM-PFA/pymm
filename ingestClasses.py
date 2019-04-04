@@ -89,8 +89,9 @@ class ComponentObject:
 	def __init__(
 		self,
 		inputPath,
+		objectCategory=None,
 		objectCategoryDetail=None,
-		ignoreDuringMove=None
+		topLevelObject=None
 		):
 		######
 		# CORE ATTRIBUTES
@@ -98,12 +99,12 @@ class ComponentObject:
 		self.basename = os.path.basename(inputPath)
 		self.objectCategory = pymmFunctions.dir_or_file(inputPath)
 		self.objectCategoryDetail = objectCategoryDetail
-		# ignoreDuringMove lets us create ComponentObjects
+		# topLevelObject lets us create ComponentObjects
 		# that are actually components of other ones or are
 		# otherwise NOT something we need/want to move 
 		# independently. prime example is WAV/DPX content of a
 		# ComponentObject that is logged/moved as a whole
-		self.ignoreDuringMove = ignoreDuringMove
+		self.topLevelObject = topLevelObject
 		self.accessPath = None
 
 		self.databaseID = None
@@ -114,6 +115,7 @@ class ComponentObject:
 
 		self.set_documentation()
 
+		self.avStatus = None
 		self.set_av_status()
 
 		if objectCategoryDetail == None:
@@ -134,7 +136,7 @@ class ComponentObject:
 
 	def set_av_status(self):
 		if not self.isDocumentation:
-			self.avStatus = pymmFunctions.is_av(inputPath)
+			self.avStatus = pymmFunctions.is_av(self.inputPath)
 		else:
 			self.avStatus = None
 
@@ -193,7 +195,9 @@ class InputObject:
 		# self.inputType gets set later during processing to something
 		# more specific. Possible values are:
 		# - 'file'
-		# - 'discrete file(s) with documentation'
+		# - 'single discrete file with documentation'
+		# - 'multiple discrete files'
+		# - 'multiple discrete files with documentation'
 		# - 'single-reel dpx'
 		# - 'single-reel dpx with documentation'
 		# - 'multi-reel dpx'
@@ -204,14 +208,18 @@ class InputObject:
 			for item in os.listdir(self.inputPath):
 				self.ComponentObjects.append(
 					ComponentObject(
-						os.path.join(inputPath,item)
+						os.path.join(inputPath,item),
+						topLevelObject=True
 						)
 					)
 		elif self.inputType == 'file':
 			self.filename = self.basename
 			self.ComponentObjects.insert(
 				0,
-				ComponentObject(inputPath)
+				ComponentObject(
+					inputPath,
+					topLevelObject=True
+					)
 				)
 
 		######

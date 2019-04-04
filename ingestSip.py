@@ -115,13 +115,13 @@ def set_args():
 
 	return parser.parse_args()
 
-def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
-	ingestLogBoilerplate,processingVars):
+def concat_access_files(CurrentIngest,wrapper):
+	inputPath = CurrentIngest.accessPath
 	sys.argv = [
 		'',
 		'-i'+inputPath,
-		'-d'+ingestUUID,
-		'-c'+canonicalName,
+		'-d'+CurrentIngest.ingestUUID,
+		'-c'+CurrentIngest.canonicalName,
 		'-w'+wrapper
 		]
 	success = False
@@ -129,16 +129,18 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 
 	origFilename = processingVars['filename']
 	if not success == False:
+		concatObject = ingestClasses.ComponentObject(concattedAccessFile)
+		CurrentIngest.InputObject.ComponentObjects.append(concatObject)
+		CurrentIngest.currentTargetObject = concatObject
 		outcome = (
 			"Component files concatenated "
 			"into an access copy at {}".format(concattedAccessFile)
 			)
 		status = "OK"
+
 		# set the 'filenaeme' to the concat file so we can log in the db
-		origFilename = processingVars['filename']
-		processingVars['filename'] = os.path.basename(concattedAccessFile)
-		processingVars = pymmFunctions.insert_object(
-			processingVars,
+		loggers.insert_object(
+			CurrentIngest,
 			objectCategory='file',
 			objectCategoryDetail='concatenated access file'
 			)
@@ -150,16 +152,15 @@ def concat_access_files(inputPath,ingestUUID,canonicalName,wrapper,\
 			"Here's the output of the attempt:\n{}\n"
 			"".format(concattedAccessFile)
 			)
-	processingVars['caller'] = processingVars['ffmpeg']
-	pymmFunctions.log_event(
-		processingVars,
-		ingestLogBoilerplate,
+	CurrentIngest.caller = CurrentIngest.ProcessArguments.ffmpegVersion
+	loggers.log_event(
+		CurrentIngest,
 		event='creation',
 		outcome=outcome,
 		status=status
 		)
-	processingVars['caller'] = None
-	processingVars['filename'] = origFilename
+	CurrentIngest.caller = None
+	CurrentIngest.currentTargetObject = None
 
 	return concattedAccessFile
 
@@ -240,7 +241,7 @@ def move_component_object(CurrentIngest):
 	'''
 	currentTargetObject = CurrentIngest.currentTargetObject
 	status = 'OK'
-	if not currentTargetObject.ignoreDuringMove == True:
+	if currentTargetObject.topLevelObject == True:
 		objectDir = CurrentIngest.packageObjectDir
 		sys.argv = [
 			'',
@@ -370,13 +371,12 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	from `mediainfo` and add it as an instantiation to the main 
 	PBCore document for the InputObject.
 	'''
-
-	_file = CurrentIngest.currentTargetObject.inputPath
+	_file = CurrentIngest.currentTargetObject
 	if _file.avStatus in ('DPX','TIFF'):
-		_,_,file0 = pymmFunctions.parse_sequence_folder(_file)
+		_,_,file0 = pymmFunctions.parse_sequence_folder(_file.inputPath)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	elif _file.avStatus in ('VIDEO','AUDIO'):
-		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file)
+		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file.inputPath)
 
 	# descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
 	# print(pbcoreReport)
@@ -521,7 +521,10 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			# if the new access file exists, 
 			# create it as a ComponentObject object and
 			# add it to the list in InputObject
-			newObject = ingestClasses.ComponentObject(value)
+			newObject = ingestClasses.ComponentObject(
+				value,
+				
+				)
 			CurrentIngest.InputObject.ComponentObjects.append(newObject)
 			CurrentIngest.currentTargetObject = newObject
 
@@ -838,6 +841,13 @@ def directory_precheck(CurrentIngest):
 		if result != True:
 			precheckPass = (False,"Directory structure and/or file format problems! See: {}".format(details))
 		else:
+			if details == 'single reel dpx':
+				if CurrentIngest.includesSubmissionDocumentation:
+					details = 'single-reel dpx with documentation'
+			elif details == 'multi-reel dpx':
+				if CurrentIngest.includesSubmissionDocumentation:
+					details = 'multi-reel dpx with documentation'
+
 			precheckPass = (True,details)
 	else:
 		precheckPass = (True,'discrete files')
@@ -915,6 +925,11 @@ def main():
 	if not prepped:
 		print(CurrentIngest.ingestResults)
 		return CurrentIngest
+	else:
+		CurrentIngest.accessPath = os.path.join(
+			CurrentIngest.packageObjectDir,
+			'resourcespace'
+			)
 
 	### Run some preparatory checks on directory inputs:
 	### - If input has subidrs, see if it is a valid DPX input.
@@ -944,10 +959,14 @@ def main():
 		
 		elif precheckPass == True:
 			# set inputType to one of:
-			# 'discrete files'
-			# 'discrete file(s) with documentation'
-			# 'single reel dpx'
-			# 'multi-reel dpx'
+			# - 'file'
+			# - 'single discrete file with documentation'
+			# - 'multiple discrete files'
+			# - 'multiple discrete files with documentation'
+			# - 'single-reel dpx'
+			# - 'single-reel dpx with documentation'
+			# - 'multi-reel dpx'
+			# - 'multi-reel dpx with documentation'
 			CurrentIngest.InputObject.inputType = precheckDetails
 
 	#### END SET INGEST ARGS #### 
@@ -1051,7 +1070,7 @@ def main():
 			_object.objectCategoryDetail
 			)
 
-		if _object.avStatus = 'DPX':
+		if _object.objectCategoryDetail == 'film scanner output reel':
 			# create a component object for each WAV and DPX
 			# component of a film scan
 			for item in os.listdir(_object.inputPath):
@@ -1064,7 +1083,9 @@ def main():
 					objectCategoryDetail = 'preservation master image sequence'
 				subObject = ingestClasses.ComponentObject(
 					itemPath,
-					objectCategoryDetail=objectCategoryDetail
+					objectCategory=objectCategory,
+					objectCategoryDetail=objectCategoryDetail,
+					topLevelObject = False
 					)
 				CurrentIngest.InputObject.ComponentObjects.append(subObject)
 				CurrentIngest.currentTargetObject = subObject
@@ -1072,317 +1093,352 @@ def main():
 				loggers.insert_object(
 					CurrentIngest,
 					subObject.objectCategory,
-					subObject.objectCategoryDetail,
-					ignoreDuringMove = True
+					subObject.objectCategoryDetail
 					)
 
 		CurrentIngest.currentTargetObject = _object
 
+		print("MOVING")
 		move_component_object(CurrentIngest)
 
-		add_pbcore_instantiation(
-			CurrentIngest,
-			"Preservation master"
-			)
-
-		CurrentIngest.currentMetadataDestination = \
-			CurrentIngest.packageMetadataObjects
-		get_file_metadata(CurrentIngest)
-		CurrentIngest.currentMetadataDestination = None
-		loggers.pymm_log(
-			CurrentIngest,
-			event = 'metadata extraction',
-			outcome = 'calculate input file technical metadata',
-			status = 'OK'
-			)
-
-		if _object.
-		CurrentIngest.accessPath = make_derivs(CurrentIngest)
-
-	#########################
-	### SINGLE-FILE INPUT ###
-	if CurrentIngest.InputObject.inputType == 'file':
-		# take the first ComponentObject
-		CurrentIngest.currentTargetObject = CurrentIngest.InputObject.ComponentObjects[0]
-		loggers.insert_object(
-			CurrentIngest,
-			objectCategory = 'file',
-			objectCategoryDetail='preservation master'
-			)
-		# I THINK THS AV TEST IS BUNK AND ALSO MAYBE NOT HELPFUL?
-		# check that input file is actually a/v
-		avStatus, AV = check_av_status(CurrentIngest)
-
-		# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
-		move_component_object(CurrentIngest)
-
-		add_pbcore_instantiation(
-			CurrentIngest,
-			"Preservation master"
-			)
-
-		CurrentIngest.currentMetadataDestination = \
-			CurrentIngest.packageMetadataObjects
-
-		get_file_metadata(CurrentIngest)
-
-		CurrentIngest.currentMetadataDestination = None
-
-		loggers.pymm_log(
-			CurrentIngest,
-			event = 'metadata extraction',
-			outcome = 'calculate input file technical metadata',
-			status = 'OK'
-			)
-		CurrentIngest.accessPath = make_derivs(CurrentIngest)
-
-	#######################################################
-	### ONE OR MORE FILES WITH SUBMISSION DOCUMENTATION ###
-	elif CurrentIngest.InputObject.inputType == \
-		'discrete file(s) with documentation':
-		for _object in CurrentIngest.InputObject.ComponentObjects:
-			CurrentIngest.currentTargetObject = _object
-
-			if _object.isDocumentation:
-				loggers.insert_object(
+	for _object in CurrentIngest.InputObject.ComponentObjects:
+		if not (_object.isDocumentation):
+			if not _object.objectCategoryDetail == 'film scanner output reel':
+				# we log metadata for the scanner output
+				# components individually
+				add_pbcore_instantiation(
 					CurrentIngest,
-					objectCategory = 'intellectual entity',
-					objectCategoryDetail=(
-						'submission documentation folder'
-						' with these contents: {}'.format(
-							'; '.join(self.documentationContents)
-							)
-						)
-					)
-				move_component_object(CurrentIngest)
-
-	### MULTIPLE, DISCRETE AV FILES INPUT ###
-	elif inputType == 'discrete files':
-		for _file in source_list:			
-			# set processing variables per file 
-			ingestLogBoilerplate['filename'] = os.path.basename(_file)
-			processingVars['filename'] = os.path.basename(_file)
-			processingVars['inputPath']=\
-				ingestLogBoilerplate['inputPath'] = _file
-			processingVars = pymmFunctions.insert_object(
-				processingVars,
-				objectCategory = 'file',
-				objectCategoryDetail='preservation master'
-				)
-			#######################
-			# check that input file is actually a/v
-			avStatus, AV = check_av_status(CurrentIngest)
-
-			# check against mediaconch policy
-			# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
-			processingVars,ingestLogBoilerplate = move_component_object(
-				processingVars,ingestLogBoilerplate
-				)
-			add_pbcore_instantiation(
-				processingVars,
-				ingestLogBoilerplate,
-				"Preservation master"
-				)
-
-			get_file_metadata(ingestLogBoilerplate,processingVars)
-			pymmFunctions.pymm_log(
-				processingVars,
-				event = 'metadata extraction',
-				outcome = 'calculate input file technical metadata',
-				status = 'OK'
-				)
-			#######################
-			# for a directory input, `accessPath` is 
-			# the containing folder under the one
-			# defined in config.ini
-			accessPath = make_derivs(
-				ingestLogBoilerplate,
-				processingVars,
-				rsPackage=True
-				)
-			
-		# reset the processing variables to the original state 
-		processingVars['filename'] = ''
-		processingVars['inputPath']=\
-			processingVars['inputName'] =\
-			ingestLogBoilerplate['inputPath'] = inputPath
-
-		if concatChoice == True:
-			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
-			SIPaccessPath = os.path.join(
-				processingVars['packageObjectDir'],
-				'resourcespace'
-				)
-			# choose the concatenation wrapper depending on the input type
-			if AV == 'VIDEO':
-				wrapper = 'mp4'
-			elif AV == 'AUDIO':
-				wrapper = 'mp3'
-			else:
-				# this should never be anything other than
-				# AUDIO or VIDEO, but just in case...
-				wrapper = 'mp4' 
-			concatPath = concat_access_files(
-				SIPaccessPath,
-				ingestUUID,
-				canonicalName,
-				wrapper,
-				ingestLogBoilerplate,
-				processingVars
-				)
-			if os.path.exists(concatPath):
-				deliver_concat_access(
-					concatPath,
-					accessPath
+					"Preservation master"
 					)
 
-	#### SINGLE-REEL DPX INPUT ####
-	elif inputType == 'single reel dpx':
-		processingVars = pymmFunctions.insert_object(
-			processingVars,
-			objectCategory='intellectual entity',
-			objectCategoryDetail='film scanner output reel'
-			)
-		for _object in source_list:
-			if os.path.isfile(_object):
-				ingestLogBoilerplate['filename'] = os.path.basename(_object)
-				processingVars['filename'] = os.path.basename(_object)
-				processingVars['inputPath']=\
-					ingestLogBoilerplate['inputPath'] = _object
-				processingVars = pymmFunctions.insert_object(
-					processingVars,
-					objectCategory='file',
-					objectCategoryDetail='preservation master audio'
-					)
-			elif os.path.isdir(_object):
-				# set filename to be the _object path
-				ingestLogBoilerplate['inputPath'] =\
-					processingVars['inputPath'] = _object
-				ingestLogBoilerplate['filename'] =\
-					processingVars['filename'] = "{}_{}".format(
-						canonicalName,
-						os.path.basename(_object)
-						)
-				processingVars = pymmFunctions.insert_object(
-					processingVars,
-					objectCategory='intellectual entity',
-					objectCategoryDetail='preservation master image sequence'
-					)
-
-			get_file_metadata(ingestLogBoilerplate,processingVars)
-			pymmFunctions.pymm_log(
-				processingVars,
-				event = 'metadata extraction',
-				outcome = 'calculate input file technical metadata',
-				status = 'OK'
-				)
-			add_pbcore_instantiation(
-				processingVars,
-				ingestLogBoilerplate,
-				"Preservation master"
-				)
-		ingestLogBoilerplate['filename'] =\
-			processingVars['filename'] = ''
-		ingestLogBoilerplate['inputPath'] =\
-			processingVars['inputPath'] = inputPath
-		processingVars,ingestLogBoilerplate = move_component_object(
-				processingVars,ingestLogBoilerplate
-				)
-		accessPath = make_derivs(
-			ingestLogBoilerplate,
-			processingVars,
-			rsPackage=None,
-			isSequence=True
-			)
-
-	#### MULTI-REEL DPX INPUT ####
-	elif inputType == 'multi-reel dpx':
-		masterList = source_list
-		for reel in masterList:
-			# clear out any preexisting filename value
-			ingestLogBoilerplate['filename'] =\
-				processingVars['filename'] = ''
-			ingestLogBoilerplate['inputPath'] =\
-				processingVars['inputPath'] = reel
-			processingVars['inputName'] = os.path.basename(reel)
-			reel_list = pymmFunctions.list_files(reel)
-
-			processingVars = pymmFunctions.insert_object(
-				processingVars,
-				objectCategory='intellectual entity',
-				objectCategoryDetail='film scanner output reel'
-				)
-			for _object in reel_list:
-				if os.path.isfile(_object):
-					ingestLogBoilerplate['filename'] =\
-						processingVars['filename'] = os.path.basename(_object)
-					processingVars['inputPath']=\
-						ingestLogBoilerplate['inputPath'] = _object
-					processingVars = pymmFunctions.insert_object(
-						processingVars,
-						objectCategory='file',
-						objectCategoryDetail='preservation master audio'
-						)
-				elif os.path.isdir(_object):
-					# set filename to be the _object path
-					ingestLogBoilerplate['inputPath'] =\
-						processingVars['inputPath'] = _object
-					ingestLogBoilerplate['filename'] =\
-						processingVars['filename'] = "{}_{}".format(
-							processingVars['inputName'],
-							os.path.basename(_object)
-							)
-					processingVars = pymmFunctions.insert_object(
-						processingVars,
-						objectCategory='intellectual entity',
-						objectCategoryDetail='preservation master image sequence'
-						)
-
-				get_file_metadata(ingestLogBoilerplate,processingVars)
-				pymmFunctions.pymm_log(
-					processingVars,
+				CurrentIngest.currentMetadataDestination = \
+					CurrentIngest.packageMetadataObjects
+				get_file_metadata(CurrentIngest)
+				CurrentIngest.currentMetadataDestination = None
+				loggers.pymm_log(
+					CurrentIngest,
 					event = 'metadata extraction',
 					outcome = 'calculate input file technical metadata',
 					status = 'OK'
 					)
-				add_pbcore_instantiation(
-					processingVars,
-					ingestLogBoilerplate,
-					"Preservation master"
-					)
-			ingestLogBoilerplate['filename'] =\
-				processingVars['filename'] = ''
-			ingestLogBoilerplate['inputPath'] =\
-				processingVars['inputPath'] = reel
-			processingVars,ingestLogBoilerplate = move_component_object(
-					processingVars,ingestLogBoilerplate
-					)
+		if _object.topLevelObject == True:
+			# but the access file is made by calling the scanner
+			# output as a whole
+			isSequence,rsPackage = None,None
+			if _object.avStatus == 'DPX':
+				isSequence = True
+			if 'multi' in CurrentIngest.InputObject.inputType:
+				rsPackage = True
+			_object.accessPath = make_derivs(
+				CurrentIngest,
+				rsPackage=rsPackage,
+				isSequence=isSequence
+				)
+	if CurrentIngest.ProcessArguments.concatChoice == True:
+		av = [
+			x for x in CurrentIngest.InputObject.ComponentObjects \
+			if x.objectCategory == 'access file'
+			]
+		avType = av[0].avStatus
+		if avType == 'AUDIO':
+			wrapper = 'mp3'
+		elif avType == "VIDEO":
+			wrapper = 'mp4'
 
-			accessPath = make_derivs(
-				ingestLogBoilerplate,
-				processingVars,
-				rsPackage=True,
-				isSequence=True
+		concatPath = concat_access_files(
+			CurrentIngest,
+			wrapper
+			)
+		if os.path.exists(concatPath):
+			deliver_concat_access(
+				concatPath,
+				CurrentIngest.accessPath
 				)
-		if concatChoice == True:
-			# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
-			SIPaccessPath = os.path.join(
-				processingVars['packageObjectDir'],
-				'resourcespace'
-				)
-			concatPath = concat_access_files(
-				SIPaccessPath,
-				ingestUUID,
-				canonicalName,
-				'mp4',
-				ingestLogBoilerplate,
-				processingVars
-				)
-			if os.path.exists(concatPath):
-				deliver_concat_access(
-					concatPath,
-					accessPath
-					)
+
+	#########################
+	### SINGLE-FILE INPUT ###
+	# if CurrentIngest.InputObject.inputType == 'file':
+	# 	# take the first ComponentObject
+	# 	CurrentIngest.currentTargetObject = CurrentIngest.InputObject.ComponentObjects[0]
+	# 	loggers.insert_object(
+	# 		CurrentIngest,
+	# 		objectCategory = 'file',
+	# 		objectCategoryDetail='preservation master'
+	# 		)
+	# 	# I THINK THS AV TEST IS BUNK AND ALSO MAYBE NOT HELPFUL?
+	# 	# check that input file is actually a/v
+	# 	avStatus, AV = check_av_status(CurrentIngest)
+
+	# 	# mediaconch_check(inputPath,ingestType,ingestLogBoilerplate) # @dbme
+	# 	move_component_object(CurrentIngest)
+
+	# 	add_pbcore_instantiation(
+	# 		CurrentIngest,
+	# 		"Preservation master"
+	# 		)
+
+	# 	CurrentIngest.currentMetadataDestination = \
+	# 		CurrentIngest.packageMetadataObjects
+
+	# 	get_file_metadata(CurrentIngest)
+
+	# 	CurrentIngest.currentMetadataDestination = None
+
+	# 	loggers.pymm_log(
+	# 		CurrentIngest,
+	# 		event = 'metadata extraction',
+	# 		outcome = 'calculate input file technical metadata',
+	# 		status = 'OK'
+	# 		)
+	# 	CurrentIngest.accessPath = make_derivs(CurrentIngest)
+
+	# #######################################################
+	# ### ONE OR MORE FILES WITH SUBMISSION DOCUMENTATION ###
+	# elif CurrentIngest.InputObject.inputType == \
+	# 	'discrete file(s) with documentation':
+	# 	for _object in CurrentIngest.InputObject.ComponentObjects:
+	# 		CurrentIngest.currentTargetObject = _object
+
+	# 		if _object.isDocumentation:
+	# 			loggers.insert_object(
+	# 				CurrentIngest,
+	# 				objectCategory = 'intellectual entity',
+	# 				objectCategoryDetail=(
+	# 					'submission documentation folder'
+	# 					' with these contents: {}'.format(
+	# 						'; '.join(self.documentationContents)
+	# 						)
+	# 					)
+	# 				)
+	# 			move_component_object(CurrentIngest)
+
+	# ### MULTIPLE, DISCRETE AV FILES INPUT ###
+	# elif inputType == 'discrete files':
+	# 	for _file in source_list:			
+	# 		# set processing variables per file 
+	# 		ingestLogBoilerplate['filename'] = os.path.basename(_file)
+	# 		processingVars['filename'] = os.path.basename(_file)
+	# 		processingVars['inputPath']=\
+	# 			ingestLogBoilerplate['inputPath'] = _file
+	# 		processingVars = pymmFunctions.insert_object(
+	# 			processingVars,
+	# 			objectCategory = 'file',
+	# 			objectCategoryDetail='preservation master'
+	# 			)
+	# 		#######################
+	# 		# check that input file is actually a/v
+	# 		avStatus, AV = check_av_status(CurrentIngest)
+
+	# 		# check against mediaconch policy
+	# 		# mediaconch_check(_file,ingestType,ingestLogBoilerplate) # @dbme
+	# 		processingVars,ingestLogBoilerplate = move_component_object(
+	# 			processingVars,ingestLogBoilerplate
+	# 			)
+	# 		add_pbcore_instantiation(
+	# 			processingVars,
+	# 			ingestLogBoilerplate,
+	# 			"Preservation master"
+	# 			)
+
+	# 		get_file_metadata(ingestLogBoilerplate,processingVars)
+	# 		pymmFunctions.pymm_log(
+	# 			processingVars,
+	# 			event = 'metadata extraction',
+	# 			outcome = 'calculate input file technical metadata',
+	# 			status = 'OK'
+	# 			)
+	# 		#######################
+	# 		# for a directory input, `accessPath` is 
+	# 		# the containing folder under the one
+	# 		# defined in config.ini
+	# 		accessPath = make_derivs(
+	# 			ingestLogBoilerplate,
+	# 			processingVars,
+	# 			rsPackage=True
+	# 			)
+			
+	# 	# reset the processing variables to the original state 
+	# 	processingVars['filename'] = ''
+	# 	processingVars['inputPath']=\
+	# 		processingVars['inputName'] =\
+	# 		ingestLogBoilerplate['inputPath'] = inputPath
+
+	# 	if concatChoice == True:
+	# 		# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
+	# 		SIPaccessPath = os.path.join(
+	# 			processingVars['packageObjectDir'],
+	# 			'resourcespace'
+	# 			)
+	# 		# choose the concatenation wrapper depending on the input type
+	# 		if AV == 'VIDEO':
+	# 			wrapper = 'mp4'
+	# 		elif AV == 'AUDIO':
+	# 			wrapper = 'mp3'
+	# 		else:
+	# 			# this should never be anything other than
+	# 			# AUDIO or VIDEO, but just in case...
+	# 			wrapper = 'mp4' 
+	# 		concatPath = concat_access_files(
+	# 			SIPaccessPath,
+	# 			ingestUUID,
+	# 			canonicalName,
+	# 			wrapper,
+	# 			ingestLogBoilerplate,
+	# 			processingVars
+	# 			)
+	# 		if os.path.exists(concatPath):
+	# 			deliver_concat_access(
+	# 				concatPath,
+	# 				accessPath
+	# 				)
+
+	# #### SINGLE-REEL DPX INPUT ####
+	# elif inputType == 'single reel dpx':
+	# 	processingVars = pymmFunctions.insert_object(
+	# 		processingVars,
+	# 		objectCategory='intellectual entity',
+	# 		objectCategoryDetail='film scanner output reel'
+	# 		)
+	# 	for _object in source_list:
+	# 		if os.path.isfile(_object):
+	# 			ingestLogBoilerplate['filename'] = os.path.basename(_object)
+	# 			processingVars['filename'] = os.path.basename(_object)
+	# 			processingVars['inputPath']=\
+	# 				ingestLogBoilerplate['inputPath'] = _object
+	# 			processingVars = pymmFunctions.insert_object(
+	# 				processingVars,
+	# 				objectCategory='file',
+	# 				objectCategoryDetail='preservation master audio'
+	# 				)
+	# 		elif os.path.isdir(_object):
+	# 			# set filename to be the _object path
+	# 			ingestLogBoilerplate['inputPath'] =\
+	# 				processingVars['inputPath'] = _object
+	# 			ingestLogBoilerplate['filename'] =\
+	# 				processingVars['filename'] = "{}_{}".format(
+	# 					canonicalName,
+	# 					os.path.basename(_object)
+	# 					)
+	# 			processingVars = pymmFunctions.insert_object(
+	# 				processingVars,
+	# 				objectCategory='intellectual entity',
+	# 				objectCategoryDetail='preservation master image sequence'
+	# 				)
+
+	# 		get_file_metadata(ingestLogBoilerplate,processingVars)
+	# 		pymmFunctions.pymm_log(
+	# 			processingVars,
+	# 			event = 'metadata extraction',
+	# 			outcome = 'calculate input file technical metadata',
+	# 			status = 'OK'
+	# 			)
+	# 		add_pbcore_instantiation(
+	# 			processingVars,
+	# 			ingestLogBoilerplate,
+	# 			"Preservation master"
+	# 			)
+	# 	ingestLogBoilerplate['filename'] =\
+	# 		processingVars['filename'] = ''
+	# 	ingestLogBoilerplate['inputPath'] =\
+	# 		processingVars['inputPath'] = inputPath
+	# 	processingVars,ingestLogBoilerplate = move_component_object(
+	# 			processingVars,ingestLogBoilerplate
+	# 			)
+	# 	accessPath = make_derivs(
+	# 		ingestLogBoilerplate,
+	# 		processingVars,
+	# 		rsPackage=None,
+	# 		isSequence=True
+	# 		)
+
+	# #### MULTI-REEL DPX INPUT ####
+	# elif inputType == 'multi-reel dpx':
+	# 	masterList = source_list
+	# 	for reel in masterList:
+	# 		# clear out any preexisting filename value
+	# 		ingestLogBoilerplate['filename'] =\
+	# 			processingVars['filename'] = ''
+	# 		ingestLogBoilerplate['inputPath'] =\
+	# 			processingVars['inputPath'] = reel
+	# 		processingVars['inputName'] = os.path.basename(reel)
+	# 		reel_list = pymmFunctions.list_files(reel)
+
+	# 		processingVars = pymmFunctions.insert_object(
+	# 			processingVars,
+	# 			objectCategory='intellectual entity',
+	# 			objectCategoryDetail='film scanner output reel'
+	# 			)
+	# 		for _object in reel_list:
+	# 			if os.path.isfile(_object):
+	# 				ingestLogBoilerplate['filename'] =\
+	# 					processingVars['filename'] = os.path.basename(_object)
+	# 				processingVars['inputPath']=\
+	# 					ingestLogBoilerplate['inputPath'] = _object
+	# 				processingVars = pymmFunctions.insert_object(
+	# 					processingVars,
+	# 					objectCategory='file',
+	# 					objectCategoryDetail='preservation master audio'
+	# 					)
+	# 			elif os.path.isdir(_object):
+	# 				# set filename to be the _object path
+	# 				ingestLogBoilerplate['inputPath'] =\
+	# 					processingVars['inputPath'] = _object
+	# 				ingestLogBoilerplate['filename'] =\
+	# 					processingVars['filename'] = "{}_{}".format(
+	# 						processingVars['inputName'],
+	# 						os.path.basename(_object)
+	# 						)
+	# 				processingVars = pymmFunctions.insert_object(
+	# 					processingVars,
+	# 					objectCategory='intellectual entity',
+	# 					objectCategoryDetail='preservation master image sequence'
+	# 					)
+
+	# 			get_file_metadata(ingestLogBoilerplate,processingVars)
+	# 			pymmFunctions.pymm_log(
+	# 				processingVars,
+	# 				event = 'metadata extraction',
+	# 				outcome = 'calculate input file technical metadata',
+	# 				status = 'OK'
+	# 				)
+	# 			add_pbcore_instantiation(
+	# 				processingVars,
+	# 				ingestLogBoilerplate,
+	# 				"Preservation master"
+	# 				)
+	# 		ingestLogBoilerplate['filename'] =\
+	# 			processingVars['filename'] = ''
+	# 		ingestLogBoilerplate['inputPath'] =\
+	# 			processingVars['inputPath'] = reel
+	# 		processingVars,ingestLogBoilerplate = move_component_object(
+	# 				processingVars,ingestLogBoilerplate
+	# 				)
+
+	# 		accessPath = make_derivs(
+	# 			ingestLogBoilerplate,
+	# 			processingVars,
+	# 			rsPackage=True,
+	# 			isSequence=True
+	# 			)
+	# 	if concatChoice == True:
+	# 		# TRY TO CONCATENATE THE ACCESS FILES INTO A SINGLE FILE...
+	# 		SIPaccessPath = os.path.join(
+	# 			processingVars['packageObjectDir'],
+	# 			'resourcespace'
+	# 			)
+	# 		concatPath = concat_access_files(
+	# 			SIPaccessPath,
+	# 			ingestUUID,
+	# 			canonicalName,
+	# 			'mp4',
+	# 			ingestLogBoilerplate,
+	# 			processingVars
+	# 			)
+	# 		if os.path.exists(concatPath):
+	# 			deliver_concat_access(
+	# 				concatPath,
+	# 				accessPath
+	# 				)
 	### END ACTUAL STUFF DOING ###
 	##############################
 	
