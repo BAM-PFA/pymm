@@ -63,6 +63,7 @@ def ingest_log(CurrentIngest,event,outcome,status):
 	filename = CurrentIngest.InputObject.filename
 	ingestLogPath = CurrentIngest.ingestLogPath
 	inputType = CurrentIngest.InputObject.inputType
+	_object = CurrentIngest.currentTargetObject.objectIdentifierValue
 
 
 	if event == "ingestion start":
@@ -94,7 +95,7 @@ def ingest_log(CurrentIngest,event,outcome,status):
 			"Event Type: {} | ".format(event),
 			"Event Outcome: {} | ".format(outcome),
 			"Operator: {} | ".format(user),
-			"Object Canonical Name: {} | ".format(canonicalName)
+			"Current Target Object: {} | ".format(_object)
 			]
 		if filename not in ("",None):
 			name = "Object Filename: {} | ".format(filename)

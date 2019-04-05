@@ -41,7 +41,7 @@ except:
 	from . import moveNcopy
 	from . import makeMetadata
 	from . import pymmFunctions
-	from . import directoryScanner 
+	from . import directoryScanner
 # read in from the config file
 config = pymmFunctions.read_config()
 
@@ -230,7 +230,8 @@ def update_input_path(CurrentIngest):
 	'''
 	objectDir = CurrentIngest.packageObjectDir
 	inputDirPath = os.path.dirname(CurrentIngest.currentTargetObject.inputPath)
-	CurrentIngest.currentTargetObject.inputPath.replace(inputDirPath,objectDir)
+	CurrentIngest.currentTargetObject.inputPath = \
+		CurrentIngest.currentTargetObject.inputPath.replace(inputDirPath,objectDir)
 
 	return True
 
@@ -270,6 +271,9 @@ def move_component_object(CurrentIngest):
 			status
 			)
 		CurrentIngest.caller = None
+	else:
+		print('f f '*30)
+		pass
 	if not status == 'FAIL':
 		update_input_path(CurrentIngest)
 
@@ -760,18 +764,12 @@ def do_cleanup(
 	else:
 		print("Ending, quitting, bye bye.")
 
-def directory_precheck(CurrentIngest):
+def remove_system_files(CurrentIngest):
 	'''
-	Do some checking on directories:
-	- remove system files
-	- check for subdirectories
-	'''
-	precheckPass = (True,'')
-	inputPath = CurrentIngest.InputObject.inputPath
-
-	####################################
 	### HUNT FOR HIDDEN SYSTEM FILES ###
 	### DESTROY!! DESTROY!! DESTROY! ###
+	'''
+	inputPath = CurrentIngest.InputObject.inputPath
 	removedFiles = pymmFunctions.remove_hidden_system_files(
 		inputPath
 		)
@@ -931,44 +929,23 @@ def main():
 			'resourcespace'
 			)
 
-	### Run some preparatory checks on directory inputs:
-	### - If input has subidrs, see if it is a valid DPX input.
-	### - Check for a valid submission documentation folder
+	# Run some checks on directory inputs:
 	if CurrentIngest.InputObject.inputType == 'dir':
-		if any(
-			x for x in CurrentIngest.InputObject.ComponentObjects \
-			if x.isDocumentation == True
-			):
-			CurrentIngest.includesSubmissionDocumentation = True
-
-		# precheckPass is True/False conformance to expected folder structure
-		# precheckDetails is the type of folder structure
-		precheckPass,precheckDetails = directory_precheck(CurrentIngest)
 		
-		if precheckPass == False:
-			CurrentIngest.currentTargetObject = CurrentIngest.ingestUUID
+		if CurrentIngest.InputObject.structureCompliance == False:
+			CurrentIngest.currentTargetObject = CurrentIngest
 			pymmFunctions.cleanup_package(
 				CurrentIngest,
 				CurrentIngest.packageOutputDir,
 				"ABORTING",
-				precheckDetails
+				CurrentIngest.InputObject.inputTypeDetail
 				)
-			CurrentIngest.ingestResults['abortReason'] = precheckDetails
+			CurrentIngest.ingestResults['abortReason'] = CurrentIngest.InputObject.inputTypeDetail
 			print(CurrentIngest.ingestResults)
 			return CurrentIngest
 		
-		elif precheckPass == True:
-			# set inputType to one of:
-			# - 'file'
-			# - 'single discrete file with documentation'
-			# - 'multiple discrete files'
-			# - 'multiple discrete files with documentation'
-			# - 'single-reel dpx'
-			# - 'single-reel dpx with documentation'
-			# - 'multi-reel dpx'
-			# - 'multi-reel dpx with documentation'
-			CurrentIngest.InputObject.inputType = precheckDetails
-
+		else:
+			remove_system_files(CurrentIngest)
 	#### END SET INGEST ARGS #### 
 	#############################
 
@@ -1099,6 +1076,7 @@ def main():
 
 		print("MOVING")
 		move_component_object(CurrentIngest)
+		print(CurrentIngest.currentTargetObject.inputPath)
 		CurrentIngest.currentTargetObject = None
 
 	for _object in CurrentIngest.InputObject.ComponentObjects:
@@ -1132,7 +1110,7 @@ def main():
 				isSequence,rsPackage = None,None
 				if 'dpx' in _object.objectCategoryDetail:
 					isSequence = True
-				if 'multi' in CurrentIngest.InputObject.inputType:
+				if 'multi' in CurrentIngest.InputObject.inputTypeDetail:
 					rsPackage = True
 				_object.accessPath = make_derivs(
 					CurrentIngest,

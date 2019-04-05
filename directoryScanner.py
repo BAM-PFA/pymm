@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 import sys
+import time
 # local modules
 try:
 	import pymmFunctions
@@ -38,8 +39,6 @@ def scan_dir(inputPath):
 
 	return a tuple: (True/False, [list of illegal subdirs])
 	'''
-	# system files should already be removed by the time it's called but...
-	pymmFunctions.remove_hidden_system_files(inputPath)
 	# remove any empty folders
 	for root,dirs,files in os.walk(inputPath):
 		for _dir in dirs:
@@ -106,12 +105,13 @@ def scan_dir(inputPath):
 
 	return status,outcome
 
-def check_formats(inputPath):
+def check_for_bad_files(inputPath):
 	'''
 	This function is insane and duplicates efforts in pymmFunctions.
 	What is it even trying to accomplish?
 	@fixme
 	'''
+	print(time.time())
 	badFiles = []
 	result = True
 	for root, dirs, files in os.walk(inputPath):
@@ -123,6 +123,14 @@ def check_formats(inputPath):
 					result = False
 					badFiles.append(filePath)
 
+	print(time.time())
+	if badFiles == []:
+		badFiles = None
+	else:
+		badFiles = (
+			"You have the following files in your DPX folder that "
+			"don't appear to belong:\n{}".format(' \n'.join(badFiles))
+			)
 	return result,badFiles
 
 def check_complexity(inputPath,details):
@@ -142,27 +150,51 @@ def check_complexity(inputPath,details):
 	return complexity
 
 def main(inputPath):
-	result,details = scan_dir(inputPath)
+	'''
+	Check whether the inputPath meets one of several possible configurations:
+	- single discrete file with documentation
+	- multiple discrete files
+	- multiple discrete files with documentation
+	- single reel dpx (and possible wav)
+	- multi-reel dpx (and possible wavs)
+	- a single dpx directory (the 'actual' dpx folder)
+	'''
+	# first look for the special case of a simple dpx input
+	if os.path.basename(inputPath).lower() == 'dpx':
+		is_dpx = pymmFunctions.is_dpx_sequence(inputPath)
+		if is_dpx:
+			result = 'dpx'
+			details = None
+		else:
+			result = False
+			details = ''
+	else:
+		result,details = scan_dir(inputPath)
 	if not result:
 		pass
 
-	else:
-		if details == 'documentation':
-			# if there is only one thing in inputPath that isn't the 
-			# documentation folder, then it is a single-file input.
-			# if there are more than one file, we can assume it is 
-			# a multiple discrete file input.
-			if len([x for x in os.scandir(inputPath) if not x.is_dir()]) > 1:
-				details = 'multiple discrete files with documentation'
-			else:
-				details = 'single discrete file with documentation'
-		else:
-			result,details = check_formats(inputPath)
+	print('d '*40)
 	print(result,details)
 
-	if result == True:
+	if details == 'documentation':
+		# if there is only one thing in inputPath that isn't the 
+		# documentation folder, then it is a single-file input.
+		# if there are more than one file, we can assume it is 
+		# a multiple discrete file input.
+		if len([x for x in os.scandir(inputPath) if not x.is_dir()]) > 1:
+			details = 'multiple discrete files with documentation'
+		else:
+			details = 'single discrete file with documentation'
+	elif details != None:
+		result,badFiles = check_for_bad_files(inputPath)
+
+	print(result,details)
+
+	if (result and details) and not badFiles:
 		complexity = check_complexity(inputPath,details)
 		details = complexity
+	else:
+		details = badFiles
 	return result,details
 
 if __name__ == "__main__":

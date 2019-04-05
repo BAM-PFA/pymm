@@ -354,22 +354,28 @@ def is_av(inputPath):
 				try:
 					# test for a valid folder structure
 					_is_dpx,details = directoryScanner.main(inputPath)
+					print(_is_dpx)
+					print(details)
 				except:
 					print('error scanning input!')
 					return False
 				if _is_dpx:
-					# if it passes the folder structure, run
-					# mediainfo to check for dpx contents
-					status, failedDirs = test_sequence_reel_dir(inputPath)
-					if status == True:
+					if _is_dpx == 'dpx':
 						print('THIS IS AN IMAGE SEQUENCE!')
 						return 'DPX'
 					else:
-						print(
-							'ERROR: check out this list of '
-							'problem directories: {}'.format(failedDirs)
-							)
-						return False
+						# if it passes the folder structure, run
+						# mediainfo to check for dpx contents
+						status, failedDirs = test_sequence_reel_dir(inputPath)
+						if status == True:
+							print('THIS IS AN IMAGE SEQUENCE!')
+							return 'DPX'
+						else:
+							print(
+								'ERROR: check out this list of '
+								'problem directories: {}'.format(failedDirs)
+								)
+							return False
 				else:
 					return None
 			else:

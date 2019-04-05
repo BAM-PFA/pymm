@@ -9,6 +9,7 @@ It should have these properties:
 '''
 # standard library modules
 import os
+import sys
 import uuid
 # local modules:
 try:
@@ -176,8 +177,9 @@ class InputObject:
 	or mixed (a/v material with supplementary documentation)
 	'''
 	def __init__(self,inputPath):
-		######
+		##################
 		# CORE ATTRIBUTES
+		##################
 		self.inputPath = inputPath
 		self.inputParent = os.path.dirname(inputPath)
 		self.basename = os.path.basename(inputPath)
@@ -189,15 +191,15 @@ class InputObject:
 
 		self.outlierComponents = []
 		self.inputType = self.sniff_input(inputPath)
-
+		self.inputTypeDetail = None
+		self.structureCompliance = None
 		# Initialize a list to be filled with component objects. 
 		# There should be at least one in the case of a single file input.
 		# Objects should either be AV or a single documentation folder called
 		# 'documentation'
 		self.ComponentObjects = []
 
-		# self.inputType gets set later during processing to something
-		# more specific. Possible values are:
+		# self.inputTypeDetail possible values are:
 		# - 'file'
 		# - 'single discrete file with documentation'
 		# - 'multiple discrete files'
@@ -209,8 +211,17 @@ class InputObject:
 
 		if self.inputType == 'dir':
 			pymmFunctions.remove_hidden_system_files(inputPath)
-			_,self.inputType = directoryScanner.main(inputPath)
-			if not 'dpx' in self.inputType:
+			self.structureCompliance,self.inputTypeDetail = directoryScanner.main(inputPath)
+			# print(self.structureCompliance,self.inputTypeDetail)
+			# sys.exit()
+			if not self.structureCompliance:
+				self.inputTypeDetail = (
+					"Directory structure and/or file format problems!"
+					" See: {}".format(self.inputTypeDetail)
+					)
+			if not 'dpx' in self.inputTypeDetail:
+				# Note: film scanner component parts get added 
+				# later during ingestSip
 				for item in os.scandir(self.inputPath):
 					self.ComponentObjects.append(
 						ComponentObject(
@@ -219,7 +230,6 @@ class InputObject:
 							)
 						)
 			else:
-				# film scanner component parts get added during ingestSip
 				self.ComponentObjects.append(
 					ComponentObject(
 						inputPath,
@@ -227,6 +237,7 @@ class InputObject:
 						)
 					)
 		elif self.inputType == 'file':
+			self.inputTypeDetail = 'file'
 			self.filename = self.basename
 			self.ComponentObjects.insert(
 				0,
@@ -236,8 +247,9 @@ class InputObject:
 					)
 				)
 
-		######
+		#######################################
 		# ASSIGNED / MUTABLE DURING PROCESSING
+		#######################################
 		self.pbcoreXML = pbcore.PBCoreDocument()
 		self.pbcoreFile = None
 
@@ -250,8 +262,6 @@ class InputObject:
 		'''
 		# returns 'dir' or 'file'
 		inputType = pymmFunctions.dir_or_file(inputPath)
-		print(":: :: "*50)
-		print(inputType)
 		if inputType == 'dir':
 			# filename sanity check
 			goodNames,badList = pymmFunctions.check_for_outliers(inputPath)
@@ -281,8 +291,9 @@ class Ingest:
           or something like a WAV+DPX sequence folder.
 	'''
 	def __init__(self,ProcessArguments,InputObject):
-		######
+		##################
 		# CORE ATTRIBUTES
+		##################
 		self.ingestUUID = str(uuid.uuid4())
 		self.databaseID = None
 		self.objectIdentifierValue = self.ingestUUID
@@ -293,8 +304,9 @@ class Ingest:
 		self.InputObject = InputObject
 		self.tempID = pymmFunctions.get_temp_id(self.InputObject.inputPath)
 
-		######
+		#################
 		# SIP ATTRIBUTES
+		#################
 		self.packageOutputDir = None
 		self.packageObjectDir = None
 		self.packageMetadataDir = None
@@ -304,12 +316,18 @@ class Ingest:
 		self.objectManifestPath = None
 
 		self.includesSubmissionDocumentation = None
+		if any(
+			x for x in self.InputObject.ComponentObjects \
+			if x.isDocumentation == True
+			):
+			self.includesSubmissionDocumentation = True
 
 		self.accessPath = None
 		self.rsPackage = None
 
-		######
+		#####################
 		# LOGGING ATTRIBUTES
+		#####################
 		self.ingestResults = {
 			'status':False,
 			'abortReason':'',
@@ -317,8 +335,9 @@ class Ingest:
 			}
 		self.ingestLogPath = None
 
-		######
+		########################################
 		# VARIABLES ASSIGNED DURING PROCESSING
+		########################################
 		self.caller = None
 		self.currentTargetObject = None
 		self.currentTargetObjectPath = None
