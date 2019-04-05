@@ -264,7 +264,7 @@ def hashdeep_audit(inputPath,manifestPath,_type=None):
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
 	print(inputPath)
-	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
+	md5File = os.path.basename(inputPath)+"_frame-md5.txt"
 	frameMd5Filepath = os.path.join(metadataDir,md5File)
 	av = pymmFunctions.is_av(inputPath)
 	returnValue = False
