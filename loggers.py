@@ -63,7 +63,10 @@ def ingest_log(CurrentIngest,event,outcome,status):
 	filename = CurrentIngest.InputObject.filename
 	ingestLogPath = CurrentIngest.ingestLogPath
 	inputType = CurrentIngest.InputObject.inputType
-	_object = CurrentIngest.currentTargetObject.objectIdentifierValue
+	try:
+		_object = CurrentIngest.currentTargetObject.inputPath
+	except:
+		_object = CurrentIngest.currentTargetObject.objectIdentifierValue
 
 
 	if event == "ingestion start":

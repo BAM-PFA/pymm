@@ -684,7 +684,7 @@ def parse_sequence_folder(dpxPath):
 		files.append(entry.path)
 	files.sort()
 	file0 = files[0]
-	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	match = re.search(r'(.*)(\d{6}|\d{7})(\..+)',file0)
 	fileBase = match.group(1)
 	startNumber = match.group(2)
 	numberOfDigits = len(startNumber)

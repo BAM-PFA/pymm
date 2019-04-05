@@ -141,6 +141,7 @@ class ComponentObject:
 		if not self.isDocumentation:
 			self.avStatus = pymmFunctions.is_av(self.inputPath)
 			print("avStatus "*50)
+			print(self.inputPath)
 			print(self.avStatus)
 		else:
 			self.avStatus = None

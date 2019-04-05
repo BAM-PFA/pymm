@@ -230,8 +230,14 @@ def update_input_path(CurrentIngest):
 	'''
 	objectDir = CurrentIngest.packageObjectDir
 	inputDirPath = os.path.dirname(CurrentIngest.currentTargetObject.inputPath)
+	if 'dpx' in CurrentIngest.InputObject.inputTypeDetail:
+		if not CurrentIngest.currentTargetObject.topLevelObject:
+			inputDirPath = os.path.dirname(inputDirPath)
 	CurrentIngest.currentTargetObject.inputPath = \
 		CurrentIngest.currentTargetObject.inputPath.replace(inputDirPath,objectDir)
+
+	# print("|| || "*100)
+	# print(CurrentIngest.currentTargetObject.inputPath)
 
 	return True
 
@@ -272,7 +278,6 @@ def move_component_object(CurrentIngest):
 			)
 		CurrentIngest.caller = None
 	else:
-		print('f f '*30)
 		pass
 	if not status == 'FAIL':
 		update_input_path(CurrentIngest)
@@ -302,6 +307,17 @@ def get_file_metadata(CurrentIngest,_type=None):
 			)
 		CurrentIngest.caller = None
 		CurrentIngest.currentTargetObject.mediainfoPath = mediainfoPath
+	else:
+		event = 'metadata extraction'
+		outcome = ("Could/did not mediainfo XML report "
+			" for input file to metadata directory for package.")
+		CurrentIngest.caller = '`mediainfo --Output=XML`'
+		loggers.short_log(
+			CurrentIngest,
+			event,
+			outcome,
+			status='FAIL'
+			)
 	
 	if not _type == 'derivative':
 	# don't bother calculating frame md5 for derivs....
@@ -322,7 +338,20 @@ def get_file_metadata(CurrentIngest,_type=None):
 				outcome,
 				status='OK'
 				)
-			CurrentIngest.caller = None
+		else:
+			event = 'message digest calculation'
+			outcome = ("Could/did not write frameMD5 report "
+				"for input file to metadata directory for package")
+			CurrentIngest.caller = \
+				CurrentIngest.ProcessArguments.ffmpegVersion\
+				+' with option `-f frameMD5`'
+			loggers.short_log(
+				CurrentIngest,
+				event,
+				outcome,
+				status='FAIL'
+				)
+		CurrentIngest.caller = None
 
 	return mediainfoPath
 
@@ -376,6 +405,8 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	PBCore document for the InputObject.
 	'''
 	_file = CurrentIngest.currentTargetObject
+	print("OO ^^ OO "*200)
+	print(_file.avStatus)
 	if _file.avStatus in ('DPX','TIFF') and not _file.topLevelObject:
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file.inputPath)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
@@ -1082,25 +1113,24 @@ def main():
 	for _object in CurrentIngest.InputObject.ComponentObjects:
 		if not (_object.isDocumentation):
 			if not _object.objectCategoryDetail == 'film scanner output reel':
-				if _object.topLevelObject == True:
-					# we log metadata for the scanner output
-					# components individually
-					CurrentIngest.currentTargetObject = _object
-					add_pbcore_instantiation(
-						CurrentIngest,
-						"Preservation master"
-						)
+				# we log metadata for the scanner output
+				# components individually
+				CurrentIngest.currentTargetObject = _object
+				add_pbcore_instantiation(
+					CurrentIngest,
+					"Preservation master"
+					)
 
-					CurrentIngest.currentMetadataDestination = \
-						CurrentIngest.packageMetadataObjects
-					get_file_metadata(CurrentIngest)
-					CurrentIngest.currentMetadataDestination = None
-					loggers.pymm_log(
-						CurrentIngest,
-						event = 'metadata extraction',
-						outcome = 'calculate input file technical metadata',
-						status = 'OK'
-						)
+				CurrentIngest.currentMetadataDestination = \
+					CurrentIngest.packageMetadataObjects
+				get_file_metadata(CurrentIngest)
+				CurrentIngest.currentMetadataDestination = None
+				loggers.pymm_log(
+					CurrentIngest,
+					event = 'metadata extraction',
+					outcome = 'calculate input file technical metadata',
+					status = 'OK'
+					)
 			else:
 				pass
 			if _object.topLevelObject == True:
@@ -1108,20 +1138,21 @@ def main():
 				# output as a whole
 				CurrentIngest.currentTargetObject = _object
 				isSequence,rsPackage = None,None
-				if 'dpx' in _object.objectCategoryDetail:
+				if _object.objectCategoryDetail == 'film scanner output reel':
 					isSequence = True
 				if 'multi' in CurrentIngest.InputObject.inputTypeDetail:
 					rsPackage = True
-				_object.accessPath = make_derivs(
-					CurrentIngest,
-					rsPackage=rsPackage,
-					isSequence=isSequence
-					)
+				# _object.accessPath = make_derivs(
+				# 	CurrentIngest,
+				# 	rsPackage=rsPackage,
+				# 	isSequence=isSequence
+				# 	)
 			CurrentIngest.currentTargetObject = _object
 			# NOTE: THIS CHECK IS TOTALLY REDUNDANT (I THINK??)
 
 			check_av_status(CurrentIngest)
 		CurrentIngest.currentTargetObject = None
+	sys.exit()
 
 	if CurrentIngest.ProcessArguments.concatChoice == True:
 		av = [

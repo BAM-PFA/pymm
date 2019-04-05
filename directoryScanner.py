@@ -159,6 +159,9 @@ def main(inputPath):
 	- multi-reel dpx (and possible wavs)
 	- a single dpx directory (the 'actual' dpx folder)
 	'''
+	badFiles = None
+	result = None
+	details = None
 	# first look for the special case of a simple dpx input
 	if os.path.basename(inputPath).lower() == 'dpx':
 		is_dpx = pymmFunctions.is_dpx_sequence(inputPath)
@@ -172,9 +175,6 @@ def main(inputPath):
 		result,details = scan_dir(inputPath)
 	if not result:
 		pass
-
-	print('d '*40)
-	print(result,details)
 
 	if details == 'documentation':
 		# if there is only one thing in inputPath that isn't the 
