@@ -179,10 +179,10 @@ def check_av_status(CurrentIngest):
 	avStatus = False
 	event = 'format identification'
 	CurrentIngest.caller = 'pymmFunctions.is_av()'
-	AV = pymmFunctions.is_av(CurrentIngest.currentTargetObject)
+	AV = pymmFunctions.is_av(CurrentIngest.currentTargetObject.inputPath)
 	if not AV:
 		outcome = "WARNING: {} is not recognized as an a/v object.".format(
-			CurrentIngest.currentTargetObject
+			CurrentIngest.currentTargetObject.inputPath
 			)
 		status = "WARNING"
 		print(outcome)
@@ -372,7 +372,7 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	PBCore document for the InputObject.
 	'''
 	_file = CurrentIngest.currentTargetObject
-	if _file.avStatus in ('DPX','TIFF'):
+	if _file.avStatus in ('DPX','TIFF') and not _file.topLevelObject:
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file.inputPath)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
 	elif _file.avStatus in ('VIDEO','AUDIO'):
@@ -1123,11 +1123,14 @@ def main():
 						outcome = 'calculate input file technical metadata',
 						status = 'OK'
 						)
+			else:
+				pass
 			if _object.topLevelObject == True:
 				# but the access file is made by calling the scanner
 				# output as a whole
+				CurrentIngest.currentTargetObject = _object
 				isSequence,rsPackage = None,None
-				if _object.avStatus == 'DPX':
+				if 'dpx' in _object.objectCategoryDetail:
 					isSequence = True
 				if 'multi' in CurrentIngest.InputObject.inputType:
 					rsPackage = True
@@ -1136,6 +1139,12 @@ def main():
 					rsPackage=rsPackage,
 					isSequence=isSequence
 					)
+			CurrentIngest.currentTargetObject = _object
+			# NOTE: THIS CHECK IS TOTALLY REDUNDANT (I THINK??)
+
+			check_av_status(CurrentIngest)
+		CurrentIngest.currentTargetObject = None
+
 	if CurrentIngest.ProcessArguments.concatChoice == True:
 		av = [
 			x for x in CurrentIngest.InputObject.ComponentObjects \

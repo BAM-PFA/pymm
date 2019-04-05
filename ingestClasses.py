@@ -13,9 +13,11 @@ import uuid
 # local modules:
 try:
 	from bampfa_pbcore import pbcore
+	import directoryScanner
 	import pymmFunctions
 except:
 	from . bampfa_pbcore import pbcore
+	from . import directoryScanner
 	from . import pymmFunctions
 class ProcessArguments:
 	"""Defines the variables and so on that exist during an ingest."""
@@ -137,6 +139,8 @@ class ComponentObject:
 	def set_av_status(self):
 		if not self.isDocumentation:
 			self.avStatus = pymmFunctions.is_av(self.inputPath)
+			print("avStatus "*50)
+			print(self.avStatus)
 		else:
 			self.avStatus = None
 
@@ -214,6 +218,14 @@ class InputObject:
 							topLevelObject=True
 							)
 						)
+			else:
+				# film scanner component parts get added during ingestSip
+				self.ComponentObjects.append(
+					ComponentObject(
+						inputPath,
+						topLevelObject=True
+						)
+					)
 		elif self.inputType == 'file':
 			self.filename = self.basename
 			self.ComponentObjects.insert(
@@ -238,6 +250,8 @@ class InputObject:
 		'''
 		# returns 'dir' or 'file'
 		inputType = pymmFunctions.dir_or_file(inputPath)
+		print(":: :: "*50)
+		print(inputType)
 		if inputType == 'dir':
 			# filename sanity check
 			goodNames,badList = pymmFunctions.check_for_outliers(inputPath)
