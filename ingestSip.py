@@ -121,17 +121,26 @@ def concat_access_files(CurrentIngest,wrapper):
 		'',
 		'-i'+inputPath,
 		'-d'+CurrentIngest.ingestUUID,
-		'-c'+CurrentIngest.canonicalName,
+		'-c'+CurrentIngest.InputObject.canonicalName,
 		'-w'+wrapper
 		]
 	success = False
 	concattedAccessFile,success = concatFiles.main()
 
-	origFilename = processingVars['filename']
 	if not success == False:
-		concatObject = ingestClasses.ComponentObject(concattedAccessFile)
+		concatObject = ingestClasses.ComponentObject(
+			concattedAccessFile,
+			objectCategoryDetail='access file',
+			topLevelObject=False
+			)
 		CurrentIngest.InputObject.ComponentObjects.append(concatObject)
 		CurrentIngest.currentTargetObject = concatObject
+		concatObject.metadataDirectory = \
+			os.path.join(
+				CurrentIngest.packageMetadataObjects,
+				'resourcespace'
+				)
+		get_file_metadata(CurrentIngest,objectCategoryDetail='access file')
 		outcome = (
 			"Component files concatenated "
 			"into an access copy at {}".format(concattedAccessFile)
@@ -164,9 +173,9 @@ def concat_access_files(CurrentIngest,wrapper):
 
 	return concattedAccessFile
 
-def deliver_concat_access(concatPath,accessPath):
+def deliver_concat_access(CurrentIngest,concatPath):
 	try:
-		shutil.copy2(concatPath,accessPath)
+		shutil.copy2(concatPath,CurrentIngest.rsPackageDelivery)
 		return True
 	except:
 		print('couldnt deliver the concat file')
@@ -284,13 +293,15 @@ def move_component_object(CurrentIngest):
 
 	return True
 
-def get_file_metadata(CurrentIngest,_type=None):
-	inputPath = CurrentIngest.currentTargetObject.inputPath
+def get_file_metadata(CurrentIngest,objectCategoryDetail=None):
+	_object = CurrentIngest.currentTargetObject
+	inputPath = _object.inputPath
 	basename = os.path.basename(inputPath)
+	mdDest = _object.metadataDirectory
 
 	mediainfoPath = makeMetadata.get_mediainfo_report(
 		inputPath,
-		CurrentIngest.currentMetadataDestination,
+		mdDest,
 		_JSON=None,
 		altFileName=basename
 		)
@@ -306,7 +317,7 @@ def get_file_metadata(CurrentIngest,_type=None):
 			status='OK'
 			)
 		CurrentIngest.caller = None
-		CurrentIngest.currentTargetObject.mediainfoPath = mediainfoPath
+		_object.mediainfoPath = mediainfoPath
 	else:
 		event = 'metadata extraction'
 		outcome = ("Could/did not mediainfo XML report "
@@ -319,11 +330,11 @@ def get_file_metadata(CurrentIngest,_type=None):
 			status='FAIL'
 			)
 	
-	if not _type == 'derivative':
+	if not objectCategoryDetail == 'access file':
 	# don't bother calculating frame md5 for derivs....
 		frameMD5 = makeMetadata.make_frame_md5(
 			inputPath,
-			CurrentIngest.packageMetadataObjects
+			_object.metadataDirectory
 			)
 		if frameMD5 != False:
 			event = 'message digest calculation'
@@ -491,6 +502,7 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			CurrentIngest.InputObject.canonicalName,
 			resourcespace_deliver
 			)
+		CurrentIngest.rsPackageDelivery = rsPackageDelivery
 	else:
 		rsPackageDelivery = None
 
@@ -548,7 +560,6 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 		# metadata for each deriv is stored in a folder named
 		# for the derivtype under the main Metadata folder
 		mdDest = os.path.join(packageMetadataObjects,key)
-		CurrentIngest.currentMetadataDestination = mdDest
 		if not os.path.isdir(mdDest):
 			os.mkdir(mdDest)
 
@@ -558,8 +569,10 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			# add it to the list in InputObject
 			newObject = ingestClasses.ComponentObject(
 				value,
-				
+				objectCategoryDetail='access file',
+				topLevelObject=False
 				)
+			newObject.metadataDirectory = mdDest
 			CurrentIngest.InputObject.ComponentObjects.append(newObject)
 			CurrentIngest.currentTargetObject = newObject
 
@@ -568,27 +581,9 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 				objectCategory='file',
 				objectCategoryDetail='access file'
 				)
-			get_file_metadata(
-				CurrentIngest,
-				_type='derivative'
-				)
+
 		else:
 			pass
-
-		CurrentIngest.currentMetadataDestination = None
-
-		if CurrentIngest.InputObject.pbcoreFile not in ('',None):
-			if derivType in ('resourcespace'):
-				level = 'Access copy'
-			elif derivType in ('proresHQ'):
-				level = 'Mezzanine'
-			else:
-				level = 'Derivative'
-
-			add_pbcore_instantiation(
-				CurrentIngest,
-				level
-				)
 
 	# get a return value that is the path to the access copy(ies) delivered
 	#   to a destination defined in config.ini
@@ -1105,26 +1100,38 @@ def main():
 
 		CurrentIngest.currentTargetObject = _object
 
-		print("MOVING")
+		# print("MOVING")
 		move_component_object(CurrentIngest)
-		print(CurrentIngest.currentTargetObject.inputPath)
+		# print(CurrentIngest.currentTargetObject.inputPath)
 		CurrentIngest.currentTargetObject = None
 
 	for _object in CurrentIngest.InputObject.ComponentObjects:
-		if not (_object.isDocumentation):
+		if not _object.isDocumentation:
 			if not _object.objectCategoryDetail == 'film scanner output reel':
 				# we log metadata for the scanner output
 				# components individually
+				if _object.objectCategoryDetail == 'access file':
+					level = 'Access file'
+					_object.metadataDirectory = \
+						os.path.join(
+							CurrentIngest.packageMetadataObjects,
+							'resourcespace'
+							)
+				else:
+					level = 'Preservation master'
+					_object.metadataDirectory = \
+						CurrentIngest.packageMetadataObjects
+				
 				CurrentIngest.currentTargetObject = _object
 				add_pbcore_instantiation(
 					CurrentIngest,
-					"Preservation master"
+					level
 					)
-
-				CurrentIngest.currentMetadataDestination = \
-					CurrentIngest.packageMetadataObjects
-				get_file_metadata(CurrentIngest)
-				CurrentIngest.currentMetadataDestination = None
+				
+				get_file_metadata(
+					CurrentIngest,
+					_object.objectCategoryDetail
+					)
 				# note: this logs status = OK whether or not it is actually ok.
 				loggers.pymm_log(
 					CurrentIngest,
@@ -1149,16 +1156,14 @@ def main():
 					isSequence=isSequence
 					)
 			CurrentIngest.currentTargetObject = _object
-			# NOTE: THIS CHECK IS TOTALLY REDUNDANT (I THINK??)
+			check_av_status(CurrentIngest) ## IS THIS REDUNDANT? IT AT LEAST LOGS THE CHECK... @fixme
 
-			check_av_status(CurrentIngest)
 		CurrentIngest.currentTargetObject = None
-	sys.exit()
 
 	if CurrentIngest.ProcessArguments.concatChoice == True:
 		av = [
 			x for x in CurrentIngest.InputObject.ComponentObjects \
-			if x.objectCategory == 'access file'
+			if x.objectCategoryDetail == 'access file'
 			]
 		avType = av[0].avStatus
 		if avType == 'AUDIO':
@@ -1172,10 +1177,9 @@ def main():
 			)
 		if os.path.exists(concatPath):
 			deliver_concat_access(
-				concatPath,
-				CurrentIngest.accessPath
+				CurrentIngest,
+				concatPath
 				)
-
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

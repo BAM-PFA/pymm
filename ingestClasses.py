@@ -124,7 +124,12 @@ class ComponentObject:
 		if objectCategoryDetail == None:
 			self.set_object_category()
 
+		# the path to the directory where per-object
+		# metadata is stored (mediainfo & frame-md5 reports)
+		self.metadataDirectory = None
+		# the path to a mediainfo xml output file for the object
 		self.mediainfoPath = None
+		# md5 hash for the object
 		self.md5hash = None
 
 	def set_documentation(self):
@@ -140,9 +145,6 @@ class ComponentObject:
 	def set_av_status(self):
 		if not self.isDocumentation:
 			self.avStatus = pymmFunctions.is_av(self.inputPath)
-			print("avStatus "*50)
-			print(self.inputPath)
-			print(self.avStatus)
 		else:
 			self.avStatus = None
 
@@ -323,8 +325,14 @@ class Ingest:
 			):
 			self.includesSubmissionDocumentation = True
 
-		self.accessPath = None
-		self.rsPackage = None
+		# this is the access file path within the SIP
+		self.accessPath = None 
+		# this is True/False whether to make a directory
+		# to contain the access files
+		self.rsPackage = None 
+		# this is the deliverable path for access files
+		# (ie, for ResourceSpace to grab)
+		self.rsPackageDelivery = None 
 
 		#####################
 		# LOGGING ATTRIBUTES
