@@ -186,9 +186,9 @@ def main(inputPath):
 		# if there are more than one file, we can assume it is 
 		# a multiple discrete file input.
 		if len([x for x in os.scandir(inputPath) if not x.is_dir()]) > 1:
-			details = 'multiple discrete files with documentation'
+			details = 'multiple discrete files'
 		else:
-			details = 'single discrete file with documentation'
+			details = 'single discrete file'
 	elif details != None:
 		result,badFiles = check_for_bad_files(inputPath)
 

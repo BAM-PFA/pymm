@@ -437,8 +437,6 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	elif _file.avStatus in ('VIDEO','AUDIO'):
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(_file.inputPath)
 
-	# descriptiveJSONpath = CurrentIngest.ProcessArguments.objectJSON
-	# print(pbcoreReport)
 	pbcoreFilePath = CurrentIngest.InputObject.pbcoreFile
 	pbcoreXML = pbcore.PBCoreDocument(pbcoreFilePath)
 
@@ -485,7 +483,6 @@ def make_rs_package(inputObject,resourcespace_deliver):
 				os.mkdir(rsPackageDelivery)
 				# add a trailing slash for rsync
 				rsPackageDelivery = os.path.join(rsPackageDelivery,'')
-				# print(rsPackageDelivery)
 			except OSError as e:
 				print("OOPS: {}".format(e))
 	except:
@@ -718,7 +715,7 @@ def update_enveloped_paths(CurrentIngest):
 	envelopedPath = os.path.join(UUIDpath,_uuid)
 
 	CurrentIngest.update_paths(UUIDpath,envelopedPath)
-	# print(CurrentIngest.packageDirs)
+
 	CurrentIngest.ingestLogPath = os.path.join(
 		CurrentIngest.packageLogDir,
 		os.path.basename(CurrentIngest.ingestLogPath)
@@ -740,7 +737,7 @@ def update_enveloped_paths(CurrentIngest):
 	if os.path.isfile(CurrentIngest.ingestLogPath):
 		pass
 	else:
-		print("OOOOO HHHHHH NNNN OOOOO")
+		print("THE INGEST LOG PATH DID NOT GET UPDATED!!")
 
 	return True
 
@@ -760,8 +757,6 @@ def envelop_SIP(CurrentIngest):
 		)
 	CurrentIngest.caller = 'ingestSIP.envelop_SIP()'
 
-	print(CurrentIngest.packageDirs)
-
 	try:
 		status = "OK"
 		parentSlice = os.path.join(pymmOutDir,UUIDslice)
@@ -775,7 +770,7 @@ def envelop_SIP(CurrentIngest):
 		update_enveloped_paths(CurrentIngest)
 	except:
 		status = "FAIL"
-		print("Something no bueno.")
+		print("Something no bueno. DID NOT BAG THE SIP")
 
 	loggers.short_log(
 		CurrentIngest,
@@ -861,35 +856,6 @@ def remove_system_files(CurrentIngest):
 
 		else:
 			pass
-	### END HIDDEN FILE HUNT ###
-	############################
-
-	subs = 0
-	for _object in CurrentIngest.InputObject.ComponentObjects:
-		if os.path.isdir(_object.inputPath):
-			subs += 1
-			print("\nYou have subdirectory(ies) in your input:"
-				"\n({})\n".format(_object.inputPath))
-
-	if subs > 0:
-		# directoryScanner checks for DPX folder structure compliance
-		# and whether it is a single or multi-reel scan
-		result,details = directoryScanner.main(inputPath)
-		if result != True:
-			precheckPass = (False,"Directory structure and/or file format problems! See: {}".format(details))
-		else:
-			if details == 'single reel dpx':
-				if CurrentIngest.includesSubmissionDocumentation:
-					details = 'single-reel dpx with documentation'
-			elif details == 'multi-reel dpx':
-				if CurrentIngest.includesSubmissionDocumentation:
-					details = 'multi-reel dpx with documentation'
-
-			precheckPass = (True,details)
-	else:
-		precheckPass = (True,'discrete files')
-
-	return precheckPass
 
 def report_SIP_fixity(CurrentIngest,eventID):
 	# parser returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
@@ -1119,15 +1085,15 @@ def main():
 					subObject.objectCategoryDetail
 					)
 
+		# reset the currentTargetObject
 		CurrentIngest.currentTargetObject = _object
 
-		# print("MOVING")
 		move_component_object(CurrentIngest)
-		# print(CurrentIngest.currentTargetObject.inputPath)
+
 		CurrentIngest.currentTargetObject = None
-	# sys.exit()
 
 	for _object in CurrentIngest.InputObject.ComponentObjects:
+		CurrentIngest.currentTargetObject = _object
 		if not _object.isDocumentation:
 			if not _object.objectCategoryDetail == 'film scanner output reel':
 				# we log metadata for the scanner output
@@ -1144,7 +1110,6 @@ def main():
 					_object.metadataDirectory = \
 						CurrentIngest.packageMetadataObjects
 				
-				CurrentIngest.currentTargetObject = _object
 				add_pbcore_instantiation(
 					CurrentIngest,
 					level
@@ -1166,7 +1131,6 @@ def main():
 			if _object.topLevelObject == True:
 				# but the access file is made by calling the scanner
 				# output as a whole
-				CurrentIngest.currentTargetObject = _object
 				isSequence,rsPackage = None,None
 				if _object.objectCategoryDetail == 'film scanner output reel':
 					isSequence = True
@@ -1179,7 +1143,6 @@ def main():
 					rsPackage=rsPackage,
 					isSequence=isSequence
 					)
-			CurrentIngest.currentTargetObject = _object
 			check_av_status(CurrentIngest) ## IS THIS REDUNDANT? IT AT LEAST LOGS THE CHECK... @fixme
 
 		CurrentIngest.currentTargetObject = None
@@ -1207,6 +1170,7 @@ def main():
 
 	if CurrentIngest.includesSubmissionDocumentation:
 		deliver_documentation(CurrentIngest)
+
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

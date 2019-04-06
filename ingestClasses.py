@@ -217,8 +217,6 @@ class InputObject:
 		if self.inputType == 'dir':
 			pymmFunctions.remove_hidden_system_files(inputPath)
 			self.structureCompliance,self.inputTypeDetail = directoryScanner.main(inputPath)
-			# print(self.structureCompliance,self.inputTypeDetail)
-			# sys.exit()
 			if not self.structureCompliance:
 				self.inputTypeDetail = (
 					"Directory structure and/or file format problems!"
@@ -235,22 +233,33 @@ class InputObject:
 							)
 						)
 			else:
-				for item in os.scandir(self.inputPath):
-					if item.name.lower() == 'documentation':
+				if 'multi' in self.inputTypeDetail:
+					for item in os.scandir(self.inputPath):
 						self.ComponentObjects.append(
 							ComponentObject(
 								item.path,
 								topLevelObject=True
 								)
 							)
-					else:
-						pass
-				self.ComponentObjects.append(
-					ComponentObject(
-						inputPath,
-						topLevelObject=True
+				else:
+					documentation = [
+						item for item in os.scandir(self.inputPath) \
+							if item.name == 'documentation'
+						]
+					if documentation != []:
+						documentation = documentation[0]
+						self.ComponentObjects.append(
+							ComponentObject(
+								documentation.path,
+								topLevelObject=True
+								)
+							)
+					self.ComponentObjects.append(
+						ComponentObject(
+							self.inputPath,
+							topLevelObject=True
+							)
 						)
-					)
 		elif self.inputType == 'file':
 			self.inputTypeDetail = 'file'
 			self.filename = self.basename
@@ -336,6 +345,10 @@ class Ingest:
 			if x.isDocumentation == True
 			):
 			self.includesSubmissionDocumentation = True
+		if self.includesSubmissionDocumentation:
+			self.InputObject.inputTypeDetail = \
+				self.InputObject.inputTypeDetail+" with documentation"
+
 
 		# this is the access file path within the SIP
 		self.accessPath = None 

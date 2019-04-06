@@ -4,16 +4,9 @@
 - [Installation](#installation)
 - [Usage](#usage)
 
-This is a set of Python 3 scripts for A/V digital preservation in use at BAMPFA. It is based on [mediamicroservices](https://github.com/mediamicroservices/mm) developed by Dave Rice and many collaborators at CUNY-TV, and also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. A lot has been changed to be less institutionally specific, but I have a lot of suff that is institutionally specific to BAMPFA.
+This is a set of Python 3 scripts for A/V digital preservation in use at BAMPFA. It is based on [mediamicroservices](https://github.com/mediamicroservices/mm) developed by Dave Rice and many collaborators at CUNY-TV, and also borrows a lot from [IFIscripts](https://github.com/kieranjol/IFIscripts) from the Irish Film Institute/Kieran O'Leary. I have tried to make it as generally applicable as possible, but there is a good amount that is institutionally specific to BAMPFA. In particular, the metadata mappings and assumptions about file formats/digitization target formats.
 
 Tested on Mac (El Capitan and Sierra), and on Ubuntu 16.04....
-
-The rationale for creating a Python version of `mm` was to make it easier for us to track issues with `mm` that are more opaque in `bash` especially since so much of the CUNY-TV code is not relevant to our workflows. Also, since we were at first using `mm` in conjunction with `php` and other Python scripts, I wanted to see if we could strip down the core functionality a bit. In the words of a really helpful Stack Overflow commenter:
-
-> If I may put forward a piece of my personal opinion, having a chain of php -> python -> bash is the worst coding style one can ever met, you may want to rewrite it into single langue so it will be easier to track down further issues at least.
-
-Thanks little buddy.
-
 
 `pymm` is now embedded as part of a Flask webapp, [edith](https://github.com/BAM-PFA/edith), being used at BAMPFA for digital preservation.
 
