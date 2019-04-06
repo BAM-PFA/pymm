@@ -181,6 +181,23 @@ def deliver_concat_access(CurrentIngest,concatPath):
 		print('couldnt deliver the concat file')
 		return False
 
+def deliver_documentation(CurrentIngest):
+	documentationPath = [
+		x.path for x in os.scandir(CurrentIngest.packageObjectDir) \
+		if x.name.lower() == 'documentation'
+		][0]
+	try:
+		shutil.copytree(
+			documentationPath,
+			os.path.join(
+				CurrentIngest.rsPackageDelivery,
+				'documentation'
+				)
+			)
+	except Exception as e:
+		print(e)
+		print("COULD'T DELIVER THE DOCUMENTATION FILES!")
+
 def check_av_status(CurrentIngest):
 	'''
 	Check whether or not a file is recognized as an a/v object.
@@ -245,11 +262,7 @@ def update_input_path(CurrentIngest):
 	CurrentIngest.currentTargetObject.inputPath = \
 		CurrentIngest.currentTargetObject.inputPath.replace(inputDirPath,objectDir)
 
-	# print("|| || "*100)
-	# print(CurrentIngest.currentTargetObject.inputPath)
-
 	return True
-
 
 def move_component_object(CurrentIngest):
 	'''
@@ -286,6 +299,8 @@ def move_component_object(CurrentIngest):
 			status
 			)
 		CurrentIngest.caller = None
+	# elif currentTargetObject.isDocumentation:
+
 	else:
 		pass
 	if not status == 'FAIL':
@@ -416,8 +431,6 @@ def add_pbcore_instantiation(CurrentIngest,level):
 	PBCore document for the InputObject.
 	'''
 	_file = CurrentIngest.currentTargetObject
-	print("OO ^^ OO "*200)
-	print(_file.avStatus)
 	if _file.avStatus in ('DPX','TIFF') and not _file.topLevelObject:
 		_,_,file0 = pymmFunctions.parse_sequence_folder(_file.inputPath)
 		pbcoreReport = makeMetadata.get_mediainfo_pbcore(file0)
@@ -1064,6 +1077,8 @@ def main():
 	
 	########################
 	# insert the objects
+	# for item in CurrentIngest.InputObject.ComponentObjects:
+	# 	print(item.inputPath)
 	for _object in CurrentIngest.InputObject.ComponentObjects:
 		CurrentIngest.currentTargetObject = _object
 
@@ -1073,6 +1088,12 @@ def main():
 			_object.objectCategoryDetail
 			)
 
+		if _object.isDocumentation:
+			move_component_object(CurrentIngest)
+		CurrentIngest.currentTargetObject = None
+
+	for _object in CurrentIngest.InputObject.ComponentObjects:
+		CurrentIngest.currentTargetObject = _object
 		if _object.objectCategoryDetail == 'film scanner output reel':
 			# create a component object for each WAV and DPX
 			# component of a film scan
@@ -1104,6 +1125,7 @@ def main():
 		move_component_object(CurrentIngest)
 		# print(CurrentIngest.currentTargetObject.inputPath)
 		CurrentIngest.currentTargetObject = None
+	# sys.exit()
 
 	for _object in CurrentIngest.InputObject.ComponentObjects:
 		if not _object.isDocumentation:
@@ -1150,6 +1172,8 @@ def main():
 					isSequence = True
 				if 'multi' in CurrentIngest.InputObject.inputTypeDetail:
 					rsPackage = True
+				if CurrentIngest.includesSubmissionDocumentation:
+					rsPackage = True
 				_object.accessPath = make_derivs(
 					CurrentIngest,
 					rsPackage=rsPackage,
@@ -1180,6 +1204,9 @@ def main():
 				CurrentIngest,
 				concatPath
 				)
+
+	if CurrentIngest.includesSubmissionDocumentation:
+		deliver_documentation(CurrentIngest)
 	### END ACTUAL STUFF DOING ###
 	##############################
 	

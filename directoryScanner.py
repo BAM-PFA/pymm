@@ -111,19 +111,23 @@ def check_for_bad_files(inputPath):
 	What is it even trying to accomplish?
 	@fixme
 	'''
-	print(time.time())
+	# print(time.time())
+	toCheck = []
 	badFiles = []
 	result = True
 	for root, dirs, files in os.walk(inputPath):
 		for _file in files:
 			if not _file.startswith('.'):
 				filePath = os.path.join(root,_file)
-				_,ext = os.path.splitext(_file)
-				if not ext.lower() in ('.dpx','.wav'):
-					result = False
-					badFiles.append(filePath)
+				if '/documentation/' not in filePath:
+					_,ext = os.path.splitext(_file)
+					if not ext.lower() in ('.dpx','.wav'):
+						result = False
+						badFiles.append(filePath)
+				else:
+					pass
 
-	print(time.time())
+	# print(time.time())
 	if badFiles == []:
 		badFiles = None
 	else:
@@ -135,12 +139,12 @@ def check_for_bad_files(inputPath):
 
 def check_complexity(inputPath,details):
 	# by the time it gets here the structure and contents 
-	# should be valid, so if there's any subdir other than dpx, 
+	# should be valid, so if there's any subdir other than dpx or documentation, 
 	# we can assume that it is a multi-reel scan input
 	if 'discrete' not in details:
 		complexity = 'single reel dpx'
 		for item in os.scandir(inputPath):
-			if item.is_dir() and item.name.lower() != 'dpx':
+			if item.is_dir() and item.name.lower() not in ('dpx','documentation'):
 				complexity = 'multi-reel dpx'
 			else:
 				pass

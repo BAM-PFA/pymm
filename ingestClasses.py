@@ -139,6 +139,8 @@ class ComponentObject:
 			self.documentationContents = [
 				item for item in os.listdir(self.inputPath)
 				]
+		else:
+			pass
 
 		return self
 
@@ -233,6 +235,16 @@ class InputObject:
 							)
 						)
 			else:
+				for item in os.scandir(self.inputPath):
+					if item.name.lower() == 'documentation':
+						self.ComponentObjects.append(
+							ComponentObject(
+								item.path,
+								topLevelObject=True
+								)
+							)
+					else:
+						pass
 				self.ComponentObjects.append(
 					ComponentObject(
 						inputPath,

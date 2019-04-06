@@ -283,8 +283,8 @@ def is_video(inputPath):
 	# Look for a video stream with codec_type == 'video'
 	ffprobe = [
 		'ffprobe',
+		'-v','error',
 		'-i',inputPath,
-		# '-v','error',
 		'-print_format','json',
 		'-show_streams',
 		'-select_streams','v'
@@ -309,6 +309,7 @@ def is_audio(inputPath):
 	# DO THE SAME AS ABOVE BUT codec_type == 'audio'
 	ffprobe = [
 		'ffprobe',
+		'-v','error',
 		'-i',inputPath,
 		'-print_format','json',
 		'-show_streams',
@@ -391,6 +392,8 @@ def test_sequence_reel_dir(reelPath):
 	failedDirs = []
 	failures = 0
 	for item in os.scandir(reelPath):
+		if item.name == 'documentation':
+			break
 		if item.is_dir():
 			print(item.path)
 			if item.name.lower() == 'dpx':

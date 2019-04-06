@@ -250,7 +250,6 @@ def main():
 	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	print('ffmpeg & '*40)
 	print(' '.join(ffmpegArgs))
 	output = subprocess.Popen(
 		ffmpegArgs,
