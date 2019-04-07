@@ -175,7 +175,7 @@ def concat_access_files(CurrentIngest,wrapper):
 
 def deliver_concat_access(CurrentIngest,concatPath):
 	try:
-		shutil.copy2(concatPath,CurrentIngest.rsPackageDelivery)
+		shutil.copy2(concatPath,CurrentIngest.accessDelivery)
 		return True
 	except:
 		print('couldnt deliver the concat file')
@@ -190,7 +190,7 @@ def deliver_documentation(CurrentIngest):
 		shutil.copytree(
 			documentationPath,
 			os.path.join(
-				CurrentIngest.rsPackageDelivery,
+				CurrentIngest.accessDelivery,
 				'documentation'
 				)
 			)
@@ -512,7 +512,7 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			CurrentIngest.InputObject.canonicalName,
 			resourcespace_deliver
 			)
-		CurrentIngest.rsPackageDelivery = rsPackageDelivery
+		CurrentIngest.accessDelivery = rsPackageDelivery
 	else:
 		rsPackageDelivery = None
 
@@ -607,6 +607,9 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 		SIPaccessPath = deliveredDerivPaths['resourcespace']
 		deliveredAccessBase = os.path.basename(SIPaccessPath)
 		accessPath = os.path.join(resourcespace_deliver,deliveredAccessBase)
+
+	CurrentIngest.ingestResults['accessPath'] = accessPath
+	CurrentIngest.accessDelivery = accessPath
 
 	return accessPath
 

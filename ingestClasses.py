@@ -357,7 +357,7 @@ class Ingest:
 		self.rsPackage = None 
 		# this is the deliverable path for access files
 		# (ie, for ResourceSpace to grab)
-		self.rsPackageDelivery = None 
+		self.accessDelivery = None 
 
 		#####################
 		# LOGGING ATTRIBUTES
