@@ -590,6 +590,17 @@ PBCORE_MAP = {
 			"TEXT":"value"
 		}
 	},
+	"creator":{
+		"pbcoreCreator":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"creator":{
+					"TEXT":"value"
+				}
+			}
+		}
+	},
 	"BAMPFA_FIELD":{
 		"PBCORE_ELEMENT":{
 			"LEVEL":"WORK_OR_INSTANTIATION",
