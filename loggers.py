@@ -121,6 +121,7 @@ def pymm_log(CurrentIngest,event,outcome,status):
 
 	objectRootPath = CurrentIngest.InputObject.inputPath
 	canonicalName = CurrentIngest.InputObject.canonicalName
+	inputTypeDetail = CurrentIngest.InputObject.inputTypeDetail
 	
 	user = CurrentIngest.ProcessArguments.user
 	ingestUUID = CurrentIngest.ingestUUID
@@ -139,6 +140,7 @@ def pymm_log(CurrentIngest,event,outcome,status):
 			"\nEvent type: Ingestion start\n",
 			"Object canonical name: {}\n".format(canonicalName),
 			"Object filepath: {}\n".format(objectRootPath),
+			"Object type: {}\n".format(inputTypeDetail),
 			"Ingest UUID: {}\n".format(ingestUUID),
 			"Operator: {}\n".format(user),
 			"Ingest working directory: {}\n".format(workingDir),
