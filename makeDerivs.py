@@ -20,6 +20,7 @@ config = pymmFunctions.read_config()
 
 defaultVideoAccessOptions = [
 	"-movflags","faststart",
+	"-threads","12", # just being conservative with hardware
 	"-pix_fmt","yuv420p",
 	"-c:v","libx264",
 	"-bufsize","1835k",
