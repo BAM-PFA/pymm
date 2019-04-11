@@ -1316,7 +1316,10 @@ def main():
 	if objectsVerified and validSIP:
 		CurrentIngest.ingestResults['status'] = True
 	CurrentIngest.ingestResults['ingestUUID'] = CurrentIngest.ingestUUID
-	CurrentIngest.ingestResults['accessPath'] = CurrentIngest.accessPath
+	# ingestResults.accessPath should be changed to "accessDelivery" once EDITH
+	#  ingest-refactor is merged to master
+	# @fixme
+	CurrentIngest.ingestResults['accessPath'] = CurrentIngest.accessDelivery
 
 	# THIS IS THE LAST CALL MADE TO MODIFY ANYTHING IN THE SIP.
 	loggers.ingest_log(
