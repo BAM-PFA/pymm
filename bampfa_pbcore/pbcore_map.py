@@ -602,31 +602,11 @@ PBCORE_MAP = {
 			}
 		}
 	},
-	"sourceFormat":{
-		"instantiationPhysical":{
-			"LEVEL":"INSTANTIATION",
-			"ATTRIBUTES":{
-				"source":"BAMPFA controlled vocabulary",
-				"annotation":"Source physical format (general)"
-			},
-			"TEXT":"value"
-		}
-	},
 	"tags":{
 		"pbcoreSubject":{
 			"LEVEL":"INSTANTIATION",
 			"ATTRIBUTES":{
 				"subjectType":"keyword"
-			},
-			"TEXT":"value"
-		}
-	},
-	"sourceFormat":{
-		"instantiationPhysical":{
-			"LEVEL":"INSTANTIATION",
-			"ATTRIBUTES":{
-				"source":"BAMPFA controlled vocabulary",
-				"annotation":"Source physical format (general)"
 			},
 			"TEXT":"value"
 		}
@@ -646,24 +626,6 @@ PBCORE_MAP = {
 					"TEXT":"Asset source/donor"
 				}
 			}
-		}
-	},
-	"exportPublishDate":{
-		"pbcoreAssetDate":{
-			"LEVEL":"WORK",
-			"ATTRIBUTES":{
-				"dateType":"Publication date"
-			},
-			"TEXT":"value"
-		}
-	},
-	"exportPublishDate":{
-		"pbcoreAssetDate":{
-			"LEVEL":"WORK",
-			"ATTRIBUTES":{
-				"dateType":"Publication date"
-			},
-			"TEXT":"value"
 		}
 	},
 	"BAMPFA_FIELD":{
