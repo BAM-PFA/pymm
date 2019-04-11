@@ -26,7 +26,7 @@ PBCORE_MAP = {
 			"TEXT":"value"
 		}
 	},
-	"releaseYear":{
+	"releaseDate":{
 		"pbcoreAssetDate":{
 			"LEVEL":"WORK",
 			"ATTRIBUTES":{
@@ -250,7 +250,8 @@ PBCORE_MAP = {
 		"instantiationPhysical":{
 			"LEVEL":"INSTANTIATION",
 			"ATTRIBUTES":{
-				"source":"BAMPFA controlled vocabulary"
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Source video format"
 			},
 			"TEXT":"value"
 		}
@@ -409,11 +410,11 @@ PBCORE_MAP = {
 		}
 	},
 	"postProcessing":{
-		"instantiationGenerations":{
-			"LEVEL":"INSTANTIATION",
+		"pbcoreAssetType":{
+			"LEVEL":"WORK",
 			"ATTRIBUTES":{
 				"source":"BAMPFA controlled vocabulary",
-				"annotation":"Indicates raw footage or processed footage. Values: 'Raw','Post-processed'"
+				"annotation":"Indicates raw footage or edited footage. Values: 'Raw','Edited work'"
 			},
 			"TEXT":"value"
 		}
@@ -599,6 +600,70 @@ PBCORE_MAP = {
 					"TEXT":"value"
 				}
 			}
+		}
+	},
+	"sourceFormat":{
+		"instantiationPhysical":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Source physical format (general)"
+			},
+			"TEXT":"value"
+		}
+	},
+	"tags":{
+		"pbcoreSubject":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"subjectType":"keyword"
+			},
+			"TEXT":"value"
+		}
+	},
+	"sourceFormat":{
+		"instantiationPhysical":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Source physical format (general)"
+			},
+			"TEXT":"value"
+		}
+	},
+	"assetExternalSource":{
+		"pbcoreContributor":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"contributor":{
+					"TEXT":"value"
+				},
+				"contributorRole":{
+					"ATTRIBUTES":{
+						"source":"BAMPFA vocabulary"
+					},
+					"TEXT":"Asset source/donor"
+				}
+			}
+		}
+	},
+	"exportPublishDate":{
+		"pbcoreAssetDate":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"dateType":"Publication date"
+			},
+			"TEXT":"value"
+		}
+	},
+	"exportPublishDate":{
+		"pbcoreAssetDate":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"dateType":"Publication date"
+			},
+			"TEXT":"value"
 		}
 	},
 	"BAMPFA_FIELD":{
