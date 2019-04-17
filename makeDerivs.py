@@ -7,14 +7,20 @@ import re
 import subprocess
 import sys
 # local modules:
-import moveNcopy
-import pymmFunctions
-import sequenceScanner
+try:
+	import moveNcopy
+	import pymmFunctions
+	import directoryScanner
+except:
+	from . import moveNcopy
+	from . import pymmFunctions
+	from . import directoryScanner
 
 config = pymmFunctions.read_config()
 
 defaultVideoAccessOptions = [
 	"-movflags","faststart",
+	"-threads","12", # just being conservative with hardware
 	"-pix_fmt","yuv420p",
 	"-c:v","libx264",
 	"-bufsize","1835k",
@@ -37,7 +43,10 @@ defaultAudioAccessOptions = [
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
-		audioPath,filePattern,startNumber,framerate = pymmFunctions.parse_sequence_parent(inputPath)
+		audioPath,\
+		filePattern,\
+		startNumber,\
+		framerate = pymmFunctions.parse_sequence_parent(inputPath)
 		# print(audioPath)
 		inputOptions = [
 			'-start_number',startNumber,
@@ -74,7 +83,7 @@ def set_middle_options(derivType,inputType):
 
 		# test/set a default proxy command for FFMPEG call
 		if middleOptions == ['a','b','c']:
-			if inputType == 'VIDEO':
+			if inputType in ('VIDEO','sequence'):
 				middleOptions = defaultVideoAccessOptions
 			elif inputType == 'AUDIO':
 				middleOptions = defaultAudioAccessOptions
@@ -140,6 +149,38 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 		# DO STUFF TO OTHER DERIV TYPES
 	return outputOptions
 
+def additional_delivery(derivFilepath,derivType,rsMulti=None):
+	destinations = 	{
+		'resourcespace': config['paths']['resourcespace_deliver'],
+		'proresHQ':config['paths']['prores_deliver']
+		}
+	deliveryDir = destinations[derivType]
+
+	if deliveryDir == '':
+		print(
+			"there's no directory set "
+			"for {} delivery... SET IT!!".format(derivType)
+			)
+		pass
+	elif deliveryDir != '' and rsMulti != None:
+		sys.argv = ['',
+			'-i'+derivFilepath,
+			'-d'+rsMulti
+			]
+	else:
+		sys.argv = ['',
+			'-i'+derivFilepath,
+			'-d'+deliveryDir
+			]
+	
+	try:
+		moveNcopy.main()
+	except:
+		print(
+			'there was an error in rsyncing the output '
+			'deriv to the destination folder'
+			)
+
 def set_args():
 	parser = argparse.ArgumentParser(
 		description='make derivatives of an input a/v file or an image sequence'
@@ -174,38 +215,6 @@ def set_args():
 		)
 
 	return parser.parse_args()
-
-def additional_delivery(derivFilepath,derivType,rsMulti=None):
-	destinations = 	{
-		'resourcespace': config['paths']['resourcespace_deliver'],
-		'proresHQ':config['paths']['prores_deliver']
-		}
-	deliveryDir = destinations[derivType]
-
-	if deliveryDir == '':
-		print(
-			"there's no directory set "
-			"for {} delivery... SET IT!!".format(derivType)
-			)
-		pass
-	elif deliveryDir != '' and rsMulti != None:
-		sys.argv = ['',
-			'-i'+derivFilepath,
-			'-d'+rsMulti
-			]
-	else:
-		sys.argv = ['',
-			'-i'+derivFilepath,
-			'-d'+deliveryDir
-			]
-	
-	try:
-		moveNcopy.main()
-	except:
-		print(
-			'there was an error in rsyncing the output '
-			'deriv to the destination folder'
-			)
 
 def main():
 	# DO STUFF

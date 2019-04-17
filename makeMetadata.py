@@ -15,7 +15,10 @@ import sys
 # nonstandard libraries:
 # import xmltodict
 # local modules:
-import pymmFunctions
+try:
+	import pymmFunctions
+except:
+	from . import pymmFunctions
 
 def get_mediainfo_report(inputPath,destination,_JSON=None,altFileName=None):
 	# handle an exception for the way 
@@ -69,7 +72,7 @@ def get_mediainfo_pbcore(inputPath):
 		stdout=subprocess.PIPE
 		)
 	pbcore = call.communicate()[0]
-	# print(pbcore)
+
 	return pbcore 
 
 def get_track_profiles(mediainfoDict):
@@ -143,9 +146,9 @@ def hash_file(inputPath,algorithm='md5',blocksize=65536):
 			buff = infile.read(blocksize) # keep reading
 	return hasher.hexdigest()
 
-def manifest_path(inputPath,_uuid,_type):
+def manifest_path(metadataPath,_uuid,_type):
 	manifestPath = os.path.join(
-		inputPath,
+		metadataPath,
 		'{}_manifest_{}_{}.txt'.format(
 			_type,
 			_uuid,
@@ -154,38 +157,53 @@ def manifest_path(inputPath,_uuid,_type):
 		)
 	return manifestPath
 
-def make_hashdeep_manifest(inputPath,_type):
+def make_hashdeep_manifest(targetDirPath,_uuid,_type):
 	'''
-	given a directory, make a hashdeep manifest.
+	given a target directory, make a hashdeep manifest.
 	chdir into target dir, make a manifest with relative paths, and get out.
 	For the SIP manifest, this currently relies on a bagit-style tree 
 		to contain both the manifest and the package.
 	proposal: also store the manifest as a blob
 	(or as text?) in a db entry... yeah.
 	'''
-	_uuid = pymmFunctions.get_base(inputPath)
+	# set a var for reporting on the SIP structure later
+	structure = True
+
 	if _type == 'hashdeep':
-		# there should be a child dir with the same name as inputPath
-		target = os.path.join(inputPath,_uuid)
-		if not os.path.isdir(target):
-			print("the expected directory structure is not present.") # @logme
-			return False
+		# this is for making a SIP-level manifest for validation
+		# we want to write the manifest in the top level SIP folder
+		metadataPath = targetDirPath
+		# the hashdeep target is the child also named w the UUID
+		targetDirPath = os.path.join(
+			targetDirPath,
+			os.path.basename(targetDirPath)
+			)
+		if not os.path.isdir(targetDirPath):
+			structure = False
 	elif _type == 'objects':
-		# were in the 'real' SIP dir so look for a subdir called 'objects'
-		target = os.path.join(inputPath,_uuid,'objects')
+		# targetDirPath should be the SIP objects directory
 		# we want to write the manifest to the metadata dir
-		inputPath = os.path.join(inputPath,_uuid,'metadata')
-		if not os.path.isdir(target) or not os.path.isdir(inputPath):
-			print("the expected directory structure is not present.") # @logme
-			return False
-	manifestPath = manifest_path(inputPath,_uuid,_type)
+		metadataPath = os.path.join(
+			os.path.dirname(targetDirPath),
+			'metadata'
+			)
+
+		for path in (targetDirPath,metadataPath):
+			if not os.path.isdir(path):
+				structure = False
+
+	if structure == False:
+		print("the expected directory structure is not present.") # @logme
+		return False
+	manifestPath = manifest_path(metadataPath,_uuid,_type)
 	# run hashdeep on the package
 	command = ['hashdeep', '-rvvl', '-c','md5','-W', manifestPath, '.']
 	# print(command)
 	here = os.getcwd()
-	os.chdir(target)
+	os.chdir(targetDirPath)
 	manifest = subprocess.call(command,stdout=subprocess.PIPE)
 	os.chdir(here)
+	
 	return manifestPath
 
 def hashdeep_audit(inputPath,manifestPath,_type=None):
@@ -246,7 +264,7 @@ def hashdeep_audit(inputPath,manifestPath,_type=None):
 def make_frame_md5(inputPath,metadataDir):
 	print('making frame md5')
 	print(inputPath)
-	md5File = pymmFunctions.get_base(inputPath)+"_frame-md5.txt"
+	md5File = os.path.basename(inputPath)+"_frame-md5.txt"
 	frameMd5Filepath = os.path.join(metadataDir,md5File)
 	av = pymmFunctions.is_av(inputPath)
 	returnValue = False

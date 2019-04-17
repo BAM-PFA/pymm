@@ -17,9 +17,13 @@ import subprocess
 import sys
 import tempfile
 # local modules:
-import makeMetadata
-import pymmFunctions
-
+try:
+	import makeMetadata
+	import pymmFunctions
+except:
+	from . import makeMetadata
+	from . import pymmFunctions
+	
 def parse_args(**kwargs):
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
@@ -89,6 +93,9 @@ def do_ffmpeg_concat(ffmpegConcatFile,sourceDir,canonicalName,wrapper):
 	command = [
 	'ffmpeg',
 	'-f','concat',
+	# `-threads` is not really necessary, 
+	# added to be conservative with hardware limitations
+	'-threads','12',
 	'-safe','0',
 	'-i',ffmpegConcatFile,
 	outputPath

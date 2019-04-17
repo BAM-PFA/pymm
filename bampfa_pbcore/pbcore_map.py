@@ -26,7 +26,7 @@ PBCORE_MAP = {
 			"TEXT":"value"
 		}
 	},
-	"releaseYear":{
+	"releaseDate":{
 		"pbcoreAssetDate":{
 			"LEVEL":"WORK",
 			"ATTRIBUTES":{
@@ -250,7 +250,8 @@ PBCORE_MAP = {
 		"instantiationPhysical":{
 			"LEVEL":"INSTANTIATION",
 			"ATTRIBUTES":{
-				"source":"BAMPFA controlled vocabulary"
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Source video format"
 			},
 			"TEXT":"value"
 		}
@@ -409,11 +410,11 @@ PBCORE_MAP = {
 		}
 	},
 	"postProcessing":{
-		"instantiationGenerations":{
-			"LEVEL":"INSTANTIATION",
+		"pbcoreAssetType":{
+			"LEVEL":"WORK",
 			"ATTRIBUTES":{
 				"source":"BAMPFA controlled vocabulary",
-				"annotation":"Indicates raw footage or processed footage. Values: 'Raw','Post-processed'"
+				"annotation":"Indicates raw footage or edited footage. Values: 'Raw','Edited work'"
 			},
 			"TEXT":"value"
 		}
@@ -524,6 +525,107 @@ PBCORE_MAP = {
 				"subjectType":"topic"
 			},
 			"TEXT":"value"
+		}
+	},
+	"recordingAnalogTechnicalNotes":{
+		"instantiationAnnotation":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotationType":"Technical note about a source (generally analog) recording"
+			},
+			"TEXT":"value"
+		}
+	},
+	"audioRecordingID":{
+		"instantiationIdentifier":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"PFA audio recording database ID"
+			},
+			"TEXT":"value"
+		}
+	},
+	"recordingPermissionsNotes":{
+		"pbcoreRightsSummary":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"rightsSummary":{
+					"ATTRIBUTES":{
+						"annotation":"Permissions statement for PFA Theater guests"
+					},
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"analogTapeNumber":{
+		"instantiationIdentifier":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"Tape number of analog audio cassette"
+			},
+			"TEXT":"value"
+		}
+	},
+	"analogTapeSide":{
+		"instantiationPart":{
+			"LEVEL":"INSTANTIATION",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"instantiationLocation":{
+					"ATTRIBUTES":{
+						"annotation":"The face from which a digitized instatiation was recorded."
+					},
+					"TEXT":"Value"
+				}
+			}
+		}
+	},
+	"digitizationQCNotes":{
+		"instantiationAnnotation":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotationType":"Technical QC notes about the digitization of an analog source"
+			},
+			"TEXT":"value"
+		}
+	},
+	"creator":{
+		"pbcoreCreator":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"creator":{
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"tags":{
+		"pbcoreSubject":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"subjectType":"keyword"
+			},
+			"TEXT":"value"
+		}
+	},
+	"assetExternalSource":{
+		"pbcoreContributor":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"contributor":{
+					"TEXT":"value"
+				},
+				"contributorRole":{
+					"ATTRIBUTES":{
+						"source":"BAMPFA vocabulary"
+					},
+					"TEXT":"Asset source/donor"
+				}
+			}
 		}
 	},
 	"BAMPFA_FIELD":{

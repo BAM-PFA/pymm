@@ -24,10 +24,19 @@ import time
 # nonstandard libraries:
 import Levenshtein
 # local modules:
-import dbReporters
-import makeMetadata
-import MySQLqueries
-import sequenceScanner
+try: 
+	import dbReporters
+	import loggers
+	import makeMetadata
+	import MySQLqueries
+	import directoryScanner
+except:
+	from . import dbReporters
+	from . import loggers
+	from . import makeMetadata
+	from . import MySQLqueries
+	from . import directoryScanner
+
 
 ################################################################
 # 
@@ -79,234 +88,15 @@ def check_missing_ingest_paths(pymmConfig):
 # PYMM ADMIN / LOGGING STUFF
 #
 # have to import dbAccess after init config to avoid circular error
-import dbAccess
-
-def check_pymm_log_exists():
-	# open a local instance of config here in case 
-	# it has changed since importing this file
-	pymmConfig = read_config()
-	pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
-	pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
-	# sys.exit()
-	opener = (
-		((("#"*75)+'\n')*2)+((' ')*4)+'THIS IS THE LOG FOR PYMEDIAMICROSERVICES'
-		'\n\n'+((' ')*4)+'THIS VERSION WAS STARTED ON '+today+'\n'+((("#"*75)+'\n')*2)+'\n'
-		)
-
-	if not os.path.isfile(pymmLogPath):
-		print('wait i need to make a logfile')
-		if pymmLogDir == '':
-			print("!~"*75)
-			print(
-				"CONFIGURATION PROBLEM:\n"
-				"THERE IS NO DIRECTORY SET FOR THE SYSTEM-WIDE LOG.\n"
-				"PLEASE RUN pymmconfig.py OR EDIT config.ini DIRECTLY\n"
-				"TO ADD A VALID DIRECTORY FOR pymm_log.txt TO LIVE IN.\n"
-				"WE'RE JUST GOING TO PUT IT ON YOUR DESKTOP FOR NOW..."
-				)
-			desktop = get_desktop()
-			pymmLogPath = os.path.join(
-				desktop,
-				'pymm_log.txt'
-				)
-			from pymmconfig import pymmconfig
-			pymmconfig.set_value('logging','pymm_log_dir',desktop)
-			with open(pymmLogPath,'w+') as pymmLog:
-				pymmLog.write(opener)
-		else:
-			open(pymmLogPath,'x')
-			with open(pymmLogPath,'w+') as pymmLog:
-				pymmLog.write(
-					opener
-					)
-	else:
-		pass
-
-def ingest_log(\
-	event,\
-	outcome,\
-	status,\
-	ingestLogPath,\
-	tempID,\
-	inputName,\
-	filename,\
-	operator,\
-	inputPath,\
-	ingestUUID\
-	):
-	stamp = timestamp("iso8601")
-
-	if event == "ingestion start":
-		stamp = ("#"*50)+"\n\n"+stamp+"\n\n"
-		systemInfo = system_info()
-		workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestsip"],
-			tempID
-			)
-		stuffToLog = [
-			stamp,
-			"Event Type: ingestion start\n",
-			"Object Canonical Name: {}\n".format(inputName),
-			"Object Input Filepath: {}\n".format(inputPath),
-			"Object Temp ID: {}\n".format(tempID),
-			"Ingest UUID: {}\n".format(ingestUUID),
-			"Ingest Working Directory: {}\n".format(workingDir),
-			"Operator: {}\n".format(operator),
-			"\n### SYSTEM INFO: ### \n{}\n".format(systemInfo),
-			("#"*50)
-			]
-		if filename not in ("",None):
-			name = "Object Filename: {}\n".format(filename)
-			stuffToLog.insert(3,name)
-
-	else:
-		stuffToLog = [
-			"{} | ".format(stamp),
-			"Status: {} | ".format(status),
-			"Event Type: {} | ".format(event),
-			"Event Outcome: {} | ".format(outcome),
-			"Operator: {} | ".format(operator),
-			"Object Canonical Name: {} | ".format(inputName)
-			]
-		if filename not in ("",None):
-			name = "Object Filename: {} | ".format(filename)
-			path = "Object Filepath: {} | ".format(inputPath)
-			stuffToLog.insert(4,name)
-			stuffToLog.insert(5,path)
-
-	with open(ingestLogPath,"a+") as ingestLog:
-		for item in stuffToLog:
-			ingestLog.write(item)
-		ingestLog.write("\n\n")
-
-def pymm_log(processingVars,event,outcome,status):
-	check_pymm_log_exists()
-	# open a local instance of config here in case 
-	# it has changed since importing this file
-	pymmConfig = read_config()
-	pymmConfig = read_config()
-	pymmLogDir =  pymmConfig['logging']['pymm_log_dir']
-	pymmLogPath = os.path.join(pymmLogDir,'pymm_log.txt')
-	stamp = timestamp('iso8601')
-	systemInfo = system_info()
-	objectRootPath = processingVars['inputPath']
-	objectName = processingVars['inputName']
-	operator = processingVars['operator']
-	ingestUUID = processingVars['ingestUUID']
-	tempID = get_temp_id(objectRootPath)
-	workingDir = os.path.join(
-			pymmConfig["paths"]["outdir_ingestsip"],
-			tempID
-			)
-	prefix = ''
-	suffix = '\n'
-	basename = os.path.basename(objectRootPath)
-	if status == 'STARTING':
-		prefix = ('&'*50)+'\n\n'
-		stuffToLog = [
-			prefix,
-			stamp,
-			"\nEvent type: Ingestion start\n",
-			"Object canonical name: {}\n".format(objectName),
-			"Object filepath: {}\n".format(objectRootPath),
-			"Ingest UUID: {}\n".format(ingestUUID),
-			"Operator: {}\n".format(operator),
-			"Ingest working directory: {}\n".format(workingDir),
-			"\n### SYSTEM INFO: ### \n{}".format(systemInfo),
-			suffix
-			]
-	elif status in ("ENDING","ABORTING"):
-		suffix = '\n\n'+('#'*50)+"\n\n"
-		stuffToLog = [
-			prefix,
-			stamp,
-			" | Status: {} |".format(status),
-			" | Event type: Ingestion end | ",
-			"Outcome: {}".format(outcome),
-			suffix
-			]
-	else:
-		stuffToLog = [
-			prefix,
-			stamp,
-			" | Status: {}".format(status),
-			" | Object name: {}".format(basename),
-			" | Event type: {}".format(event),
-			" | Event outcome: {}".format(outcome),
-			suffix
-			]
-
-	with open(pymmLogPath,'a') as log:
-		for item in stuffToLog:
-			log.write(item)
-
-def log_event(processingVars,ingestLogBoilerplate,event,outcome,status):
-	'''
-	log an event to all logs: database, system log, ingest log
-	'''
-	pymm_log(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-	ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-	eventID = insert_event(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-
-	return eventID
-
-def short_log(processingVars,ingestLogBoilerplate,event,outcome,status):
-	'''
-	same as log_event() but skip the system log for when the event
-	is too detailed.
-	'''
-	ingest_log(
-		event,
-		outcome,
-		status,
-		**ingestLogBoilerplate
-		)
-	eventID = insert_event(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-
-	return eventID
-
-def end_log(processingVars,event,outcome,status):
-	'''
-	same as short_log() but skip the ingest log 
-	so as not to bungle the hashdeep manifest
-	'''
-	pymm_log(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-	eventID = insert_event(
-		processingVars,
-		event,
-		outcome,
-		status
-		)
-
-	return eventID
-
-def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
+try:
+	import dbAccess
+except:
+	from . import dbAccess
+def cleanup_package(CurrentIngest,pathForDeletion,reason,outcome=None):
 	# print(pathForDeletion)
+	inputType = CurrentIngest.InputObject.inputType
+	dontDelete = False
+
 	if reason == "ABORTING":
 		status = 'ABORTING'
 		event = 'ingestion end'
@@ -318,6 +108,36 @@ def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 					pathForDeletion
 					)
 				)
+		# put the things back
+		try:
+			if inputType == 'file':
+				_object = [
+					thing.path for thing in 
+					os.scandir(CurrentIngest.packageObjectDir)
+					if thing.is_file()
+					][0]
+				if os.path.isfile(CurrentIngest.InputObject.inputPath):
+					pass
+				else:
+					shutil.move(
+						_object,
+						CurrentIngest.InputObject.inputParent
+						)
+			else:
+				if not os.path.isdir(CurrentIngest.InputObject.inputPath):
+					os.mkdir(CurrentIngest.InputObject.inputPath)
+				for _object in os.scandir(CurrentIngest.packageObjectDir):
+					if _object.name not in ('resourcespace','prores'):
+						shutil.move(
+							_object.path,
+							CurrentIngest.InputObject.inputPath
+							)
+		except:
+			dontDelete = True
+			outcome = ("COULD NOT REPLACE ORIGINAL COPIES!! \
+				NOT DELETING {}!".format(pathForDeletion))
+			print(outcome)
+
 	elif reason == 'done':
 		status = 'OK'
 		event = 'deletion'
@@ -326,7 +146,7 @@ def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 			"of object at {}".format(pathForDeletion)
 			)
 
-	if os.path.isdir(pathForDeletion):
+	if os.path.isdir(pathForDeletion) and dontDelete == False:
 		try:
 			shutil.rmtree(pathForDeletion)
 		except:
@@ -336,28 +156,14 @@ def cleanup_package(processingVars,pathForDeletion,reason,outcome=None):
 				". Try deleting it manually?"
 				)
 			print(outcome)
-	processingVars['caller'] = 'pymmFunctions.cleanup_package()'
-	end_log(
-		processingVars,
+
+	CurrentIngest.caller = 'pymmFunctions.cleanup_package()'
+	loggers.end_log(
+		CurrentIngest,
 		event,
 		outcome,
 		status
 		)
-
-def reset_cleanup_choice():
-	'''
-	If using interactive mode ask whether or not to remove files when done.
-	'''
-	cleanupStrategy = input("Do you want to clean up stuff when you are done? yes/no : ")
-	if pymmFunctions.boolean_answer(cleanupStrategy):
-		cleanupStrategy = True
-	else:
-		cleanupStrategy = False
-		print(
-			"Either you selected no or your answer didn't make sense"
-			"so we will just leave things where they are when we finish."
-			)
-	return cleanupStrategy
 
 def validate_SIP_structure(SIPpath):
 	'''
@@ -457,245 +263,6 @@ def do_query(connection,sql,*args):
 	cursor = connection.query(sql,*args)
 	return cursor
 
-def insert_object(processingVars,objectCategory,objectCategoryDetail):
-	operator = processingVars['operator']
-	if processingVars['filename'] in ('',None):
-		theObject = processingVars['inputName']
-	else:
-		theObject = processingVars['filename']
-	if processingVars['database_reporting'] == True:
-		# init an insertion instance
-		objectInsert = dbReporters.ObjectInsert(
-				operator,
-				theObject,
-				objectCategory,
-				objectCategoryDetail
-				)
-		try:
-			# report the details to the db
-			objectIdentifierValueID = objectInsert.report_to_db()
-			del objectInsert
-		except:
-			print("CAN'T MAKE DB CONNECTION")
-			pymm_log(
-				processingVars,
-				event = "connect to database",
-				outcome = "NO DATABASE CONNECTION!!!",
-				status = "WARNING"
-				)
-			processingVars['database_reporting'] = False
-	else:
-		objectIdentifierValueID = None
-	# update the processingVars with the unique db ID of the object
-	processingVars['componentObjectData'][theObject] = {}
-	processingVars['componentObjectData'][theObject]['databaseID'] = str(
-		objectIdentifierValueID
-		)
-	# set the object category in component object data
-	processingVars['componentObjectData'][theObject]\
-		['objectCategory'] = objectCategory
-	processingVars['componentObjectData'][theObject]\
-		['objectCategoryDetail'] = objectCategoryDetail
-
-	return processingVars
-
-def insert_event(processingVars,eventType,outcome,status):
-	if processingVars['filename'] in ('',None):
-			theObject = processingVars['inputName']
-	else:
-		theObject = processingVars['filename']
-	# get the name of the computer
-	computer = processingVars['computer']
-	# get the name of the program, script, or function doing the event
-	callingAgent = processingVars['caller']
-
-	objectID = processingVars['componentObjectData'][theObject]['databaseID']
-	if processingVars['database_reporting'] == True:
-		#insert the event
-		eventInsert = dbReporters.EventInsert(
-			eventType,
-			objectID,
-			theObject,
-			timestamp('iso8601'),
-			status,
-			outcome,
-			callingAgent,
-			computer,
-			processingVars['operator'],
-			eventID=None
-			)
-
-		eventID = eventInsert.report_to_db()
-		del eventInsert
-	else:
-		eventID = None
-	return eventID
-
-def insert_obj_chars(processingVars,ingestLogBoilerplate):
-	'''
-	report obect characteristics to db:
-	- get the object dict
-	- for files report the mediainfo text
-	- for SIPs report the pbcore, ingestLog
-	- 
-	'''
-	if processingVars['database_reporting'] != True:
-		return processingVars
-	user = processingVars['operator']
-	for _object,chars in processingVars['componentObjectData'].items():
-		data = processingVars['componentObjectData'][_object]
-		category = data['objectCategory']
-		categoryDetail = data['objectCategoryDetail']
-		if category == 'file':
-			try:
-				mediainfoPath = data['mediainfoPath']
-				objID = data['databaseID']
-				with open(mediainfoPath,'r') as MI:
-					mediainfoText = MI.read()
-				objectCharsInsert = dbReporters.InsertObjChars(
-					user,
-					objID,
-					_object,
-					mediainfoText
-					)
-				objectCharsInsert.report_to_db()
-				del objectCharsInsert
-			except:
-				pass
-		elif category == 'intellectual entity'\
-			and categoryDetail == 'Archival Information Package':
-			try:
-				objID = data['databaseID']
-				pbcorePath = processingVars['pbcore']
-				# print(pbcorePath)
-				if os.path.isfile(pbcorePath):
-					with open(pbcorePath,'r') as PB:
-						pbcoreText = PB.read()
-						# print(pbcoreText)
-				else:
-					pbcoreText = None
-					pbcorePath = None
-				ingestLogPath = ingestLogBoilerplate['ingestLogPath']
-				if os.path.isfile(ingestLogPath):
-					with open(ingestLogPath,'r') as IL:
-						ingestLogText = IL.read()
-				else:
-					ingestLogText = None				
-				# theres some mysql permission preventing
-				# load_file(pbcorePath) as BLOB
-				# @fixme ... also, is it worth it?
-				objectCharsInsert = dbReporters.InsertObjChars(
-					user,
-					objID,
-					_object,
-					mediaInfo=None,
-					ingestLog=ingestLogText,
-					pbcoreText=pbcoreText,
-					pbcoreXML=pbcorePath
-					)
-				objectCharsInsert.report_to_db()
-			except:
-				print(
-					"COULDN'T REPORT characteristics FOR {}".format(_object)
-					)
-	return processingVars
-
-
-def get_event_timestamp(eventID,user):
-	connection = database_connection(user)
-	sql = MySQLqueries.getEventTimestamp
-
-	cursor = do_query(
-		connection,
-		sql,
-		eventID
-		)
-	# this returns a datetime.datetime tuple like 
-	# (datetime.datetime(2018, 7, 16, 15, 21, 13),)
-	value = cursor.fetchone()
-	timestamp =  value[0].strftime("%Y-%m-%dT%H:%M:%S")
-	return timestamp
-
-def insert_fixity(\
-	processingVars,\
-	eventID,\
-	messageDigestAlgorithm,\
-	messageDigestHashValue,\
-	messageDigestSource=None,
-	eventDateTime=None
-	):
-	# if processingVars['database_reporting'] == True:
-	# 	pass
-	# else:
-	# 	return None
-	inputFile = processingVars['filename']
-	objectID = processingVars['componentObjectData'][inputFile]['databaseID']
-	objectIDValue = processingVars['filename']
-	eventDetailCallingFunc = processingVars['caller']
-	messageDigestFilepath = processingVars['inputPath']
-	
-	if processingVars['database_reporting'] == True:
-		eventTimestamp = get_event_timestamp(
-			eventID,
-			processingVars['operator']
-			)
-
-		if not eventTimestamp:
-			eventDateTime = None
-		else:
-			eventDateTime = eventTimestamp
-
-		fixityInsert = dbReporters.FixityInsert(
-			processingVars['operator'],
-			eventID,
-			objectID,
-			objectIDValue,
-			eventDetailCallingFunc,
-			messageDigestAlgorithm,
-			messageDigestFilepath,
-			messageDigestHashValue,
-			messageDigestSource,
-			eventDateTime
-			)
-
-		fixityID = fixityInsert.report_to_db()
-		del fixityInsert
-	else:
-		fixityID = None
-	# print("HEY-O")
-	return fixityID
-
-def parse_object_manifest(manifestPath):
-	'''
-	parse an object manifest to grab md5 hashes for db reporting
-	returns tuple (True/False,{'filename1':'hash1','filename2':'hash2'})
-	'''
-	parsed = False
-	data = []
-	hashes = {}
-	if not os.path.basename(manifestPath).startswith('objects_manifest_'):
-		parsed = 'Not an object manifest'
-	else:
-		try:
-			with open(manifestPath,'r') as f:
-				for line in f:
-					# notes in the hashdeep manifest start with 
-					# '%' or '%'
-					if not (line.startswith('%') or line.startswith('#')):
-						data.append(line)
-			for element in data:
-				# this is the file
-				_file = element.split(',')[2].rstrip()
-				_file = os.path.basename(_file)
-				# this is the hash
-				hashes[_file] = element.split(',')[1]
-			parsed = True
-		except:
-			parsed = 'error parsing object manifest'
-
-	# hashes should look like {'filename':'md5 hash'}
-	return parsed,hashes
-
 def parse_pbcore_xml(pbcoreFile):
 	pbcoreString = ''
 	with open(pbcoreFile,'r') as f:
@@ -716,8 +283,8 @@ def is_video(inputPath):
 	# Look for a video stream with codec_type == 'video'
 	ffprobe = [
 		'ffprobe',
+		'-v','error',
 		'-i',inputPath,
-		# '-v','error',
 		'-print_format','json',
 		'-show_streams',
 		'-select_streams','v'
@@ -726,7 +293,6 @@ def is_video(inputPath):
 		probe = subprocess.run(ffprobe,stdout=subprocess.PIPE)
 		out = probe.stdout.decode('utf-8')
 		output = json.loads(out)
-		# print(output)
 		try:
 			codec_type = output['streams'][0]['codec_type']
 			if codec_type == 'video':
@@ -743,6 +309,7 @@ def is_audio(inputPath):
 	# DO THE SAME AS ABOVE BUT codec_type == 'audio'
 	ffprobe = [
 		'ffprobe',
+		'-v','error',
 		'-i',inputPath,
 		'-print_format','json',
 		'-show_streams',
@@ -783,32 +350,35 @@ def is_av(inputPath):
 		if _is_audio:
 			return 'AUDIO'
 		else:
-			try:
-				_is_dpx,details = sequenceScanner.main(inputPath)
-			except:
-				print('error scanning a sequence directory')
-				return False
-			if _is_dpx:
-				if details in ('single reel dpx','multi-reel dpx'):
-					# insert test for only dpx contents
-					status, failedDirs = test_sequence_reel_dir(inputPath)
-					if status == True:
+			if os.path.isdir(inputPath):
+				# if it's a folder, see if it's a DPX sequence
+				try:
+					# test for a valid folder structure
+					_is_dpx,details = directoryScanner.main(inputPath)
+					print(_is_dpx)
+					print(details)
+				except:
+					print('error scanning input!')
+					return False
+				if _is_dpx:
+					if _is_dpx == 'dpx':
 						print('THIS IS AN IMAGE SEQUENCE!')
 						return 'DPX'
 					else:
-						print(
-							'ERROR: check out this list of '
-							'problem directories: {}'.format(failedDirs)
-							)
-						return False
-
-			elif _is_dpx == None:
-				# if we are dealing with an actual sequence folder,
-				# run a different test
-				_is_dpx_av = is_dpx_sequence(inputPath)
-				if _is_dpx_av:
-					print('THIS IS AN IMAGE SEQUENCE!')
-					return 'DPX'
+						# if it passes the folder structure, run
+						# mediainfo to check for dpx contents
+						status, failedDirs = test_sequence_reel_dir(inputPath)
+						if status == True:
+							print('THIS IS AN IMAGE SEQUENCE!')
+							return 'DPX'
+						else:
+							print(
+								'ERROR: check out this list of '
+								'problem directories: {}'.format(failedDirs)
+								)
+							return False
+				else:
+					return None
 			else:
 				return None
 
@@ -822,14 +392,19 @@ def test_sequence_reel_dir(reelPath):
 	failedDirs = []
 	failures = 0
 	for item in os.scandir(reelPath):
+		if item.name == 'documentation':
+			break
 		if item.is_dir():
-			# print(item.path)
-			_is_dpx_av = is_dpx_sequence(item.path)
-			if not _is_dpx_av:
+			print(item.path)
+			if item.name.lower() == 'dpx':
+				_is_dpx = is_dpx_sequence(item.path)
+				if not _is_dpx:
+					failedDirs.append(item.path)
+					failures += 1
+			else:
 				failedDirs.append(item.path)
 				failures += 1
-			else:
-				pass
+			
 	if failures > 0:
 		return False, failedDirs
 	else:
@@ -838,19 +413,16 @@ def test_sequence_reel_dir(reelPath):
 def is_dpx_sequence(inputPath):
 	'''
 	run mediainfo on the 'dpx' folder
-	if there's anything other than dpx files in there
-	the result will not parse as json and it indicates
-	noncompliance with expected structure
-	(PS-this is a hack)
 	'''
 	_is_dpx_av = False
 	try:
-		mediainfo = makeMetadata.get_mediainfo_report(inputPath,'',_JSON=True)
-		mediainfo = json.loads(mediainfo)
+		format = get_mediainfo_value(inputPath,'General','Format')
+		if any([('dpx','directory') for x in format.lower()]):
+			_is_dpx_av = True
+		else:
+			pass
 	except:
 		_is_dpx_av = False
-	if mediainfo:
-		_is_dpx_av = True
 
 	return _is_dpx_av
 
@@ -938,11 +510,10 @@ def check_for_outliers(inputPath):
 				str(outliers),
 				outlierListString
 				)
-			)
-		goodNames = False
+			)		
+		return False,outlierList
 	else:
-		warning = None
-	return goodNames,warning
+		return True,None
 
 def list_files(_input):
 	'''
@@ -952,9 +523,8 @@ def list_files(_input):
 	if os.path.isdir(_input):
 		source_list = []
 		for _file in os.listdir(_input):
-			if os.path.isdir(_file):
-				print("you have unexpected subdirectories. now exiting.")
-				sys.exit()
+			if os.path.isdir(_file) and not _file.lower() == 'documentation':
+				print("you have unexpected subdirectories!")
 			else:
 				source_list.append(os.path.join(_input,_file))
 		source_list.sort()
@@ -1081,7 +651,7 @@ def parse_sequence_parent(inputPath):
 		* startNumber = first sequence number
 		* framerate = embedded by scanner in DPX files
 	'''
-	sequenceScanner.main(inputPath)
+	directoryScanner.main(inputPath)
 	for entry in os.scandir(inputPath):
 		if entry.is_file():
 			if entry.name.endswith('.wav'):
@@ -1117,7 +687,7 @@ def parse_sequence_folder(dpxPath):
 		files.append(entry.path)
 	files.sort()
 	file0 = files[0]
-	match = re.search(r'(.*)(\d{7})(\..+)',file0)
+	match = re.search(r'(.*)(\d{6}|\d{7})(\..+)',file0)
 	fileBase = match.group(1)
 	startNumber = match.group(2)
 	numberOfDigits = len(startNumber)

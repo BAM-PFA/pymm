@@ -5,8 +5,13 @@
 import os
 import sys
 # local modules
-import MySQLqueries
-import pymmFunctions
+try:
+	import MySQLqueries
+	import pymmFunctions
+except:
+	from . import MySQLqueries
+	from . import pymmFunctions
+
 
 class EventInsert:
 	'''
@@ -195,7 +200,7 @@ class InsertObjChars:
 		self,
 		user,
 		objectID,
-		objectIdentifierValue,
+		_object,
 		mediaInfo = None,
 		ingestLog = None,
 		pbcoreText = None,
@@ -207,7 +212,7 @@ class InsertObjChars:
 		'''
 		self.user = user
 		self.objectID = objectID
-		self.objectIdentifierValue = objectIdentifierValue
+		self.objectIdentifierValue = _object.objectIdentifierValue
 		self.mediaInfo = mediaInfo
 		self.ingestLog = ingestLog
 		self.pbcoreText = pbcoreText

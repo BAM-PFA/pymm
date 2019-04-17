@@ -11,14 +11,17 @@ except ImportError:
 	print("Try installing mysql connector/python again.")
 	sys.exit()
 # local modules:
-import pymmFunctions
+try:
+	from pymmFunctions import read_config
+except:
+	from . pymmFunctions import read_config
 # check this out for mysql.connector install: https://gist.github.com/stefanfoulis/902296/f466a8dba3a75c172ac88627298f18eaaf0aa4c3
 # brew install mysql-connector-c
 # pip3 install mysql-connector
 # pip3 error  ``Unable to find Protobuf include directory.`` --> `brew install protobuf`
 # and if that still doesn't work try pip3 install mysql-connector==2.1.6
 
-config = pymmFunctions.read_config()
+config = read_config()
 pymmDB = config['database settings']['pymm_db']
 # set db name to None in case it doesn't exist yet
 if pymmDB in ('',None):
