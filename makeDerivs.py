@@ -39,6 +39,11 @@ defaultAudioAccessOptions = {
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
+	'''
+	Set the input options and filepath for ffmpeg
+	'''
+	inputOptions = {}
+
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
 		audioPath,\
@@ -46,28 +51,36 @@ def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 		startNumber,\
 		framerate = pymmFunctions.parse_sequence_parent(inputPath)
 		# print(audioPath)
-		inputOptions = [
-			'-start_number',startNumber,
-			'-i',filePattern
-			]
+		inputOptions['-start_number'] = startNumber
+		inputOptions['-i'] = filePattern
+
 		if framerate:
-			inputOptions.extend(['-r',framerate])
+			inputOptions['-r'] = framerate
 		if audioPath:
-			inputOptions.extend(
-				['-i',audioPath]
-				)
+			inputOptions['audioPath'] = audioPath # this gets reset to '-i'
+
 	else:
 		audioPath = None
-		inputOptions = ['-i',inputPath]
+		inputOptions['-i'] = inputPath
 
+	temp = options_to_list(inputOptions)
 	if ffmpegLogDir:
-		inputOptions.append('-report')
+		temp.append('-report')
+	# change the 'audioPath' key back to second '-i'
+	inputOptions = ['-i' if x == 'audioPath' else x for x in temp]
 	
-	return inputOptions
+	return inputOptions,audioPath
 
-def set_middle_options(derivType,inputType,inputPath,mixdown):
+def set_middle_options(
+	derivType,
+	inputType,
+	inputPath,
+	mixdown,
+	keep_audio_streams,
+	audioPath
+	):
 	'''
-	SET FFMPEG MIDDLE OPTIONS
+	Set the options for encoding and any filters
 	'''
 	middleOptions = []
 	if derivType == 'resourcespace':
@@ -91,13 +104,23 @@ def set_middle_options(derivType,inputType,inputPath,mixdown):
 				"IN config.ini.\nWE'RE GOING TO USE SOME DEFAULTS!!"
 				)
 		
-		audio_filter = add_audio_filter(middleOptions,inputPath)
-		# print(audio_filter)
-		if audio_filter:
-			middleOptions['-filter_complex'] = audio_filter
-			middleOptions['-map'] = '[out] -map 0:v'
-		if mixdown:
-			middleOptions['-ac'] = '1'
+		if audioPath:
+			path = audioPath
+		else:
+			path = inputPath
+		if not keep_audio_streams:
+			audioFilter = add_audio_filter(middleOptions,path)
+			# print(audioFilter)
+			if audioFilter:
+				middleOptions['-filter_complex'] = audioFilter
+				middleOptions['-map'] = '[out] -map 0:v'
+
+			if mixdown:
+				middleOptions['-ac'] = '1'
+			else:
+				middleOptions['-ac'] = '2'
+		else:
+			middleOptions['-map'] = '0:v -map 0:a'
 
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine 
@@ -108,16 +131,18 @@ def set_middle_options(derivType,inputType,inputPath,mixdown):
 		print('etc')
 		# and so on
 
-	middleOptions = middleOptions_to_list(middleOptions)
+	middleOptions = options_to_list(middleOptions)
 
 	return middleOptions
 
 def set_output_options(derivType,inputType,inputPath,outputDir):
-	outputOptions = []
+	'''
+	Set the output filepath and its extension
+	'''
+	outputOptions = {}
 	# the ffmpeg docs say the strict flag is no longer required 
 	# for aac encoding in mp4 but I ran into issues without it, 
 	# so I'll keep it for now (7/2018)
-	strict = ['-strict','-2'] 
 	base = pymmFunctions.get_base(inputPath)
 	baseMinusExtension = pymmFunctions.get_base(
 		inputPath,
@@ -134,7 +159,7 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 	if derivType == 'resourcespace':
 		if inputType in ('VIDEO','sequence'):
 			ext = 'mp4'
-			outputOptions.extend(strict)
+			outputOptions['-strict'] = '-2'
 		elif inputType == 'AUDIO':
 			ext = 'mp3'
 		else:
@@ -144,17 +169,19 @@ def set_output_options(derivType,inputType,inputPath,outputDir):
 			derivDeliv,
 			baseMinusExtension+'_access.'+ext
 			)
-		outputOptions.append(outputFilePath)
 	elif derivType == 'proresHQ':
 		ext = 'mov'
 		outputFilePath = os.path.join(
 			derivDeliv,
 			baseMinusExtension+'_proresHQ.'+ext
 			)
-		outputOptions.append(outputFilePath)
 	else:
 		print('~ ~ ~ ~ ~')
 		# DO STUFF TO OTHER DERIV TYPES
+
+	outputOptions = options_to_list(outputOptions)
+	outputOptions.append(outputFilePath)
+
 	return outputOptions
 
 def additional_delivery(derivFilepath,derivType,rsMulti=None):
@@ -194,7 +221,9 @@ def add_audio_filter(middleOptions,inputPath):
 	check for audio streams and add to a filter that will merge them all 
 	'''
 	audioStreamCount = pymmFunctions.get_audio_stream_count(inputPath)
-	if not audioStreamCount:
+	print(str(audioStreamCount)+' audio streams in '+inputPath)
+	
+	if audioStreamCount in (None, 0, 1):
 		audioFilter = None
 	else:
 		audioFilter = 'amerge[out]' # this is the end of the filter
@@ -208,17 +237,21 @@ def add_audio_filter(middleOptions,inputPath):
 
 	return audioFilter
 
-def middleOptions_to_list(middleOptions):
+def options_to_list(options):
+	'''
+	Take in one of the options dicts and turn it into a list for 
+	use by `subprocess`
+	'''
 	temp = []
-	[temp.extend([key,value]) for key, value in middleOptions.items()]
+	[temp.extend([key,value]) for key, value in options.items()]
 	temp2 = []
 	# print(temp)
 	for item in temp:
 		temp2.extend(item.split(' '))
 	print(temp2)
-	middleOptions = temp2
+	options = temp2
 
-	return middleOptions
+	return options
 
 def set_args():
 	parser = argparse.ArgumentParser(
@@ -255,8 +288,16 @@ def set_args():
 	parser.add_argument(
 		'-m','--mixdown',
 		action='store_true',
+		default=False,
+		help="Do/don't mix down all audio tracks to mono for access copy. Default=False"
+		)
+	parser.add_argument(
+		'-k','--keep_audio_streams',
+		action='store_false',
 		default=True,
-		help="Do/don't mix down all audio tracks to mono for access copy. Default=True"
+		help="Do/don't map all existing audio streams "\
+			"to access copy. Default=True. Set this to mix to single stereo track "\
+			"and also set -m if you want mono instead."
 		)
 
 	return parser.parse_args()
@@ -272,6 +313,7 @@ def main():
 	rsMulti = args.rspaceMulti
 	isSequence = args.isSequence
 	mixdown = args.mixdown
+	keep_audio_streams = args.keep_audio_streams
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
@@ -281,7 +323,7 @@ def main():
 	else:
 		inputType = 'sequence'
 	ffmpegArgs = []
-	inputOptions = set_input_options(
+	inputOptions,audioPath = set_input_options(
 		derivType,
 		inputPath,
 		logDir,
@@ -291,7 +333,9 @@ def main():
 		derivType,
 		inputType,
 		inputPath,
-		mixdown
+		mixdown,
+		keep_audio_streams,
+		audioPath
 		)
 	outputOptions = set_output_options(
 		derivType,
@@ -302,11 +346,10 @@ def main():
 	
 	ffmpegArgs = inputOptions+middleOptions+outputOptions
 	ffmpegArgs.insert(0,'ffmpeg')
-	print(ffmpegArgs)
+	# print(ffmpegArgs)
 	print(' '.join(ffmpegArgs))
-	arglist = ' '.join(ffmpegArgs)
 	output = subprocess.run(
-		arglist.split(),
+		ffmpegArgs,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE
 		)
