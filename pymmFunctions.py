@@ -696,6 +696,35 @@ def parse_sequence_folder(dpxPath):
 	# print(filePattern,startNumber,file0)
 	return filePattern,startNumber,file0
 
+def get_audio_stream_count(inputPath):
+	'''
+	Count the audio streams present in an av file. 
+	For a file with audio track(s) it should return one line per stream:
+		'streams.stream.0.index=1'
+	Tally these lines and take that as the count of audio streams. 
+	'''
+	probeCommand = [
+		'ffprobe', '-hide_banner',
+		inputPath,
+		'-select_streams', 'a',
+		'-show_entries', 'stream=index',
+		'-of', 'flat'
+		]
+	count = None
+	try:
+		count = 0
+		probe = subprocess.run(
+			probeCommand,
+			stdout=subprocess.PIPE, # this should return a list of streams
+			stderr=subprocess.PIPE
+			)
+		count += len(probe.stdout.splitlines())
+	except Exception as e:
+		print(e)
+		pass
+
+	return count
+
 #
 # END FILE CHECK STUFF 
 #
