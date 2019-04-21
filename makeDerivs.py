@@ -26,7 +26,6 @@ defaultVideoAccessOptions = {
 	"-f":"mp4",
 	"-crf":"23",
 	"-c:a":"aac",
-	"-ac":"2",
 	"-b:a":"320k",
 	"-ar":"48000"
 	}
@@ -76,7 +75,7 @@ def set_middle_options(
 	inputType,
 	inputPath,
 	mixdown,
-	keep_audio_streams,
+	combine_audio_streams,
 	audioPath
 	):
 	'''
@@ -108,17 +107,19 @@ def set_middle_options(
 			path = audioPath
 		else:
 			path = inputPath
-		if not keep_audio_streams:
+		if combine_audio_streams or mixdown:
 			audioFilter = add_audio_filter(middleOptions,path)
 			# print(audioFilter)
 			if audioFilter:
 				middleOptions['-filter_complex'] = audioFilter
 				middleOptions['-map'] = '[out] -map 0:v'
 
-			if mixdown:
-				middleOptions['-ac'] = '1'
+				if mixdown:
+					middleOptions['-ac'] = '1'
+				else:
+					middleOptions['-ac'] = '2'
 			else:
-				middleOptions['-ac'] = '2'
+				middleOptions['-map'] = '0:v -map 0:a'
 		else:
 			middleOptions['-map'] = '0:v -map 0:a'
 
@@ -289,15 +290,20 @@ def set_args():
 		'-m','--mixdown',
 		action='store_true',
 		default=False,
-		help="Do/don't mix down all audio tracks to mono for access copy. Default=False"
+		help=(
+			"Do/don't mix down all audio tracks to mono "
+			"for access copy. Default=False."
+			)
 		)
 	parser.add_argument(
-		'-k','--keep_audio_streams',
-		action='store_false',
-		default=True,
-		help="Do/don't map all existing audio streams "\
-			"to access copy. Default=True. Set this to mix to single stereo track "\
-			"and also set -m if you want mono instead."
+		'-k','--combine_audio_streams',
+		action='store_true',
+		help=(
+			"Do/don't map all existing audio streams "
+			"to access copy. "
+			"Use this flag to mix to single (stereo) track."
+			"Set -m if you want mono instead."
+			)
 		)
 
 	return parser.parse_args()
@@ -313,7 +319,7 @@ def main():
 	rsMulti = args.rspaceMulti
 	isSequence = args.isSequence
 	mixdown = args.mixdown
-	keep_audio_streams = args.keep_audio_streams
+	combine_audio_streams = args.combine_audio_streams
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
@@ -334,7 +340,7 @@ def main():
 		inputType,
 		inputPath,
 		mixdown,
-		keep_audio_streams,
+		combine_audio_streams,
 		audioPath
 		)
 	outputOptions = set_output_options(
