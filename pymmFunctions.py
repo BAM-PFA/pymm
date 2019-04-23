@@ -725,6 +725,94 @@ def get_audio_stream_count(inputPath):
 
 	return count
 
+def check_dual_mono(inputPath):
+	'''
+	Check if a video file has the first two audio streams mono
+	inspired by `mmfunctions` _has_first_two_tracks_mono()
+	'''
+	probes = []
+	dualMono = None
+	for index in range(2):		
+		probe = [
+		'ffprobe',
+		inputPath,
+		"-show_streams",
+		"-select_streams","a:{}".format(index)
+		]
+		out = subprocess.run(
+			probe,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+		probes.append(out)
+	probe1 = probes[0]
+	probe2 = probes[1]
+	stream1Channels = [
+		x for x in probe1.stdout.decode().splitlines() \
+			if x.startswith('channels=')
+		]
+	stream2Channels = [
+		x for x in probe2.stdout.decode().splitlines() \
+			if x.startswith('channels=')
+		]
+	if stream1Channels == stream2Channels == ['channels=1']:
+		dualMono = True
+	else:
+		dualMono = False
+
+	return dualMono
+
+def check_empty_mono_track(inputPath):
+	'''
+	Check if one mono audio track is basically empty.
+	Intended usage is with a dual mono file so we can remove
+	an empty track and use the non-empty one as track 1.
+	
+	NB: setting "empty" as below -50dB peak, this could be tweaked
+	'''
+	# ffmpeg -i /Users/michael/Desktop/test_files/illuminated_extract.mov -map 0:a:1 -af astats -f null -
+	empty = {0:False,1:False}
+
+	for stream in range(2):
+		command = [
+		'ffmpeg',
+		'-i',inputPath,
+		'-map','0:a:{}'.format(stream),
+		'-af','astats',
+		'-f','null','-'
+		]
+		# print(command)
+		output = subprocess.run(
+			command,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+		stats = [line for line in output.stderr.decode().splitlines()]
+		chopped = [re.sub(r'\[Parsed_astats.+\]\ ','',line) for line in stats]
+		peakdB = [
+			int(float(line.replace('RMS peak dB: ',''))) for line in chopped \
+				if line.startswith('RMS peak dB: ')
+			]
+		# print(peakdB)
+		try:
+			if peakdB[1] < -50:
+				empty[stream] = True
+		except:
+			pass
+
+	returnValue = None
+	count = 0
+	for k,v in empty.items():
+		if not v:
+			returnValue = k # return the stream id to keep
+		else:
+			count += 1
+	if count > 1:
+		returnValue = 'both'
+
+	return returnValue
+
+
 #
 # END FILE CHECK STUFF 
 #

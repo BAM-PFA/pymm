@@ -106,13 +106,15 @@ def set_middle_options(
 				"OPTIONS FOR ACCESS FILE TRANSCODING "
 				"IN config.ini.\nWE'RE GOING TO USE SOME DEFAULTS!!"
 				)
-		
-		if audioPath:
-			path = audioPath
-		else:
-			path = inputPath
+
+		dualMono = pymmFunctions.check_dual_mono(inputPath)
+
 		if combine_audio_streams or mixdown:
-			audioFilter = add_audio_filter(middleOptions,path)
+			if audioPath:
+				path = audioPath
+			else:
+				path = inputPath
+			audioFilter = add_audio_merge_filter(middleOptions,path)
 			# print(audioFilter)
 			if audioFilter:
 				middleOptions['-filter_complex'] = audioFilter
@@ -124,6 +126,17 @@ def set_middle_options(
 					middleOptions['-ac'] = '2'
 			else:
 				middleOptions['-map'] = '0:v -map 0:a'
+		elif dualMono:
+			# if the input has two mono tracks, check if one is "empty"
+			# and if so, discard it. Checks for RMS peak dB below -50
+			empty = pymmFunctions.check_empty_mono_track(inputPath)
+			if empty != None:
+				middleOptions['-filter_complex'] = \
+					"[0:a:{}]aformat=channel_layouts=stereo".format(empty)
+			elif empty == 'both':
+				# both mono tracks are empty??
+				middleOptions['-map'] = '0:v -map 0:a'
+
 		else:
 			middleOptions['-map'] = '0:v -map 0:a'
 			if inputType == 'AUDIO':
@@ -226,7 +239,7 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 			'deriv to the destination folder'
 			)
 
-def add_audio_filter(middleOptions,inputPath):
+def add_audio_merge_filter(middleOptions,inputPath):
 	'''
 	check for audio streams and add to a filter that will merge them all 
 	'''
@@ -258,7 +271,7 @@ def options_to_list(options):
 	# print(temp)
 	for item in temp:
 		temp2.extend(item.split(' '))
-	print(temp2)
+	# print(temp2)
 	options = temp2
 
 	return options
