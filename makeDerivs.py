@@ -87,9 +87,13 @@ def set_middle_options(
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
 		if inputType in ('VIDEO','sequence'):
-			middleOptions = json.loads(config['ffmpeg']['resourcespace_video_opts'])
+			middleOptions = json.loads(
+				config['ffmpeg']['resourcespace_video_opts']
+				)
 		elif inputType == 'AUDIO':
-			middleOptions = json.loads(config['ffmpeg']['resourcespace_audio_opts'])
+			middleOptions = json.loads(
+				config['ffmpeg']['resourcespace_audio_opts']
+				)
 
 		# test/set a default proxy command for FFMPEG call
 		if middleOptions == {}:
@@ -122,6 +126,11 @@ def set_middle_options(
 				middleOptions['-map'] = '0:v -map 0:a'
 		else:
 			middleOptions['-map'] = '0:v -map 0:a'
+			if inputType == 'AUDIO':
+				# remove video stream map for audio input
+				middleOptions['-map'] = middleOptions['-map'].replace(
+					'0:v -map ',''
+					)
 
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine 
@@ -231,7 +240,7 @@ def add_audio_filter(middleOptions,inputPath):
 		
 		for stream in reversed(range(audioStreamCount)):
 			streamIndex = "[0:a:{}]".format(str(stream))
-			audioFilter = streamIndex+audioFilter
+			audioFilter = streamIndex+audioFilter # add each track in reverse order
 		# YOU DONT NEED To WRAP THE FILTER (OR ANYTHING ELSE?) IN QUOTES
 		# WHEN CALLING FROM SUBPROCESS
 		# audioFilter = '"{}"'.format(audioFilter) # wrap the filter in quotes
@@ -300,7 +309,7 @@ def set_args():
 		action='store_true',
 		help=(
 			"Do/don't map all existing audio streams "
-			"to access copy. "
+			"to access copy. Default is to keep all streams as-is. "
 			"Use this flag to mix to single (stereo) track."
 			"Set -m if you want mono instead."
 			)
