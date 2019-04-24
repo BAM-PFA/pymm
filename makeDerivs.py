@@ -130,11 +130,13 @@ def set_middle_options(
 			# if the input has two mono tracks, check if one is "empty"
 			# and if so, discard it. Checks for RMS peak dB below -50
 			empty = pymmFunctions.check_empty_mono_track(inputPath)
+			print(empty)
+			print(type(empty))
 			if empty != None:
 				middleOptions['-filter_complex'] = \
-					"[0:a:{}]aformat=channel_layouts=stereo".format(empty)
-			elif empty == 'both':
-				# both mono tracks are empty??
+					"[0:a:{}]aformat=channel_layouts=stereo".format(str(empty))
+			else:
+				# what if both mono tracks are empty??
 				middleOptions['-map'] = '0:v -map 0:a'
 
 		else:
