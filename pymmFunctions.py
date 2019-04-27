@@ -793,14 +793,14 @@ def check_empty_mono_track(inputPath):
 			int(float(line.replace('RMS peak dB: ',''))) for line in chopped \
 				if line.startswith('RMS peak dB: ')
 			]
-		print(peakdB)
+		# print(peakdB)
 		try:
 			if peakdB[1] < -50:
 				empty[stream] = True
 		except:
 			pass
 
-	print(empty)
+	# print(empty)
 	returnValue = None
 	count = 0
 	if any([v for v in empty.values()]):		

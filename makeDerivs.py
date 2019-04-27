@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-# YOU WANT TO MAKE SOME DERIVATIVES, PUNK?
+'''
+This script takes an input AV object and outputs an access copy. 
+It is relatively tailored to use within BAMPFA's EDITH app, 
+but mostly in terms of the output folder structure (it expects you to
+want a folder called 'resourcespace'). The transcoding options are 
+set in dicts in `pymmconfig`. You can also leave the dicts empty and
+use the defaults below for testing.
+I haven't (4/2019) put much thought into ProRes output, but that 
+may or may not become a necessity for us later. For now, we are outputting 
+H264 in mp4 for video and mp3 for audio input.
+'''
 import argparse
 import json
 import os
@@ -130,8 +140,8 @@ def set_middle_options(
 			# if the input has two mono tracks, check if one is "empty"
 			# and if so, discard it. Checks for RMS peak dB below -50
 			empty = pymmFunctions.check_empty_mono_track(inputPath)
-			print(empty)
-			print(type(empty))
+			# print(empty)
+			# print(type(empty))
 			if empty != None:
 				middleOptions['-filter_complex'] = \
 					"[0:a:{}]aformat=channel_layouts=stereo".format(str(empty))
