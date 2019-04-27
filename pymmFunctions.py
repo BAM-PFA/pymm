@@ -770,7 +770,8 @@ def check_empty_mono_track(inputPath):
 	Intended usage is with a dual mono file so we can remove
 	an empty track and use the non-empty one as track 1.
 	
-	NB: setting "empty" as below -50dB peak, this could be tweaked
+	NB: setting "empty" as below -50dB RMS (root mean square) level,
+	  this could be tweaked!
 	'''
 	# ffmpeg -i /Users/michael/Desktop/test_files/illuminated_extract.mov -map 0:a:1 -af astats -f null -
 	empty = {0:False,1:False}
@@ -791,13 +792,13 @@ def check_empty_mono_track(inputPath):
 			)
 		stats = [line for line in output.stderr.decode().splitlines()]
 		chopped = [re.sub(r'\[Parsed_astats.+\]\ ','',line) for line in stats]
-		peakdB = [
+		leveldB = [
 			int(float(line.replace('RMS level dB: ',''))) for line in chopped \
 				if line.startswith('RMS level dB: ')
 			]
-		# print(peakdB)
+		# print(leveldB)
 		try:
-			if peakdB[1] < -50:
+			if leveldB[1] < -50:
 				empty[stream] = True
 		except:
 			pass
