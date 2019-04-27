@@ -52,14 +52,13 @@ def scan_dir(inputPath):
 	outcome = []
 	dirs = []
 	status = None
-	hasDocumentation = False
 	for entry in os.scandir(inputPath):
 		# cast the fiery circle,
 		# summon all the subdirectories 
 		# for judgement before my wrath
 		if entry.is_dir():
 			dirs.append(entry.path)
-	print(dirs)
+	# print(dirs)
 	if len(dirs) > 0:
 		if len(dirs) == 1:
 			dirname = os.path.basename(dirs[0]).lower()
@@ -102,6 +101,9 @@ def scan_dir(inputPath):
 				print("Image sequence folders are ok")
 				status = True
 				outcome = 'dpx' # is this true?? @fixme
+
+	else:
+		status = True
 
 	return status,outcome
 
@@ -177,24 +179,35 @@ def main(inputPath):
 			details = ''
 	else:
 		result,details = scan_dir(inputPath)
-	if not result:
-		pass
 
+	if not result:
+		pass # what was supposed to go here?? @fixme
+
+	# print(result,details)
+
+	scannedDir = os.scandir(inputPath)
 	if details == 'documentation':
 		# if there is only one thing in inputPath that isn't the 
 		# documentation folder, then it is a single-file input.
 		# if there are more than one file, we can assume it is 
 		# a multiple discrete file input.
-		if len([x for x in os.scandir(inputPath) if not x.is_dir()]) > 1:
+		if len([x for x in scannedDir if not x.is_dir()]) > 1:
 			details = 'multiple discrete files'
 		else:
 			details = 'single discrete file'
-	elif details != None:
+	elif details != []:
 		result,badFiles = check_for_bad_files(inputPath)
+	elif details == []:
+		if len(list(scannedDir)) > 1:
+			details = 'multiple discrete files'
+		elif len(list(scannedDir)) == 1:
+			# this should never actually happne, but just in case
+			details = 'single discrete file'
 
-	print(result,details)
+	# print(result,details)
 
 	if (result and details) and not badFiles:
+		print("directory complexity check")
 		complexity = check_complexity(inputPath,details)
 		details = complexity
 	else:
