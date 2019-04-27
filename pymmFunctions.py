@@ -696,17 +696,19 @@ def parse_sequence_folder(dpxPath):
 	# print(filePattern,startNumber,file0)
 	return filePattern,startNumber,file0
 
-def get_audio_stream_count(inputPath):
+def get_stream_count(inputPath,_type="video"):
 	'''
-	Count the audio streams present in an av file. 
-	For a file with audio track(s) it should return one line per stream:
+	Count the data streams present in an av file.
+	Specify _type as "audio" or "video" (default)
+	For example, a file with audio track(s) should return one line per stream:
 		'streams.stream.0.index=1'
 	Tally these lines and take that as the count of audio streams. 
 	'''
+
 	probeCommand = [
 		'ffprobe', '-hide_banner',
 		inputPath,
-		'-select_streams', 'a',
+		'-select_streams', _type[:1], # get the first letter of _type (a or v)
 		'-show_entries', 'stream=index',
 		'-of', 'flat'
 		]

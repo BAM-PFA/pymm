@@ -255,7 +255,7 @@ def add_audio_merge_filter(middleOptions,inputPath):
 	'''
 	check for audio streams and add to a filter that will merge them all 
 	'''
-	audioStreamCount = pymmFunctions.get_audio_stream_count(inputPath)
+	audioStreamCount = pymmFunctions.get_stream_count(inputPath,"audio")
 	print(str(audioStreamCount)+' audio streams in '+inputPath)
 
 	if audioStreamCount in (None, 0, 1):
