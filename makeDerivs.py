@@ -77,7 +77,7 @@ def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 		temp.append('-report')
 	# change the 'audioPath' key back to second '-i'
 	inputOptions = ['-i' if x == 'audioPath' else x for x in temp]
-	
+
 	return inputOptions,audioPath
 
 def set_middle_options(
@@ -135,7 +135,7 @@ def set_middle_options(
 				else:
 					middleOptions['-ac'] = '2'
 			else:
-				middleOptions['-map'] = '0:v -map 0:a'
+				middleOptions['-map'] = '0:v -map 0:a?'
 		elif dualMono:
 			# if the input has two mono tracks, check if one is "empty"
 			# and if so, discard it. Checks for RMS peak dB below -50
@@ -150,7 +150,7 @@ def set_middle_options(
 				middleOptions['-map'] = '0:v -map 0:a'
 
 		else:
-			middleOptions['-map'] = '0:v -map 0:a'
+			middleOptions['-map'] = '0:v -map 0:a?'
 			if inputType == 'AUDIO':
 				# remove video stream map for audio input
 				middleOptions['-map'] = middleOptions['-map'].replace(
@@ -161,7 +161,7 @@ def set_middle_options(
 		# make a HQ prores .mov file as a mezzanine 
 		# for color correction, cropping, etc.
 		middleOptions = json.loads(config['ffmpeg']['proresHQ_opts'])
-	
+
 	elif True == True:
 		print('etc')
 		# and so on
@@ -242,7 +242,7 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 			'-i'+derivFilepath,
 			'-d'+deliveryDir
 			]
-	
+
 	try:
 		moveNcopy.main()
 	except:
@@ -257,12 +257,12 @@ def add_audio_merge_filter(middleOptions,inputPath):
 	'''
 	audioStreamCount = pymmFunctions.get_audio_stream_count(inputPath)
 	print(str(audioStreamCount)+' audio streams in '+inputPath)
-	
+
 	if audioStreamCount in (None, 0, 1):
 		audioFilter = None
 	else:
 		audioFilter = 'amerge[out]' # this is the end of the filter
-		
+
 		for stream in reversed(range(audioStreamCount)):
 			streamIndex = "[0:a:{}]".format(str(stream))
 			audioFilter = streamIndex+audioFilter # add each track in reverse order
@@ -282,7 +282,8 @@ def options_to_list(options):
 	temp2 = []
 	# print(temp)
 	for item in temp:
-		temp2.extend(item.split(' '))
+		if not item == '':
+			temp2.extend(item.split(' '))
 	# print(temp2)
 	options = temp2
 
