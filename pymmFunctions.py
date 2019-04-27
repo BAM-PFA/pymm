@@ -792,8 +792,8 @@ def check_empty_mono_track(inputPath):
 		stats = [line for line in output.stderr.decode().splitlines()]
 		chopped = [re.sub(r'\[Parsed_astats.+\]\ ','',line) for line in stats]
 		peakdB = [
-			int(float(line.replace('RMS peak dB: ',''))) for line in chopped \
-				if line.startswith('RMS peak dB: ')
+			int(float(line.replace('RMS level dB: ',''))) for line in chopped \
+				if line.startswith('RMS level dB: ')
 			]
 		# print(peakdB)
 		try:

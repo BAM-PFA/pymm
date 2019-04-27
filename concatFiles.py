@@ -313,6 +313,7 @@ def main():
 		print(problems)
 		return problems,success
 	# safe_to_concat returns either True or a list of problems
+	safeToConcat = None
 	simpleConcat = safe_to_concat(sourceList)
 	complexConcat = None # placeholder
 
@@ -334,7 +335,7 @@ def main():
 				)
 		except:
 			problems += "\nsome problem with the concat process."
-			print(problems)
+			# print(problems)
 	else:
 
 		problems += simpleConcat
@@ -350,8 +351,19 @@ def main():
 		os.rename(concattedFile,newPath)
 		# reset the var to the new path name
 		concattedFile = newPath
-		success = True
-
+		if pymmFunctions.is_av(concattedFile) in ('VIDEO','AUDIO'):
+			success = True
+		else:
+			success = False
+			try:
+				os.remove(concattedFile)
+			except:
+				pass
+			problems += (
+				"\nOutput concat file is not recognized as AV!! "
+				"Something must have gone wrong. Sorry."
+				)
+			concattedFile = problems
 	else: 
 		success = False
 		concattedFile = problems

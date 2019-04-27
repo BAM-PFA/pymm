@@ -369,7 +369,8 @@ class Ingest:
 		self.ingestResults = {
 			'status':False,
 			'abortReason':'',
-			'ingestUUID':self.ingestUUID
+			'ingestUUID':self.ingestUUID,
+			'notes':''
 			}
 		self.ingestLogPath = None
 
