@@ -46,6 +46,28 @@ def parse_args(**kwargs):
 
 	return parser.parse_args()
 
+def count_streams(sourceList):
+	status = True
+	sources = {}
+	for _object in sourceList:
+		sources[_object] = {'audio tracks':'','video tracks':''}
+		sources[_object]['audio tracks'] = pymmFunctions.get_stream_count(
+			_object,
+			'audio'
+			)
+		sources[_object]['video tracks'] = pymmFunctions.get_stream_count(
+			_object,
+			'video'
+			)
+	for format in ('audio','video'):
+		if len(set([x[format+' tracks'] for x in sources.values()])) > 1:
+			# if there's more than one value for stream type,
+			# that's no good
+			status = False
+	# print(sources)
+
+	return status,sources
+
 def get_profiles(input_list):
 	# BUILD A DICT OF PROFILES TO COMPARE FOR CONCATENATION
 	print("*"*100)
@@ -154,8 +176,7 @@ def safe_to_concat(sourceList,complex=None):
 	profilesDict = get_profiles(sourceList)
 	canonicalAudioSpec = list(profilesDict.items())[0][1]['audio']
 	canonicalVideoSpec = list(profilesDict.items())[0][1]['video']
-	print(canonicalAudioSpec)
-	print(type(canonicalVideoSpec))
+	# print(canonicalAudioSpec)
 
 	numberOfFiles = len(sourceList)
 	checkedFiles = 0
@@ -280,11 +301,27 @@ def main():
 			"so we will treat the first item in sourceList as "
 			"the canonical name for your object."
 			)
-
+	#######################
+	#	START TESTING FILES
+	stream_compatability,streams = count_streams(sourceList)
+	if not stream_compatability:
+		problems += (
+			"\nCan't concatenate. There are stream count differences "
+			"in your input files. See this: \n{}".format(streams)
+			)
+		success = False
+		print(problems)
+		return problems,success
 	# safe_to_concat returns either True or a list of problems
-	safeToConcat = safe_to_concat(sourceList)
-	if not safeToConcat:
-		safeToConcat = safe_to_concat(sourceList,complex=True)
+	simpleConcat = safe_to_concat(sourceList)
+	complexConcat = None # placeholder
+
+	if not simpleConcat == True:
+		complexConcat = False
+		# placeholder:
+		# complexConcat = safe_to_concat(sourceList,complex=True)
+	if True in (simpleConcat,complexConcat):
+		safeToConcat = True
 	concattedFile = False
 
 	if safeToConcat == True:
@@ -299,8 +336,8 @@ def main():
 			problems += "\nsome problem with the concat process."
 			print(problems)
 	else:
-		# try merging files with different specs
-		problems += safeToConcat
+
+		problems += simpleConcat
 
 	# rename the file so it sorts to the top of the output directory
 	# maybe this is a stupid idea? but it will be handy
