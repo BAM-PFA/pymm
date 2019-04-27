@@ -7,8 +7,6 @@ creates fixity checks,
 and packages the whole lot in an OAIS-like Archival Information Package
 
 @fixme = stuff to do
-@logme = stuff to add to ingest log
-@dbme = stuff to add to PREMIS db
 '''
 # standard library modules
 import argparse
@@ -111,6 +109,14 @@ def set_args():
 			'enter a full directory path to override path set in config; '
 			'sets output directory for ingestSip.py'
 			)
+		)
+	parser.add_argument(
+		'-m','--mono_access_copy',
+		help='select to mixdown access copy audio to single mono stream'
+		)
+	parser.add_argument(
+		'-k','--combine_audio_streams',
+		help='select to mixdown access copy audio to single stereo stream'
 		)
 
 	return parser.parse_args()
@@ -504,6 +510,8 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 	makeProres = CurrentIngest.ProcessArguments.makeProres
 	ingestType = CurrentIngest.ProcessArguments.ingestType
 	resourcespace_deliver = CurrentIngest.ProcessArguments.resourcespace_deliver
+	mono = CurrentIngest.ProcessArguments.mono
+	combineAudio = CurrentIngest.ProcessArguments.combineAudio
 
 	# make an enclosing folder for access copies if the input is a
 	# group of related video files
@@ -545,6 +553,12 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			sysargs.append('-r'+rsPackageDelivery)
 		if isSequence:
 			sysargs.append('-s')
+		if mono:
+			# select to mixdown audio to mono
+			sysargs.append('-m')
+		if combineAudio:
+			# select to mix all audio tracks to one stereo track
+			sysargs.append('-k')
 		sys.argv = 	sysargs
 		
 		deliveredDeriv = makeDerivs.main()
@@ -907,6 +921,8 @@ def main():
 	overrideOutdir = args.outdir_ingestsip
 	overrideAIPdir = args.aip_staging
 	overrideRS = args.resourcespace_deliver
+	mono = args.mono_access_copy
+	combineAudio = args.combine_audio_streams
 
 	# init some objects
 	CurrentProcess = ingestClasses.ProcessArguments(
@@ -919,7 +935,9 @@ def main():
 		cleanupStrategy,
 		overrideOutdir,
 		overrideAIPdir,
-		overrideRS
+		overrideRS,
+		mono,
+		combineAudio
 		)
 	CurrentObject = ingestClasses.InputObject(inputPath)
 	CurrentIngest = ingestClasses.Ingest(CurrentProcess,CurrentObject)
@@ -972,7 +990,6 @@ def main():
 
 	# tell the various logs that we are starting
 	CurrentIngest.caller = 'ingestSIP.main()'
-	# CurrentIngest.currentTargetObject = CurrentIngest.InputObject.canonicalName
 	loggers.log_event(
 		CurrentIngest,
 		event = 'ingestion start',
@@ -1122,7 +1139,8 @@ def main():
 					CurrentIngest,
 					_object.objectCategoryDetail
 					)
-				# note: this logs status = OK whether or not it is actually ok.
+				# note: 
+				# this logs status = OK whether or not it is actually ok. @fixme
 				loggers.pymm_log(
 					CurrentIngest,
 					event = 'metadata extraction',

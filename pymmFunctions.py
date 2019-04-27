@@ -696,6 +696,127 @@ def parse_sequence_folder(dpxPath):
 	# print(filePattern,startNumber,file0)
 	return filePattern,startNumber,file0
 
+def get_audio_stream_count(inputPath):
+	'''
+	Count the audio streams present in an av file. 
+	For a file with audio track(s) it should return one line per stream:
+		'streams.stream.0.index=1'
+	Tally these lines and take that as the count of audio streams. 
+	'''
+	probeCommand = [
+		'ffprobe', '-hide_banner',
+		inputPath,
+		'-select_streams', 'a',
+		'-show_entries', 'stream=index',
+		'-of', 'flat'
+		]
+	count = None
+	try:
+		count = 0
+		probe = subprocess.run(
+			probeCommand,
+			stdout=subprocess.PIPE, # this should return a list of streams
+			stderr=subprocess.PIPE
+			)
+		count += len(probe.stdout.splitlines())
+	except Exception as e:
+		print(e)
+		pass
+
+	return count
+
+def check_dual_mono(inputPath):
+	'''
+	Check if a video file has the first two audio streams mono
+	inspired by `mmfunctions` _has_first_two_tracks_mono()
+	'''
+	probes = []
+	dualMono = None
+	for index in range(2):		
+		probe = [
+		'ffprobe',
+		inputPath,
+		"-show_streams",
+		"-select_streams","a:{}".format(index)
+		]
+		out = subprocess.run(
+			probe,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+		probes.append(out)
+	probe1 = probes[0]
+	probe2 = probes[1]
+	stream1Channels = [
+		x for x in probe1.stdout.decode().splitlines() \
+			if x.startswith('channels=')
+		]
+	stream2Channels = [
+		x for x in probe2.stdout.decode().splitlines() \
+			if x.startswith('channels=')
+		]
+	if stream1Channels == stream2Channels == ['channels=1']:
+		dualMono = True
+	else:
+		dualMono = False
+
+	return dualMono
+
+def check_empty_mono_track(inputPath):
+	'''
+	Check if one mono audio track is basically empty.
+	Intended usage is with a dual mono file so we can remove
+	an empty track and use the non-empty one as track 1.
+	
+	NB: setting "empty" as below -50dB peak, this could be tweaked
+	'''
+	# ffmpeg -i /Users/michael/Desktop/test_files/illuminated_extract.mov -map 0:a:1 -af astats -f null -
+	empty = {0:False,1:False}
+
+	for stream in range(2):
+		command = [
+		'ffmpeg',
+		'-i',inputPath,
+		'-map','0:a:{}'.format(stream),
+		'-af','astats',
+		'-f','null','-'
+		]
+		# print(command)
+		output = subprocess.run(
+			command,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE
+			)
+		stats = [line for line in output.stderr.decode().splitlines()]
+		chopped = [re.sub(r'\[Parsed_astats.+\]\ ','',line) for line in stats]
+		peakdB = [
+			int(float(line.replace('RMS peak dB: ',''))) for line in chopped \
+				if line.startswith('RMS peak dB: ')
+			]
+		# print(peakdB)
+		try:
+			if peakdB[1] < -50:
+				empty[stream] = True
+		except:
+			pass
+
+	# print(empty)
+	returnValue = None
+	count = 0
+	if any([v for v in empty.values()]):		
+		for k,v in empty.items():
+			if not v:
+				returnValue = k # return the stream id to keep
+			else:
+				count += 1
+		if count > 1:
+			returnValue = 'both'
+	else:
+		returnValue = None
+
+	return returnValue
+
+
 #
 # END FILE CHECK STUFF 
 #

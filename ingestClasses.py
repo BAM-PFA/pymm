@@ -34,6 +34,8 @@ class ProcessArguments:
 		overrideOutdir=None,
 		overrideAIPdir=None,
 		overrideRS=None,
+		mono=None,
+		combineAudio=None
 		):
 		#######
 		# GLOBAL CONFIG (this is ConfigParser object, callable as a dict)
@@ -49,6 +51,8 @@ class ProcessArguments:
 		self.makeProres = makeProres
 		self.concatChoice = concatChoice
 		self.cleanupStrategy = cleanupStrategy
+		self.mono = mono
+		self.combineAudio = combineAudio
 
 		if None in (overrideOutdir,overrideAIPdir,overrideRS):
 			# if any of the outdirs is empty check for config settings
