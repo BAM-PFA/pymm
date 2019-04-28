@@ -29,11 +29,10 @@ def parse_args(**kwargs):
 	parser.add_argument(
 		'-i','--inputPath',
 		required=True,
-		help='stuff to concatenate'
-		)
-	parser.add_argument(
-		'-d','--ingestID',
-		help='ingest UUID'
+		help=(
+			'Full path to either a dir with stuff to concatenate '
+			'or a list of paths to files to concatenate.'
+			)
 		)
 	parser.add_argument(
 		'-c','--canonical_name',
@@ -46,6 +45,28 @@ def parse_args(**kwargs):
 		)
 
 	return parser.parse_args()
+
+def count_streams(sourceList):
+	status = True
+	sources = {}
+	for _object in sourceList:
+		sources[_object] = {'audio tracks':'','video tracks':''}
+		sources[_object]['audio tracks'] = pymmFunctions.get_stream_count(
+			_object,
+			'audio'
+			)
+		sources[_object]['video tracks'] = pymmFunctions.get_stream_count(
+			_object,
+			'video'
+			)
+	for format in ('audio','video'):
+		if len(set([x[format+' tracks'] for x in sources.values()])) > 1:
+			# if there's more than one value for stream type,
+			# that's no good
+			status = False
+	# print(sources)
+
+	return status,sources
 
 def get_profiles(input_list):
 	# BUILD A DICT OF PROFILES TO COMPARE FOR CONCATENATION
@@ -61,7 +82,7 @@ def get_profiles(input_list):
 		profiles[sourceFile]['video'] = json.loads(videoProfile)
 		profiles[sourceFile]['audio'] = json.loads(audioProfile)
 
-	# print(profiles)
+	print(profiles)
 	return profiles
 
 def make_ffmpeg_concat_file(sourceList):
@@ -112,7 +133,7 @@ def do_ffmpeg_concat(ffmpegConcatFile,sourceDir,canonicalName,wrapper):
 
 	return outputPath
 
-def concat(sourceList,canonicalName,wrapper):
+def concat(sourceList,canonicalName,wrapper,simple=None):
 	# do stuff:
 	# -set ffmpeg report 
 	# -get length of files for chapter markers
@@ -141,19 +162,21 @@ def concat(sourceList,canonicalName,wrapper):
 
 	return concattedFile
 
-def safe_to_concat(sourceList):
+def safe_to_concat(sourceList,complex=None):
 	'''
 	OK this is cheezy but should get it done:
 	- pick a random input file to call the 'canonical' spec source.
 	- since they all need to match each other it doesn't matter which it is.
 	- then we'll try to match each profile to the canonical spec,
 	  and if any fails we can report which input file failed.
+
+	If complex=True, test for identical pixel dimensions and stream counts,
+	  or report the different stats and refuse to concatenate.
 	'''
 	profilesDict = get_profiles(sourceList)
 	canonicalAudioSpec = list(profilesDict.items())[0][1]['audio']
 	canonicalVideoSpec = list(profilesDict.items())[0][1]['video']
 	# print(canonicalAudioSpec)
-	# print(canonicalVideoSpec)
 
 	numberOfFiles = len(sourceList)
 	checkedFiles = 0
@@ -172,7 +195,7 @@ def safe_to_concat(sourceList):
 						)
 					)
 			else:
-				problems += "\n{} failed the audio spec check. Exiting".format(
+				problems += "\n{} failed the audio spec check.".format(
 					os.path.basename(inputFile)
 					)
 				print(problems)
@@ -187,7 +210,7 @@ def safe_to_concat(sourceList):
 					)
 				safeToConcat = True
 			else:
-				problems += "\n{} failed the video spec check. Exiting".format(
+				problems += "\n{} failed the video spec check.".format(
 					os.path.basename(inputFile)
 					)
 				print(problems)
@@ -196,20 +219,65 @@ def safe_to_concat(sourceList):
 					))
 
 	# print(outlierFiles)
-	
+	# print(profilesDict)
 	if safeToConcat == True:
 		print('go ahead')
 	else:
-		problems += '\nnot safe to concat. check file specs.'
-		print(problems)
+		diffs = get_spec_diffs(
+			profilesDict,
+			canonicalAudioSpec,
+			canonicalVideoSpec
+			)
+
+		problems += '\nNot safe to concat. Check file specs.'
+		if not diffs == {}:
+			for thing,diff in diffs.items():
+				base = os.path.basename(thing)
+				problems += (
+					'\n*** Variances found in {}: ***'
+					'\nAudio: {}'
+					'\nVideo: {}'.format(base,diff['audio'],diff['video'])
+					)
+		# print(problems)
 		safeToConcat = problems
 
 	return safeToConcat
 
+def get_spec_diffs(profilesDict,canonicalAudioSpec,canonicalVideoSpec):
+	'''
+	Return the variances from the 'canonical' specs for each input file.
+	'''
+	diffs = {}
+	for _object,profile in profilesDict.items():
+		# get any differences from the canonical video spec:
+		vidDet = profile['video']
+		# print(vidDet)
+		vDiff = { 
+			k : vidDet[k] \
+			for k,_ \
+			in set(vidDet.items()) - set(canonicalVideoSpec.items())
+		}
+		# now get differences from the canonical audio spec:
+		audDet = profilesDict[_object]['audio']
+		aDiff = { 
+			k : audDet[k] \
+			for k,_ \
+			in set(audDet.items()) - set(canonicalAudioSpec.items())
+		}
+		# print("aDiff",aDiff)
+		# print("vDiff",vDiff)
+		if not all([x == {} for x in (aDiff,vDiff)]):
+			diffs[_object] = {'audio':'','video':''}
+		if not aDiff == {}:
+			diffs[_object]["audio"] = aDiff
+		if not vDiff == {}:
+			diffs[_object]["video"] = vDiff
+
+	return diffs
+
 def main():
 	args = parse_args()
 	_input = args.inputPath
-	ingestID = args.ingestID
 	canonicalName = args.canonical_name
 	wrapper = args.wrapper
 	success = False
@@ -226,19 +294,51 @@ def main():
 		problems += "\ninput is not a dir or list of files. exiting!"
 		print(problems)
 		# sys.exit()
-
+	if not canonicalName:
+		canonicalName = os.path.basename(sourceList[0])
+		print(
+			"You didn't specify a canonical_name "
+			"so we will treat the first item in sourceList as "
+			"the canonical name for your object."
+			)
+	#######################
+	#	START TESTING FILES
+	stream_compatability,streams = count_streams(sourceList)
+	if not stream_compatability:
+		problems += (
+			"\nCan't concatenate. There are stream count differences "
+			"in your input files. See this: \n{}".format(streams)
+			)
+		success = False
+		print(problems)
+		return problems,success
 	# safe_to_concat returns either True or a list of problems
-	safeToConcat = safe_to_concat(sourceList)
+	safeToConcat = None
+	simpleConcat = safe_to_concat(sourceList)
+	complexConcat = None # placeholder
+
+	if not simpleConcat == True:
+		complexConcat = False
+		# placeholder:
+		# complexConcat = safe_to_concat(sourceList,complex=True)
+	if True in (simpleConcat,complexConcat):
+		safeToConcat = True
 	concattedFile = False
 
 	if safeToConcat == True:
 		try: 
-			concattedFile = concat(sourceList,canonicalName,wrapper)
+			concattedFile = concat(
+				sourceList,
+				canonicalName,
+				wrapper,
+				simple=True
+				)
 		except:
 			problems += "\nsome problem with the concat process."
-			print(problems)
+			# print(problems)
 	else:
-		problems += safeToConcat
+
+		problems += simpleConcat
 
 	# rename the file so it sorts to the top of the output directory
 	# maybe this is a stupid idea? but it will be handy
@@ -251,8 +351,19 @@ def main():
 		os.rename(concattedFile,newPath)
 		# reset the var to the new path name
 		concattedFile = newPath
-		success = True
-
+		if pymmFunctions.is_av(concattedFile) in ('VIDEO','AUDIO'):
+			success = True
+		else:
+			success = False
+			try:
+				os.remove(concattedFile)
+			except:
+				pass
+			problems += (
+				"\nOutput concat file is not recognized as AV!! "
+				"Something must have gone wrong. Sorry."
+				)
+			concattedFile = problems
 	else: 
 		success = False
 		concattedFile = problems

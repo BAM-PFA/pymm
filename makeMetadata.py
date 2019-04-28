@@ -80,23 +80,21 @@ def get_track_profiles(mediainfoDict):
 	Get audio and video track profiles to compare for concatenation of files.
 	Takes an OrderedDict as retrned by get_mediainfo_report.
 
-	Discard attributes that are not necessary but keep relevant attributes
-	that we want to compare between files. Prob can discard even more?
+	Define relevant attributes taken from MediaInfo
+	that we want to compare between files. Are these lists accurate? @fixme
 	'''
 	problems = 0
 	if isinstance(mediainfoDict,str):
 		mediainfoDict = ast.literal_eval(mediainfoDict)
-	videoAttribsToDiscard = [
-		'@type', 'ID', 'Format_Info', 'Format_profile',
-		'Format_settings__CABAC', 'Format_settings__ReFrames', 
-		'Format_settings__GOP', 'Codec_ID', 'Codec_ID_Info', 'Duration', 
-		'Scan_type', 'Bits__Pixel_Frame_', 'StreamSize', 'Language', 
-		'Tagged_date', 'Encoded_date', 'BitRate_Mode', 'BitRate', 
-		'FrameCount', 'BufferSize','Delay'
+
+	videoAttribsToKeep = [
+		'Format','Width','Height','PixelAspectRatio','DisplayAspectRatio',
+		'FrameRate','Standard','ColorSpace','ChromaSubsampling',
+		'BitDepth','ScanType','CodecID'
 		]
-	audioAttribsToDiscard = [
-		'@type', 'ID', 'Codec_ID', 'Duration', 'Stream_size', 
-		'Language', 'Encoded_date', 'Tagged_date'
+	
+	audioAttribsToKeep = [
+		'Format','CodecID','SamplingRate','SamplesPerFrame','BitDepth'
 		]
 	# `tracks` should be a list of track dicts
 	tracks = mediainfoDict['media']['track']
@@ -111,15 +109,29 @@ def get_track_profiles(mediainfoDict):
 			audioTrackProfile = track
 
 	if videoTrackProfile:
-		for attr in videoAttribsToDiscard:
-			videoTrackProfile.pop(attr,None)
+		# print(videoTrackProfile)
+		temp = {}
+		for attr in videoAttribsToKeep:
+			# videoTrackProfile.pop(attr,None)
+			if attr in videoTrackProfile:
+				temp[attr] = videoTrackProfile[attr]
+		videoTrackProfile = temp
+		del temp
+		# print(videoTrackProfile)
 	else:
 		problems += 1
 		print("mediainfo problem: "
 			"either there is no video track or you got some issues")
 	if audioTrackProfile:
-		for attr in audioAttribsToDiscard:
-			audioTrackProfile.pop(attr,None)
+		# print(audioTrackProfile)
+		temp = {}
+		for attr in audioAttribsToKeep:
+			if attr in audioTrackProfile:
+				temp[attr] = audioTrackProfile[attr]
+		audioTrackProfile = temp
+		del temp
+			# audioTrackProfile.pop(attr,None)
+		# print(audioTrackProfile)
 	else:
 		problems += 1
 		print("mediainfo problem: "

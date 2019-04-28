@@ -126,7 +126,6 @@ def concat_access_files(CurrentIngest,wrapper):
 	sys.argv = [
 		'',
 		'-i'+inputPath,
-		'-d'+CurrentIngest.ingestUUID,
 		'-c'+CurrentIngest.InputObject.canonicalName,
 		'-w'+wrapper
 		]
@@ -167,6 +166,8 @@ def concat_access_files(CurrentIngest,wrapper):
 			"Here's the output of the attempt:\n{}\n"
 			"".format(concattedAccessFile)
 			)
+		CurrentIngest.ingestResults['notes'] += outcome
+		CurrentIngest.currentTargetObject = CurrentIngest
 	CurrentIngest.caller = CurrentIngest.ProcessArguments.ffmpegVersion
 	loggers.log_event(
 		CurrentIngest,

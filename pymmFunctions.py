@@ -696,17 +696,19 @@ def parse_sequence_folder(dpxPath):
 	# print(filePattern,startNumber,file0)
 	return filePattern,startNumber,file0
 
-def get_audio_stream_count(inputPath):
+def get_stream_count(inputPath,_type="video"):
 	'''
-	Count the audio streams present in an av file. 
-	For a file with audio track(s) it should return one line per stream:
+	Count the data streams present in an av file.
+	Specify _type as "audio" or "video" (default)
+	For example, a file with audio track(s) should return one line per stream:
 		'streams.stream.0.index=1'
 	Tally these lines and take that as the count of audio streams. 
 	'''
+
 	probeCommand = [
 		'ffprobe', '-hide_banner',
 		inputPath,
-		'-select_streams', 'a',
+		'-select_streams', _type[:1], # get the first letter of _type (a or v)
 		'-show_entries', 'stream=index',
 		'-of', 'flat'
 		]
@@ -768,7 +770,8 @@ def check_empty_mono_track(inputPath):
 	Intended usage is with a dual mono file so we can remove
 	an empty track and use the non-empty one as track 1.
 	
-	NB: setting "empty" as below -50dB peak, this could be tweaked
+	NB: setting "empty" as below -50dB RMS (root mean square) level,
+	  this could be tweaked!
 	'''
 	# ffmpeg -i /Users/michael/Desktop/test_files/illuminated_extract.mov -map 0:a:1 -af astats -f null -
 	empty = {0:False,1:False}
@@ -789,13 +792,13 @@ def check_empty_mono_track(inputPath):
 			)
 		stats = [line for line in output.stderr.decode().splitlines()]
 		chopped = [re.sub(r'\[Parsed_astats.+\]\ ','',line) for line in stats]
-		peakdB = [
-			int(float(line.replace('RMS peak dB: ',''))) for line in chopped \
-				if line.startswith('RMS peak dB: ')
+		leveldB = [
+			int(float(line.replace('RMS level dB: ',''))) for line in chopped \
+				if line.startswith('RMS level dB: ')
 			]
-		# print(peakdB)
+		# print(leveldB)
 		try:
-			if peakdB[1] < -50:
+			if leveldB[1] < -50:
 				empty[stream] = True
 		except:
 			pass
