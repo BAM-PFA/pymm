@@ -1,7 +1,7 @@
 # Database Structure & Info
-The MySQL database that pymm uses is intended to log [PREMIS](http://www.loc.gov/standards/premis/v3/) events that are taken on objects being ingested, as well as basic info about each object. There is also going to be (not done as of 7/2018) a module to parse and log the contents of an index.schema file generated when writing to an LTFS-formatted Linear Tape Open tape.
+The MySQL database that pymm uses is intended to log [PREMIS](http://www.loc.gov/standards/premis/v3/) events that are taken on objects being ingested, as well as basic info about each object. There is also a module to parse and log the contents of an `index.schema` file generated when writing to an LTFS-formatted Linear Tape Open tape.
 
-This structure is 99% taken from [mediamicroservices](https://github.com/mediamicroservices/mm) with a few minor modifications to suit our local needs and also my whimsy.
+This structure is 99% taken from [mediamicroservices](https://github.com/mediamicroservices/mm) with a few minor modifications to suit our local needs.
 
 ## Tables
 There are 6 tables, 5 of which are expected to be in use.

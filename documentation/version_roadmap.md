@@ -24,6 +24,7 @@ Basic functions of [mediamicroservices](https://github.com/mediamicroservices/mm
 * Random fixes
 
 ## Version 1.0.0
+### Released 2019/04/17
 This is the big refactor of `ingestSip`.
 
 Logic changes include:
@@ -41,9 +42,23 @@ Logic changes include:
 * Instead of chunks of code repeating for processing inputs of different types, the processing happens once, with different actions taking place based on the state/attributes of the various Input and ComponentObjects.
 
 ## Version 1.1.0
+### Released 2019/04/28
 
-* Refactor the LTO processes
-* At least update the HTML templates to be consistent with ingest ones
+* Fixes to the logic involved in concatenating access files
+  * More graceful failure of incompatible concat requests
+  * More descriptive explanation of why files are incompatible (lists audio/video specs that don't match)
+  * Additional tests for compatibility
+  * Simplify existing checks for file specs
+  * Placeholders for future complex concatenation of access files with differing specs.
+* Adds more complex handling of audio in input files when creating access copies.
+  * Tests for dual mono tracks (i.e. discrete audio channels coming off of tape)
+  * Tests for an empty mono track to disregard when creating access file.
+* Adds options to:
+  * Mix down audio to mono in access files
+  * Keep existing audio streams as-is in access file (default)
+  * Mix down all audio to single stereo stream in access files
+
 
 ## Version 1.x.x
+
 * Fix ordering of PBcore XML fields

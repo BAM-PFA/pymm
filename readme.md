@@ -18,7 +18,7 @@ Tested on Mac (El Capitan and Sierra), and on Ubuntu 16.04....
 ### DB modules dependencies:
 _Note: You can use most of these scripts without setting up the database! You just won't be able to use the database reporting functions._
 * MySQL Connector/Python is used for MySQL access:
-    * On a Mac: Try `brew install mysql-connector-c` and `pip3 install mysql-connector`, which may reaquire `brew install protobuf`. If that fails then try `pip3 install mysql-connector==2.1.6` for a version that is not so picky about Protobuf.
+    * On a Mac: Try `brew install mysql-connector-c` and `pip3 install mysql-connector`, which may require `brew install protobuf`. If that fails then try `pip3 install mysql-connector==2.1.6` for a version that is not so picky about Protobuf.
     * On Ubuntu 16.04 Just running `pip3 install mysql-connector==2.1.6` seems to work.
 * You need MySQL root privileges on the host machine.
 * On a Mac it really helps things if both Python and MySQL are both `brew`ed installs.
