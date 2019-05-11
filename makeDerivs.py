@@ -11,7 +11,8 @@ may or may not become a necessity for us later. For now, we are outputting
 H264 in mp4 for video and mp3 for audio input.
 '''
 import argparse
-import json
+import ast
+import collections
 import os
 import re
 import subprocess
@@ -28,30 +29,30 @@ except:
 
 config = pymmFunctions.read_config()
 
-defaultVideoAccessOptions = {
-	"-movflags":"faststart",
-	"-threads":"12", # just being conservative with hardware
-	"-pix_fmt":"yuv420p",
-	"-c:v":"libx264",
-	"-f":"mp4",
-	"-crf":"23",
-	"-c:a":"aac",
-	"-b:a":"320k",
-	"-ar":"48000"
-	}
+defaultVideoAccessOptions = [
+	("-threads","12"), # being conservative with hardware
+	("-movflags","faststart"),
+	("-pix_fmt","yuv420p"),
+	("-c:v","libx264"),
+	("-f","mp4"),
+	("-crf","18"),
+	("-c:a","aac"),
+	("-b:a","320k"),
+	("-ar","48000")
+	]
 
-defaultAudioAccessOptions = {
-	"-id3v2_version":"3",
-	"-dither_method":"rectangular",
-	"-qscale:a":"1"
-	}
+defaultAudioAccessOptions = [
+	("-id3v2_version","3"),
+	("-dither_method","rectangular"),
+	("-qscale:a","1")
+	]
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	'''
 	Set the input options and filepath for ffmpeg
 	'''
-	inputOptions = {}
+	inputOptions = collections.OrderedDict()
 
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
@@ -91,26 +92,34 @@ def set_middle_options(
 	'''
 	Set the options for encoding and any filters
 	'''
-	middleOptions = []
+	# middleOptions = collections.OrderedDict()
 	if derivType == 'resourcespace':
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
 		if inputType in ('VIDEO','sequence'):
-			middleOptions = json.loads(
-				config['ffmpeg']['resourcespace_video_opts']
+			middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+						config['ffmpeg']['resourcespace_video_opts']
+					)
 				)
 		elif inputType == 'AUDIO':
-			middleOptions = json.loads(
-				config['ffmpeg']['resourcespace_audio_opts']
+			middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+					config['ffmpeg']['resourcespace_audio_opts']
+					)
 				)
 
 		# test/set a default proxy command for FFMPEG call
-		if middleOptions == {}:
+		if middleOptions == collections.OrderedDict([('', '')]):
 			if inputType in ('VIDEO','sequence'):
-				middleOptions = defaultVideoAccessOptions
+				middleOptions = collections.OrderedDict(
+					defaultVideoAccessOptions
+					)
 			elif inputType == 'AUDIO':
-				middleOptions = defaultAudioAccessOptions
+				middleOptions = collections.OrderedDict(
+					defaultAudioAccessOptions
+					)
 			print(
 				"WARNING: YOU HAVEN'T SET FFMPEG "
 				"OPTIONS FOR ACCESS FILE TRANSCODING "
@@ -124,7 +133,7 @@ def set_middle_options(
 				path = audioPath
 			else:
 				path = inputPath
-			audioFilter = add_audio_merge_filter(middleOptions,path)
+			audioFilter = add_audio_merge_filter(path)
 			# print(audioFilter)
 			if audioFilter:
 				middleOptions['-filter_complex'] = audioFilter
@@ -160,7 +169,11 @@ def set_middle_options(
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine 
 		# for color correction, cropping, etc.
-		middleOptions = json.loads(config['ffmpeg']['proresHQ_opts'])
+		middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+						config['ffmpeg']['proresHQ_opts']
+						)
+				)
 
 	elif True == True:
 		print('etc')
@@ -251,7 +264,7 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 			'deriv to the destination folder'
 			)
 
-def add_audio_merge_filter(middleOptions,inputPath):
+def add_audio_merge_filter(inputPath):
 	'''
 	check for audio streams and add to a filter that will merge them all 
 	'''
