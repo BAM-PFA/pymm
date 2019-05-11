@@ -796,14 +796,14 @@ def check_empty_mono_track(inputPath):
 			int(float(line.replace('RMS level dB: ',''))) for line in chopped \
 				if line.startswith('RMS level dB: ')
 			]
-		# print(leveldB)
+		print(leveldB)
 		try:
 			if leveldB[1] < -50:
 				empty[stream] = True
 		except:
 			pass
 
-	# print(empty)
+	print(empty)
 	returnValue = None
 	count = 0
 	if any([v for v in empty.values()]):		

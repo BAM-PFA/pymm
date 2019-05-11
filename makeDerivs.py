@@ -11,7 +11,8 @@ may or may not become a necessity for us later. For now, we are outputting
 H264 in mp4 for video and mp3 for audio input.
 '''
 import argparse
-import json
+import ast
+import collections
 import os
 import re
 import subprocess
@@ -28,30 +29,30 @@ except:
 
 config = pymmFunctions.read_config()
 
-defaultVideoAccessOptions = {
-	"-movflags":"faststart",
-	"-threads":"12", # just being conservative with hardware
-	"-pix_fmt":"yuv420p",
-	"-c:v":"libx264",
-	"-f":"mp4",
-	"-crf":"23",
-	"-c:a":"aac",
-	"-b:a":"320k",
-	"-ar":"48000"
-	}
+defaultVideoAccessOptions = [
+	("-threads","12"), # being conservative with hardware
+	("-movflags","faststart"),
+	("-pix_fmt","yuv420p"),
+	("-c:v","libx264"),
+	("-f","mp4"),
+	("-crf","18"),
+	("-c:a","aac"),
+	("-b:a","320k"),
+	("-ar","48000")
+	]
 
-defaultAudioAccessOptions = {
-	"-id3v2_version":"3",
-	"-dither_method":"rectangular",
-	"-qscale:a":"1"
-	}
+defaultAudioAccessOptions = [
+	("-id3v2_version","3"),
+	("-dither_method","rectangular"),
+	("-qscale:a","1")
+	]
 
 # SET FFMPEG INPUT OPTIONS
 def set_input_options(derivType,inputPath,ffmpegLogDir=None,isSequence=None):
 	'''
 	Set the input options and filepath for ffmpeg
 	'''
-	inputOptions = {}
+	inputOptions = collections.OrderedDict()
 
 	if isSequence:
 		# get variables needed to process a derivative from a dpx sequence
@@ -91,26 +92,34 @@ def set_middle_options(
 	'''
 	Set the options for encoding and any filters
 	'''
-	middleOptions = []
+	# middleOptions = collections.OrderedDict()
 	if derivType == 'resourcespace':
 		# make an mp4 file for upload to ResourceSpace
 		# also used as our Proxy for access screenings
 		# list in config setting requires double quotes
 		if inputType in ('VIDEO','sequence'):
-			middleOptions = json.loads(
-				config['ffmpeg']['resourcespace_video_opts']
+			middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+						config['ffmpeg']['resourcespace_video_opts']
+					)
 				)
 		elif inputType == 'AUDIO':
-			middleOptions = json.loads(
-				config['ffmpeg']['resourcespace_audio_opts']
+			middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+					config['ffmpeg']['resourcespace_audio_opts']
+					)
 				)
 
 		# test/set a default proxy command for FFMPEG call
-		if middleOptions == {}:
+		if middleOptions == collections.OrderedDict([('', '')]):
 			if inputType in ('VIDEO','sequence'):
-				middleOptions = defaultVideoAccessOptions
+				middleOptions = collections.OrderedDict(
+					defaultVideoAccessOptions
+					)
 			elif inputType == 'AUDIO':
-				middleOptions = defaultAudioAccessOptions
+				middleOptions = collections.OrderedDict(
+					defaultAudioAccessOptions
+					)
 			print(
 				"WARNING: YOU HAVEN'T SET FFMPEG "
 				"OPTIONS FOR ACCESS FILE TRANSCODING "
@@ -124,7 +133,7 @@ def set_middle_options(
 				path = audioPath
 			else:
 				path = inputPath
-			audioFilter = add_audio_merge_filter(middleOptions,path)
+			audioFilter = add_audio_merge_filter(path)
 			# print(audioFilter)
 			if audioFilter:
 				middleOptions['-filter_complex'] = audioFilter
@@ -160,7 +169,11 @@ def set_middle_options(
 	elif derivType == 'proresHQ':
 		# make a HQ prores .mov file as a mezzanine 
 		# for color correction, cropping, etc.
-		middleOptions = json.loads(config['ffmpeg']['proresHQ_opts'])
+		middleOptions = collections.OrderedDict(
+				ast.literal_eval(
+						config['ffmpeg']['proresHQ_opts']
+						)
+				)
 
 	elif True == True:
 		print('etc')
@@ -251,7 +264,7 @@ def additional_delivery(derivFilepath,derivType,rsMulti=None):
 			'deriv to the destination folder'
 			)
 
-def add_audio_merge_filter(middleOptions,inputPath):
+def add_audio_merge_filter(inputPath):
 	'''
 	check for audio streams and add to a filter that will merge them all 
 	'''
@@ -271,6 +284,81 @@ def add_audio_merge_filter(middleOptions,inputPath):
 		# audioFilter = '"{}"'.format(audioFilter) # wrap the filter in quotes
 
 	return audioFilter
+
+def add_audio_images(CurrentIngest,outputFilePath):
+	'''
+	If the input asset is type=AUDIO and there are images
+	in the 'documentation' folder, take either an image with 
+	"AssetFront" in the filename, or the first available image 
+	and embed it in the mp3 access files as "cover art." There doesn't
+	seem to be a good way of adding more than one image (that I can find)
+	and no reliable way of associating a particular image with a particular 
+	media face (side "a"= imageA; side "b" = imageB) so we will 
+	just use the one image to represent the whole shebang.
+	Error handling is intended to just give up if there are any issues
+	as this isn't really an important task.
+	'''
+	if CurrentIngest.includesSubmissionDocumentation:
+		documentationObject = [
+			x for x in CurrentIngest.InputObject.ComponentObjects
+			if x.isDocumentation == True
+			]
+		documentationContents = documentationObject[0].documentationContents
+		# print(documentationContents)
+		# ID3v2 spec allows for JPG or PNG images to be included
+		images = [
+			x for x in documentationContents 
+			if os.path.splitext(x)[1].lower() in ['.jpg','.jpeg','.png']
+			]
+		documentationPath = os.path.join(
+			CurrentIngest.packageObjectDir,
+			'documentation'
+			)
+		imagePaths = [os.path.join(documentationPath,x) for x in images]
+		imagePaths = sorted(imagePaths)
+		# Find the "one" image		
+		frontImagePath = [x for x in imagePaths if "AssetFront" in x]
+		if frontImagePath == [] and imagePaths != []:
+			frontImagePath = imagePaths[0]
+		elif imagePaths == []:
+			# if there aren't actually any images, get out
+			return None
+		else:
+			frontImagePath = frontImagePath[0]
+
+		# Rename the existing access file temporarily
+		outputSplitPath = os.path.splitext(outputFilePath)
+		temp = outputSplitPath[0]+"_tmp_"+outputSplitPath[1]
+		os.rename(outputFilePath,temp)
+
+		addArtCommand = [
+			'ffmpeg','-y', # going to have to overwrite the existing file
+			'-i',temp,
+			'-i',frontImagePath,
+			'-c', 'copy', 
+			'-map', '0:a', 
+			'-map', '1:v', 
+			'-metadata:s:v', 'title="asset image"', 
+			'-metadata:s:v','comment="Other"',
+			outputFilePath
+			]
+		# print(' '.join(addArtCommand))
+		try:
+			output = subprocess.run(
+				addArtCommand,
+				check=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE
+				)
+			print(output.stderr.decode('utf-8'))
+			os.remove(temp)
+
+		except subprocess.CalledProcessError as e:
+			# if there was an error, abort and 
+			# rename the temp file back as it was
+			print(e.returncode)
+			print(e.stderr.decode('utf-8'))
+			os.rename(temp,outputFilePath)
 
 def options_to_list(options):
 	'''
@@ -343,7 +431,7 @@ def set_args():
 
 	return parser.parse_args()
 
-def main():
+def main(CurrentIngest=None):
 	# DO STUFF
 	args = set_args()
 	inputPath = args.inputPath
@@ -355,6 +443,7 @@ def main():
 	isSequence = args.isSequence
 	mixdown = args.mixdown
 	combine_audio_streams = args.combine_audio_streams
+	# CurrentIngest = args.current_ingest
 
 	if logDir:
 		pymmFunctions.set_ffreport(logDir,'makeDerivs')
@@ -411,6 +500,9 @@ def main():
 		):
 		additional_delivery(outputFilePath,derivType,rsMulti)
 	# print(outputFilePath)
+	if inputType == "AUDIO":
+		add_audio_images(CurrentIngest,outputFilePath)
+
 	return outputFilePath
 
 if __name__ == '__main__':
