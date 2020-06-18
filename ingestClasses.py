@@ -54,16 +54,18 @@ class ProcessArguments:
 		self.mono = mono
 		self.combineAudio = combineAudio
 
-		if None in (overrideOutdir,overrideAIPdir,overrideRS):
-			# if any of the outdirs is empty check for config settings
-			pymmFunctions.check_missing_ingest_paths(self.config)
-			self.aip_staging = self.config['paths']['aip_staging']
-			self.resourcespace_deliver = self.config['paths']['resourcespace_deliver']
+		if overrideOutdir == None:
 			self.outdir_ingestsip = self.config['paths']['outdir_ingestsip']
 		else:
-			self.aip_staging = overrideAIPdir
-			self.resourcespace_deliver = overrideRS
 			self.outdir_ingestsip = overrideOutdir
+		if overrideAIPdir == None:
+			self.aip_staging = self.config['paths']['aip_staging']
+		else:
+			self.aip_staging = overrideAIPdir
+		if overrideRS == None:
+			self.resourcespace_deliver = self.config['paths']['resourcespace_deliver']
+		else:
+			self.resourcespace_deliver = overrideRS
 
 		self.databaseReporting = self.test_db_access(self.user)
 		

@@ -10,36 +10,28 @@ and packages the whole lot in an OAIS-like Archival Information Package
 '''
 # standard library modules
 import argparse
-import json
 import os
 import shutil
-import subprocess
 import sys
-import time
-import uuid
 # local modules:
 try:
 	from bampfa_pbcore import pbcore, makePbcore
 	import concatFiles
-	import dbReporters
 	import ingestClasses
 	import loggers
 	import makeDerivs
 	import moveNcopy
 	import makeMetadata
 	import pymmFunctions
-	import directoryScanner
 except:
 	from . bampfa_pbcore import pbcore, makePbcore
 	from . import concatFiles
-	from . import dbReporters
 	from . import ingestClasses
 	from . import loggers
 	from . import makeDerivs
 	from . import moveNcopy
 	from . import makeMetadata
 	from . import pymmFunctions
-	from . import directoryScanner
 # read in from the config file
 config = pymmFunctions.read_config()
 
@@ -562,7 +554,7 @@ def make_derivs(CurrentIngest,rsPackage=None,isSequence=None):
 			sysargs.append('-k')
 		sys.argv = 	sysargs
 		
-		deliveredDeriv = makeDerivs.main()
+		deliveredDeriv = makeDerivs.main(CurrentIngest)
 		deliveredDerivPaths[derivType] = deliveredDeriv
 
 		event = 'migration'
@@ -647,7 +639,7 @@ def stage_sip(CurrentIngest):
 	# UUIDpath = os.path.join(aip_staging,ingestUUID)
 	# pymmFunctions.rename_dir(stagedSIP,UUIDpath)
 	CurrentIngest.caller = 'rsync'
-	pymmFunctions.short_log(
+	loggers.short_log(
 		CurrentIngest,
 		event = 'replication',
 		outcome = 'SIP moved to staging area at {}'.format(stagedSIP),
@@ -1167,6 +1159,8 @@ def main():
 					)
 			check_av_status(CurrentIngest) ## IS THIS REDUNDANT? IT AT LEAST LOGS THE CHECK... @fixme
 
+		else:
+			pass
 		CurrentIngest.currentTargetObject = None
 
 	if CurrentIngest.ProcessArguments.concatChoice == True:
