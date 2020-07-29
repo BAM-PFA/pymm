@@ -296,7 +296,10 @@ def is_video(inputPath):
 		try:
 			codec_type = output['streams'][0]['codec_type']
 			if codec_type == 'video':
-				return True
+				if not any([x in output['streams'][0]['codec_name'] for x in ('jpeg','jpg','png')]):
+					return True
+				else:
+					return False
 		except:
 			return False
 	except:
